@@ -7,6 +7,9 @@ import pg from 'pg';
 import * as schema from './schema.js';
 
 export type Db = NodePgDatabase<typeof schema>;
+/** A transaction handle; accepted wherever a query only needs to read or write */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+export type Executor = Db | Tx;
 
 export interface Database {
   db: Db;
