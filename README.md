@@ -60,3 +60,7 @@ Frontend: http://localhost:5173
 
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names: `domain`, `server`, `web`, plus `docker` and `docs`.
 - Code, comments and tests are in English. Every user-facing string goes into both locale files in `apps/web/src/i18n/locales/`.
+
+## License
+
+[GNU Affero General Public License v3.0 or later](LICENSE). You may use, modify and host draw-and-play, also commercially. If you distribute a modified version or offer it to others over a network, you must publish its source code under the same license.

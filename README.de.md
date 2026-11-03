@@ -60,3 +60,7 @@ Frontend: http://localhost:5173
 
 - Commit-Nachrichten folgen [Conventional Commits](https://www.conventionalcommits.org/de/v1.0.0/), z. B. `feat(domain): add knockout placements`. Scopes sind die Workspace-Namen `domain`, `server`, `web` sowie `docker` und `docs`.
 - Code, Kommentare und Tests sind auf Englisch. Jeder sichtbare Text kommt in beide Sprachdateien unter `apps/web/src/i18n/locales/`.
+
+## Lizenz
+
+[GNU Affero General Public License v3.0 oder später](LICENSE). draw-and-play darf genutzt, verändert und betrieben werden, auch kommerziell. Wer eine veränderte Version weitergibt oder anderen über ein Netzwerk anbietet, muss deren Quellcode unter derselben Lizenz veröffentlichen.

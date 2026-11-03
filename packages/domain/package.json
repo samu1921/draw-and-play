@@ -2,6 +2,7 @@
   "name": "@draw-and-play/domain",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "description": "Sport-neutral tournament logic: schedules, draw, standings, knockout, transitions, scheduler/simulator. No UI or database dependencies.",
   "exports": {
