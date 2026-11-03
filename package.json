@@ -1,0 +1,25 @@
+{
+  "name": "draw-and-play",
+  "private": true,
+  "description": "Web-based tournament software with planner, live forecast and browser-based result entry",
+  "license": "UNLICENSED",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@draw-and-play/server & npm run dev --workspace=@draw-and-play/web & wait",
+    "build": "npm run build --workspace=@draw-and-play/web && npm run build --workspace=@draw-and-play/server",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

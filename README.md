@@ -1,0 +1,62 @@
+# draw-and-play
+
+**English** · [Deutsch](README.de.md)
+
+Web-based tournament software: plan, draw and run multi-day events with several competitions on shared tables, entirely in the browser. It starts with table tennis club championships and is built sport-neutral from day one.
+
+What sets it apart:
+
+- **Planner with simulation.** Before the event it compares every sensible format for the expected number of entries (groups, knockout, placement matches) by matches per player, finishing time and table usage.
+- **Live forecast.** During the event the schedule is recalculated from the actual state, and delays show up immediately.
+- **Format changes on the fly.** Whatever has not started yet can still be changed, with a preview of the impact.
+- **Everything in the browser.** Admin desk, result entry on phones via QR code and PIN, projector display and a public read-only view, all updated live.
+
+Background (German): [concept](docs/02-konzept-draw-and-play.md).
+
+> Status: early development. The domain library (draw, standings, knockout, scheduling) is built first, test-driven.
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `packages/domain` | Pure tournament logic in TypeScript (schedules, draw, standings, knockout, planner). No UI or database dependencies; runs in Node and in the browser. Consumed as TypeScript source, without a build step of its own. Returns language-neutral codes, never UI text. |
+| `apps/server` | Fastify API, Drizzle ORM + PostgreSQL. Also serves the built frontend in production. |
+| `apps/web` | Vue 3 + Vite + Vue Router + Pinia (SPA), localized with vue-i18n (English, German). |
+| `docker/` | Caddy configuration (reverse proxy, automatic HTTPS) |
+
+Stack: Node 22, TypeScript 6.0 (not 7, because `vue-tsc` needs the compiler's JavaScript API), Vitest, npm workspaces.
+
+## Run everything with Docker
+
+```bash
+cp .env.example .env   # set a password
+docker compose up -d --build
+```
+
+Then open http://localhost:8080 (health check: http://localhost:8080/api/health).
+
+On a server, set `SITE_ADDRESS=tournament.example.org`, `HTTP_PORT=80` and `HTTPS_PORT=443` in `.env`. Caddy then obtains the certificate automatically.
+
+## Development with hot reload
+
+```bash
+npm install
+docker compose up -d db   # database only
+npm run dev               # server (tsx watch, :3000) + Vite (:5173, proxies /api → :3000)
+```
+
+Frontend: http://localhost:5173
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `npm test` | Run all tests (Vitest) |
+| `npm run typecheck` | Type-check all packages |
+| `npm run build` | Build frontend and server |
+| `npm run db:generate -w @draw-and-play/server` | Generate a migration from the Drizzle schema |
+
+## Contributing
+
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names: `domain`, `server`, `web`, plus `docker` and `docs`.
+- Code, comments and tests are in English. Every user-facing string goes into both locale files in `apps/web/src/i18n/locales/`.
