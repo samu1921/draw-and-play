@@ -141,3 +141,16 @@ export interface Operations {
   queue: OperationsMatch[];
   recent: OperationsMatch[];
 }
+
+export interface Forecast {
+  day: string | null;
+  days: string[];
+  /** true: planned from now; false: a future day, planned from its first start */
+  live: boolean;
+  now: number;
+  end: number | null;
+  endLate: number | null;
+  competitions: { id: string; start: number; groupStageEnd: number | null; end: number; endLate: number; matchMinutes: number }[];
+  matches: { competitionId: string; matchKey: string; tableId: string; start: number; end: number }[];
+  skipped: { id: string; reason: string }[];
+}

@@ -229,6 +229,16 @@ a {
   grid-column: 1 / -1;
 }
 
+.field.inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field.inline select {
+  width: auto;
+}
+
 .field.grow {
   flex: 1 1 12rem;
 }

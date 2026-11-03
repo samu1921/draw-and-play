@@ -27,18 +27,17 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
   async function reload() {
     const value = eventRef.value;
     if (!value) return;
-    try {
-      const path = `/api/events/${encodeURIComponent(value)}`;
-      const [o, ops] = await Promise.all([
-        api<EventOverview>('GET', path),
-        options.operations ? api<Operations>('GET', `${path}/operations`) : Promise.resolve(null),
-      ]);
-      overview.value = o;
-      operations.value = ops;
-      error.value = null;
-    } catch (e) {
-      error.value = e;
-    }
+    const path = `/api/events/${encodeURIComponent(value)}`;
+    // Set independently: the overview is quick, the operations view resolves every competition.
+    const load = async <T>(target: Ref<T | null>, url: string) => {
+      try {
+        target.value = await api<T>('GET', url);
+        error.value = null;
+      } catch (e) {
+        error.value = e;
+      }
+    };
+    await Promise.all([load(overview, path), options.operations ? load(operations, `${path}/operations`) : null]);
   }
 
   const { status } = useEventStream(eventRef, () => {

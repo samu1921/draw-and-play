@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import ForecastPanel from '../../components/live/ForecastPanel.vue';
 import ResultDialog from '../../components/live/ResultDialog.vue';
 import TableCard from '../../components/live/TableCard.vue';
+import { useForecast } from '../../composables/useForecast.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { useNow } from '../../composables/useNow.js';
 import { api, type OperationsMatch } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
+import { formatClock } from '../../lib/time.js';
 
 const { t, te } = useI18n();
 const live = injectLiveEvent();
@@ -15,6 +18,13 @@ const now = useNow();
 const ops = computed(() => live.operations.value);
 const competitions = computed(() => new Map((ops.value?.competitions ?? []).map((c) => [c.id, c])));
 const rulesOf = (m: OperationsMatch | null) => live.overview.value?.competitions.find((c) => c.id === m?.competitionId)?.matchRules;
+
+const forecastDay = ref<string | null>(null);
+const { forecast } = useForecast(forecastDay);
+/** Planned start and table per queued match, from the live forecast */
+const planned = computed(() => new Map((forecast.value?.matches ?? []).map((m) => [`${m.competitionId}:${m.matchKey}`, m])));
+const plannedOf = (m: OperationsMatch) => planned.value.get(`${m.competitionId}:${m.key}`);
+const tableName = (id: string) => ops.value?.tables.find((t) => t.id === id)?.name ?? '';
 
 const error = ref('');
 const editing = ref<OperationsMatch | null>(null);
@@ -38,11 +48,23 @@ async function run(action: () => Promise<unknown>) {
   }
 }
 
-/** Callable matches first; matches with a busy player keep their order below */
-const queue = computed(() => [...(ops.value?.queue ?? [])].sort((a, b) => Number(a.busy ?? false) - Number(b.busy ?? false)));
+/**
+ * In the order of the forecast (the suggested next calls); matches with a busy player stay in place, greyed out.
+ * Without a forecast, callable matches come first.
+ */
+const queue = computed(() =>
+  [...(ops.value?.queue ?? [])].sort(
+    (a, b) =>
+      (plannedOf(a)?.start ?? Number.MAX_SAFE_INTEGER) - (plannedOf(b)?.start ?? Number.MAX_SAFE_INTEGER) ||
+      Number(a.busy ?? false) - Number(b.busy ?? false),
+  ),
+);
+/** The table picked by hand, else the one the forecast suggests, else the first free one */
 const selectedTable = (m: OperationsMatch) => {
   const options = tablesFor(m);
-  return options.some((t) => t.id === chosen[m.id]) ? chosen[m.id]! : (options[0]?.id ?? '');
+  if (options.some((t) => t.id === chosen[m.id])) return chosen[m.id]!;
+  const suggested = plannedOf(m)?.tableId;
+  return options.some((t) => t.id === suggested) ? suggested! : (options[0]?.id ?? '');
 };
 
 const call = (m: OperationsMatch) => {
@@ -90,6 +112,9 @@ async function onSaved() {
               {{ competitions.get(m.competitionId)?.name }} · {{ matchLabel(t, m) }}
             </span>
             <span class="queue-players">{{ sideNames(m) }}</span>
+            <span v-if="plannedOf(m)" class="muted small">
+              {{ t('forecast.suggested', { time: formatClock(plannedOf(m)!.start), table: tableName(plannedOf(m)!.tableId) }) }}
+            </span>
             <span v-if="m.busy" class="busy-note">
               <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1" /><rect x="9.5" y="2" width="3.5" height="12" rx="1" /></svg>
               {{ t('admin.desk.busy') }}
@@ -103,10 +128,13 @@ async function onSaved() {
               <button type="button" class="button small" :disabled="m.busy" @click="call(m)">{{ t('admin.desk.call') }}</button>
             </template>
             <span v-else class="muted small">{{ t('admin.desk.noFreeTable') }}</span>
+            <button type="button" class="button secondary small" @click="editing = m">{{ t('admin.desk.result') }}</button>
           </div>
         </li>
       </ul>
     </section>
+
+    <ForecastPanel v-model:day="forecastDay" :forecast="forecast" selectable />
 
     <section v-if="ops.recent.length > 0" class="card" aria-labelledby="desk-recent">
       <h2 id="desk-recent">{{ t('admin.desk.recent') }}</h2>

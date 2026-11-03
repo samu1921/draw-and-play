@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import ForecastPanel from '../../components/live/ForecastPanel.vue';
 import TableCard from '../../components/live/TableCard.vue';
+import { useForecast } from '../../composables/useForecast.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { useNow } from '../../composables/useNow.js';
 import { matchLabel } from '../../lib/describe.js';
@@ -9,6 +11,8 @@ import { matchLabel } from '../../lib/describe.js';
 const { t } = useI18n();
 const live = injectLiveEvent();
 const now = useNow();
+const forecastDay = ref<string | null>(null);
+const { forecast } = useForecast(forecastDay);
 const ops = computed(() => live.operations.value);
 const competitions = computed(() => new Map((ops.value?.competitions ?? []).map((c) => [c.id, c])));
 </script>
@@ -21,6 +25,7 @@ const competitions = computed(() => new Map((ops.value?.competitions ?? []).map(
         <TableCard v-for="table in ops.tables" :key="table.id" :table="table" :competitions="competitions" :now="now" />
       </div>
     </section>
+    <ForecastPanel v-model:day="forecastDay" :forecast="forecast" selectable />
     <section v-if="ops.recent.length > 0" class="card" aria-labelledby="public-recent">
       <h2 id="public-recent">{{ t('public.recent') }}</h2>
       <ul class="queue">

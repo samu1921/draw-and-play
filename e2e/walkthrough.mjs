@@ -99,6 +99,8 @@ await shot(admin, '03-setup');
 step('call matches at the desk');
 await admin.getByRole('link', { name: 'Spielbetrieb' }).click();
 await admin.locator('.queue-item').first().waitFor();
+await admin.getByRole('heading', { name: 'Prognose' }).waitFor();
+await admin.getByText(/≈ \d{2}:\d{2} · Tisch/).first().waitFor();
 for (let i = 0; i < 3; i++) {
   await admin.locator('.queue-item:not(.blocked) button:has-text("Aufrufen")').first().click();
   await admin.waitForTimeout(600);
