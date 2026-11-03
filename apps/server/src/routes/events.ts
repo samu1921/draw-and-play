@@ -1,0 +1,222 @@
+import { and, asc, eq, inArray, notInArray, or } from 'drizzle-orm';
+import type { ServerResponse } from 'node:http';
+import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import type { Executor } from '../db/client.js';
+import { auditLog, competitions, eventTables, events, matches, persons } from '../db/schema.js';
+import { conflict, notFound, parse } from '../errors.js';
+import { competitionSummary, personView } from '../services/competitions.js';
+import { actorOf, requireAdmin } from './auth.js';
+import type { RouteDeps } from './deps.js';
+
+const uuid = z.uuid();
+const isoDate = z.iso.date();
+
+const createEventBody = z.object({
+  name: z.string().trim().min(1).max(120),
+  slug: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(60)
+    .optional(),
+  startsOn: isoDate.optional(),
+  endsOn: isoDate.optional(),
+  tableCount: z.int().min(1).max(64).default(4),
+});
+
+const updateEventBody = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  startsOn: isoDate.nullable().optional(),
+  endsOn: isoDate.nullable().optional(),
+  settings: z.object({ publicRatings: z.boolean().optional(), shortNames: z.boolean().optional() }).optional(),
+});
+
+const tablesBody = z.object({ names: z.array(z.string().trim().min(1).max(20)).min(1).max(64) });
+
+const personBody = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  club: z.string().trim().max(120).nullable().optional(),
+  gender: z.enum(['f', 'm', 'd']).nullable().optional(),
+  birthYear: z.int().min(1900).max(2100).nullable().optional(),
+  licenceNo: z.string().trim().max(40).nullable().optional(),
+  rating: z.int().min(0).max(4000).nullable().optional(),
+});
+
+function slugify(name: string): string {
+  const base = name
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 50);
+  return base || 'event';
+}
+
+/** Events are addressed by id or slug (the slug makes public URLs readable). */
+export async function findEvent(ex: Executor, ref: string) {
+  const condition = uuid.safeParse(ref).success ? or(eq(events.id, ref), eq(events.slug, ref)) : eq(events.slug, ref);
+  const [row] = await ex.select().from(events).where(condition).limit(1);
+  if (!row) throw notFound('event');
+  return row;
+}
+
+export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: RouteDeps) {
+  // Open streams are ended on shutdown; otherwise the server would wait for every client to disconnect.
+  const streams = new Set<ServerResponse>();
+  app.addHook('preClose', async () => {
+    for (const res of streams) res.end();
+  });
+
+  const publish = (eventId: string, type: 'event' | 'tables' | 'persons', id = eventId) => broadcaster.publish({ eventId, type, id });
+
+  app.get('/api/events', { preHandler: requireAdmin }, async () => {
+    return { events: await db.select().from(events).orderBy(asc(events.startsOn), asc(events.name)) };
+  });
+
+  app.post('/api/events', { preHandler: requireAdmin }, async (request, reply) => {
+    const body = parse(createEventBody, request.body);
+    const slug = body.slug ?? `${slugify(body.name)}-${Math.random().toString(36).slice(2, 6)}`;
+    const created = await db.transaction(async (tx) => {
+      const [taken] = await tx.select({ id: events.id }).from(events).where(eq(events.slug, slug)).limit(1);
+      if (taken) throw conflict('slugTaken');
+      const [event] = await tx
+        .insert(events)
+        .values({ name: body.name, slug, startsOn: body.startsOn ?? null, endsOn: body.endsOn ?? null })
+        .returning();
+      await tx
+        .insert(eventTables)
+        .values(Array.from({ length: body.tableCount }, (_, i) => ({ eventId: event!.id, name: String(i + 1), sortOrder: i })));
+      await tx.insert(auditLog).values({ eventId: event!.id, actor: actorOf(request), action: 'create', entityType: 'event', entityId: event!.id });
+      return event!;
+    });
+    return reply.code(201).send({ event: created });
+  });
+
+  /** Public overview: event, tables and competitions */
+  app.get('/api/events/:eventRef', async (request) => {
+    const { eventRef } = request.params as { eventRef: string };
+    const event = await findEvent(db, eventRef);
+    const [tables, comps] = await Promise.all([
+      db.select().from(eventTables).where(eq(eventTables.eventId, event.id)).orderBy(asc(eventTables.sortOrder)),
+      db.select().from(competitions).where(eq(competitions.eventId, event.id)).orderBy(asc(competitions.sortOrder), asc(competitions.createdAt)),
+    ]);
+    return {
+      event: { id: event.id, slug: event.slug, name: event.name, startsOn: event.startsOn, endsOn: event.endsOn, timezone: event.timezone, sport: event.sport, settings: event.settings },
+      tables: tables.map((t) => ({ id: t.id, name: t.name, sortOrder: t.sortOrder })),
+      competitions: comps.map(competitionSummary),
+    };
+  });
+
+  app.patch('/api/events/:eventId', { preHandler: requireAdmin }, async (request) => {
+    const event = await findEvent(db, (request.params as { eventId: string }).eventId);
+    const body = parse(updateEventBody, request.body);
+    const [updated] = await db
+      .update(events)
+      .set({
+        ...(body.name !== undefined && { name: body.name }),
+        ...(body.startsOn !== undefined && { startsOn: body.startsOn }),
+        ...(body.endsOn !== undefined && { endsOn: body.endsOn }),
+        ...(body.settings && { settings: { ...event.settings, ...body.settings } }),
+      })
+      .where(eq(events.id, event.id))
+      .returning();
+    publish(event.id, 'event');
+    return { event: updated };
+  });
+
+  /** Replaces the table list by name. Tables holding a called match cannot be removed. */
+  app.put('/api/events/:eventId/tables', { preHandler: requireAdmin }, async (request) => {
+    const event = await findEvent(db, (request.params as { eventId: string }).eventId);
+    const { names } = parse(tablesBody, request.body);
+    if (new Set(names).size !== names.length) throw conflict('duplicateTableName');
+    const tables = await db.transaction(async (tx) => {
+      const existing = await tx.select().from(eventTables).where(eq(eventTables.eventId, event.id));
+      const removed = existing.filter((t) => !names.includes(t.name)).map((t) => t.id);
+      if (removed.length > 0) {
+        const [inUse] = await tx
+          .select({ id: matches.id })
+          .from(matches)
+          .where(and(inArray(matches.tableId, removed), eq(matches.status, 'called')))
+          .limit(1);
+        if (inUse) throw conflict('tableInUse');
+        await tx.delete(eventTables).where(and(eq(eventTables.eventId, event.id), notInArray(eventTables.name, names)));
+      }
+      for (const [sortOrder, name] of names.entries()) {
+        const found = existing.find((t) => t.name === name);
+        if (found) await tx.update(eventTables).set({ sortOrder }).where(eq(eventTables.id, found.id));
+        else await tx.insert(eventTables).values({ eventId: event.id, name, sortOrder });
+      }
+      return tx.select().from(eventTables).where(eq(eventTables.eventId, event.id)).orderBy(asc(eventTables.sortOrder));
+    });
+    publish(event.id, 'tables');
+    return { tables };
+  });
+
+  // --- Persons (admin only: they hold personal data) ---
+
+  app.get('/api/events/:eventId/persons', { preHandler: requireAdmin }, async (request) => {
+    const event = await findEvent(db, (request.params as { eventId: string }).eventId);
+    const rows = await db.select().from(persons).where(eq(persons.eventId, event.id)).orderBy(asc(persons.lastName), asc(persons.firstName));
+    return { persons: rows.map((p) => personView(p, event.settings, 'admin')) };
+  });
+
+  app.post('/api/events/:eventId/persons', { preHandler: requireAdmin }, async (request, reply) => {
+    const event = await findEvent(db, (request.params as { eventId: string }).eventId);
+    const body = parse(personBody, request.body);
+    const [person] = await db.insert(persons).values({ ...body, eventId: event.id }).returning();
+    publish(event.id, 'persons', person!.id);
+    return reply.code(201).send({ person: personView(person!, event.settings, 'admin') });
+  });
+
+  app.patch('/api/persons/:personId', { preHandler: requireAdmin }, async (request) => {
+    const { personId } = request.params as { personId: string };
+    const body = parse(personBody.partial(), request.body);
+    const [person] = await db.update(persons).set(body).where(eq(persons.id, parse(uuid, personId))).returning();
+    if (!person) throw notFound('person');
+    const event = await findEvent(db, person.eventId);
+    publish(event.id, 'persons', person.id);
+    return { person: personView(person, event.settings, 'admin') };
+  });
+
+  app.delete('/api/persons/:personId', { preHandler: requireAdmin }, async (request, reply) => {
+    const personId = parse(uuid, (request.params as { personId: string }).personId);
+    try {
+      const [person] = await db.delete(persons).where(eq(persons.id, personId)).returning();
+      if (!person) throw notFound('person');
+      publish(person.eventId, 'persons', person.id);
+    } catch (error) {
+      if ((error as { cause?: { code?: string } }).cause?.code === '23503') throw conflict('personHasEntries');
+      throw error;
+    }
+    return reply.code(204).send();
+  });
+
+  // --- Live updates ---
+
+  /** Server-Sent Events: one "change" message per modification, plus a heartbeat against idle proxies. */
+  app.get('/api/events/:eventRef/stream', async (request, reply) => {
+    const event = await findEvent(db, (request.params as { eventRef: string }).eventRef);
+    reply.hijack();
+    const res = reply.raw;
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    res.write(`retry: 3000\n\nevent: ready\ndata: ${JSON.stringify({ eventId: event.id })}\n\n`);
+    const unsubscribe = broadcaster.subscribe(event.id, (message) => {
+      res.write(`event: change\ndata: ${JSON.stringify(message)}\n\n`);
+    });
+    const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 25_000);
+    streams.add(res);
+    request.raw.on('close', () => {
+      clearInterval(heartbeat);
+      unsubscribe();
+      streams.delete(res);
+    });
+  });
+}

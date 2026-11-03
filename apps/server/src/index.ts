@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.js';
+import { ensureAdmin } from './bootstrap.js';
 import { loadConfig } from './config.js';
 import { createDatabase, runMigrations } from './db/client.js';
 
@@ -14,13 +15,17 @@ const app = await buildApp({
   logLevel: config.logLevel,
   webDist: config.webDist,
   pingDb: () => database.ping(),
+  db: database.db,
+  sessionTtlHours: config.sessionTtlHours,
 });
 
 try {
   const migrated = await runMigrations(database, migrationsFolder);
   app.log.info(migrated ? 'Migrations applied' : 'No migrations found');
+  const admin = await ensureAdmin(database.db, config.adminUsername, config.adminPassword);
+  if (admin === 'created') app.log.info(`Admin user "${config.adminUsername}" created`);
 } catch (error) {
-  app.log.error(error, 'Migrations failed');
+  app.log.error(error, 'Startup failed');
   process.exit(1);
 }
 

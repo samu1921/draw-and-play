@@ -5,6 +5,10 @@ export interface Config {
   /** Directory of the built frontend. Empty = do not serve it (e.g. in development, where Vite runs). */
   webDist: string | undefined;
   logLevel: string;
+  /** First admin, created on startup if missing */
+  adminUsername: string | undefined;
+  adminPassword: string | undefined;
+  sessionTtlHours: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -22,5 +26,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl,
     webDist: env.WEB_DIST || undefined,
     logLevel: env.LOG_LEVEL ?? 'info',
+    adminUsername: env.ADMIN_USERNAME || undefined,
+    adminPassword: env.ADMIN_PASSWORD || undefined,
+    sessionTtlHours: Number(env.SESSION_TTL_HOURS ?? 24) || 24,
   };
 }

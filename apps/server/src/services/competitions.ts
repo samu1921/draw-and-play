@@ -1,0 +1,185 @@
+import {
+  buildStructure,
+  resolveCompetition,
+  tableTennis,
+  type CompetitionState,
+  type CompetitionStructure,
+  type DrawEntry,
+  type MatchResult,
+} from '@draw-and-play/domain';
+import { asc, eq, inArray } from 'drizzle-orm';
+import type { Executor } from '../db/client.js';
+import { competitions, entries, entryMembers, events, matches, persons, type EventSettings } from '../db/schema.js';
+import { notFound } from '../errors.js';
+
+export type CompetitionRow = typeof competitions.$inferSelect;
+export type PersonRow = typeof persons.$inferSelect;
+export type MatchRow = typeof matches.$inferSelect;
+
+export interface EntryWithMembers {
+  id: string;
+  seed: number | null;
+  status: 'registered' | 'present' | 'withdrawn';
+  members: PersonRow[];
+}
+
+export async function loadCompetition(ex: Executor, id: string): Promise<CompetitionRow> {
+  const [row] = await ex.select().from(competitions).where(eq(competitions.id, id)).limit(1);
+  if (!row) throw notFound('competition');
+  return row;
+}
+
+export async function loadEntries(ex: Executor, competitionId: string): Promise<EntryWithMembers[]> {
+  const rows = await ex
+    .select({ entry: entries, member: entryMembers, person: persons })
+    .from(entries)
+    .leftJoin(entryMembers, eq(entryMembers.entryId, entries.id))
+    .leftJoin(persons, eq(persons.id, entryMembers.personId))
+    .where(eq(entries.competitionId, competitionId))
+    .orderBy(asc(entries.createdAt), asc(entryMembers.position));
+  const byId = new Map<string, EntryWithMembers>();
+  for (const { entry, person } of rows) {
+    const e = byId.get(entry.id) ?? { id: entry.id, seed: entry.seed, status: entry.status, members: [] };
+    if (person) e.members.push(person);
+    byId.set(entry.id, e);
+  }
+  return [...byId.values()];
+}
+
+/** The structure matching a stored draw: the number of drawn entries fixes group sizes and bracket. */
+export function structureFor(competition: CompetitionRow): CompetitionStructure | null {
+  const draw = competition.draw;
+  if (!draw) return null;
+  const count = draw.type === 'groups' ? draw.groups.flat().length : draw.seats.filter((s) => s !== null).length;
+  return buildStructure(competition.format, count);
+}
+
+/** Seeding input: singles use the player's rating, doubles the average; club only if both share it. */
+export function toDrawEntry(entry: EntryWithMembers): DrawEntry {
+  const ratings = entry.members.flatMap((m) => (m.rating === null ? [] : [m.rating]));
+  const clubs = new Set(entry.members.map((m) => m.club));
+  const [club] = clubs;
+  return {
+    id: entry.id,
+    seed: entry.seed ?? undefined,
+    rating: ratings.length === entry.members.length && ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : undefined,
+    club: clubs.size === 1 && club ? club : undefined,
+  };
+}
+
+export interface LoadedCompetition {
+  competition: CompetitionRow;
+  entries: EntryWithMembers[];
+  matchRows: MatchRow[];
+  structure: CompetitionStructure | null;
+  state: CompetitionState | null;
+}
+
+export async function loadCompetitionState(ex: Executor, competitionId: string): Promise<LoadedCompetition> {
+  const competition = await loadCompetition(ex, competitionId);
+  const [entryList, matchRows] = await Promise.all([
+    loadEntries(ex, competitionId),
+    ex.select().from(matches).where(eq(matches.competitionId, competitionId)),
+  ]);
+  const structure = structureFor(competition);
+  let state: CompetitionState | null = null;
+  if (structure && competition.draw) {
+    const results = new Map<string, MatchResult>(
+      matchRows.flatMap((m) => (m.status === 'finished' && m.result ? [[m.matchKey, m.result] as const] : [])),
+    );
+    state = resolveCompetition(structure, competition.draw, results, tableTennis.ranking);
+  }
+  return { competition, entries: entryList, matchRows, structure, state };
+}
+
+// --- Views ---
+
+export type Audience = 'admin' | 'public';
+
+export function personName(p: PersonRow, settings: EventSettings, audience: Audience): string {
+  if (audience === 'public' && settings.shortNames) return `${p.firstName} ${p.lastName.charAt(0)}.`;
+  return `${p.firstName} ${p.lastName}`;
+}
+
+export function personView(p: PersonRow, settings: EventSettings, audience: Audience) {
+  const base = { id: p.id, name: personName(p, settings, audience), club: p.club };
+  if (audience === 'admin') {
+    return { ...base, firstName: p.firstName, lastName: p.lastName, gender: p.gender, birthYear: p.birthYear, licenceNo: p.licenceNo, rating: p.rating };
+  }
+  return settings.publicRatings ? { ...base, rating: p.rating } : base;
+}
+
+export async function eventSettings(ex: Executor, eventId: string): Promise<EventSettings> {
+  const [row] = await ex.select({ settings: events.settings }).from(events).where(eq(events.id, eventId)).limit(1);
+  return row?.settings ?? {};
+}
+
+export function competitionSummary(c: CompetitionRow) {
+  return {
+    id: c.id,
+    eventId: c.eventId,
+    name: c.name,
+    kind: c.kind,
+    day: c.day,
+    color: c.color,
+    sortOrder: c.sortOrder,
+    matchRules: c.matchRules,
+    matchMinutes: c.matchMinutes,
+    format: c.format,
+    earliestStart: c.earliestStart,
+    startAfterId: c.startAfterId,
+    tableIds: c.tableIds,
+    drawn: c.draw !== null,
+    version: c.version,
+  };
+}
+
+/** Everything a client needs to show a competition: entries, groups, matches with live status, places. */
+export function competitionView(loaded: LoadedCompetition, settings: EventSettings, audience: Audience) {
+  const { competition, state, structure, matchRows } = loaded;
+  const rowByKey = new Map(matchRows.map((m) => [m.matchKey, m]));
+  const bracketOf = new Map(structure?.matches.map((m) => [m.id, m.bracketMatch]) ?? []);
+  return {
+    competition: competitionSummary(competition),
+    ...(audience === 'admin' && { drawSeed: competition.drawSeed }),
+    entries: loaded.entries.map((e) => ({
+      id: e.id,
+      ...(audience === 'admin' && { seed: e.seed }),
+      status: e.status,
+      members: e.members.map((m) => personView(m, settings, audience)),
+    })),
+    groups:
+      state?.groups.map((g) => ({ group: g.group, entries: g.entries, standings: g.standings, complete: g.complete })) ?? [],
+    matches:
+      state?.matches.map((m) => {
+        const row = rowByKey.get(m.id);
+        const places = bracketOf.get(m.id)?.places;
+        return {
+          id: row?.id ?? null,
+          key: m.id,
+          phase: m.phase,
+          group: m.group ?? null,
+          round: m.round,
+          places: places ?? null,
+          sides: m.sides,
+          status: m.status === 'finished' ? 'finished' : row?.status === 'called' ? 'called' : m.status,
+          tableId: row?.status === 'called' ? row.tableId : null,
+          calledAt: row?.calledAt ?? null,
+          finishedAt: row?.finishedAt ?? null,
+          result: m.result ?? null,
+          version: row?.version ?? 0,
+        };
+      }) ?? [],
+    placements: state?.placements ?? [],
+    finished: state?.finished ?? false,
+  };
+}
+
+/** Person ids per entry, for "player is busy" checks across competitions */
+export async function personsOfEntries(ex: Executor, entryIds: string[]): Promise<Map<string, string[]>> {
+  if (entryIds.length === 0) return new Map();
+  const rows = await ex.select().from(entryMembers).where(inArray(entryMembers.entryId, entryIds));
+  const map = new Map<string, string[]>();
+  for (const r of rows) map.set(r.entryId, [...(map.get(r.entryId) ?? []), r.personId]);
+  return map;
+}
