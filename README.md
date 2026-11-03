@@ -15,6 +15,18 @@ Background (German): [concept](docs/02-konzept-draw-and-play.md). Developer refe
 
 > Status: early development. The test-driven domain library (draw, standings, knockout, scheduling) the planner UI, the data model and the API with live updates are in place; the match operation UI (table overview, result entry by phone, projector display) comes next.
 
+## Demo
+
+A separate demo stack with its own database contains a complete club championship with made-up players: Friday three youth competitions, Saturday doubles, singles (after the doubles) and hobby, on four tables. Everything is entered but not drawn yet.
+
+```bash
+npm run demo          # http://localhost:8090 – sign in as admin / demo-admin-2026, table PIN 123456
+npm run demo:reset    # throw the demo data away and start fresh
+npm run demo:down     # stop
+```
+
+It runs next to the normal stack and never touches its data.
+
 ## Tournament day in short
 
 1. Sign in at `/login` (first admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`).

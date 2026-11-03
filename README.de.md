@@ -15,6 +15,18 @@ Hintergrund: [Konzept](docs/02-konzept-draw-and-play.md). Für Entwickler: [HTTP
 
 > Stand: frühe Entwicklung. Die testgetriebene Domänenbibliothek (Auslosung, Tabellen, KO, Zeitplanung) die Planer-Oberfläche, das Datenmodell und die API mit Echtzeit stehen; als Nächstes folgt die Oberfläche für den Spielbetrieb (Tischübersicht, Ergebniseingabe per Handy, Beamer-Anzeige).
 
+## Demo
+
+Ein eigener Demo-Stack mit eigener Datenbank enthält eine komplette Vereinsmeisterschaft mit erfundenen Spielern: Freitag drei Jugendkonkurrenzen, Samstag Doppel, Einzel (nach dem Doppel) und Hobby, auf vier Tischen. Alles ist gemeldet, aber noch nicht ausgelost.
+
+```bash
+npm run demo          # http://localhost:8090 – Anmeldung admin / demo-admin-2026, Tisch-PIN 123456
+npm run demo:reset    # Demo-Daten verwerfen und neu anlegen
+npm run demo:down     # stoppen
+```
+
+Er läuft neben dem normalen Stack und berührt dessen Daten nie.
+
 ## Turniertag in Kürze
 
 1. Unter `/login` anmelden (erster Admin aus `ADMIN_USERNAME` / `ADMIN_PASSWORD` in der `.env`).
