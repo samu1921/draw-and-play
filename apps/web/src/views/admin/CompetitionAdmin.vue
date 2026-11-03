@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { generateVariants, validateFormat, type PlacementMode } from '@draw-and-play/domain';
+import {
+  bracketSize,
+  generateVariants,
+  rankForSeeding,
+  validateFormat,
+  type PairDrawMode,
+  type PlacementMode,
+  type SeedPlacement,
+} from '@draw-and-play/domain';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
@@ -44,6 +52,11 @@ async function run(action: () => Promise<unknown>) {
 
 const competition = computed(() => state.value?.competition);
 const activeEntries = computed(() => state.value?.entries.filter((e) => e.status !== 'withdrawn') ?? []);
+const isDoubles = computed(() => competition.value?.kind === 'doubles');
+/** Doubles players still waiting for a partner from the pair draw */
+const unpaired = computed(() => (isDoubles.value ? activeEntries.value.filter((e) => e.members.length === 1) : []));
+/** Entries the draw will have: two unpaired players make one pair */
+const drawCount = computed(() => activeEntries.value.length - unpaired.value.length + Math.ceil(unpaired.value.length / 2));
 const entered = computed(() => new Set(state.value?.entries.flatMap((e) => e.members.map((m) => m.id)) ?? []));
 const available = computed(() => persons.value.filter((p) => !entered.value.has(p.id)));
 const entryName = (e: EntryInfo) => e.members.map((m) => m.name).join(' / ');
@@ -64,13 +77,17 @@ const addPair = () =>
     await api('POST', `/api/competitions/${competitionId.value}/entries`, { personIds: pair.value, status: 'present' });
     pair.value = ['', ''];
   });
+const splitPairs = (entryIds?: string[]) => run(() => api('POST', `/api/competitions/${competitionId.value}/pairs/split`, entryIds ? { entryIds } : {}));
+const splitAll = () => {
+  if (confirm(t('admin.competition.splitAllConfirm'))) void splitPairs();
+};
 const updateEntry = (e: EntryInfo, patch: Record<string, unknown>) => run(() => api('PATCH', `/api/entries/${e.id}`, patch));
 const removeEntry = (e: EntryInfo) => run(() => api('DELETE', `/api/entries/${e.id}`));
 
 // --- Format ---
 const placements = ref<PlacementMode>('none');
 const variantId = ref('');
-const variants = computed(() => generateVariants(activeEntries.value.length, { placements: placements.value }));
+const variants = computed(() => generateVariants(drawCount.value, { placements: placements.value }));
 watch(
   competition,
   (c) => {
@@ -86,16 +103,70 @@ watch(
   },
   { immediate: true },
 );
-const formatError = computed(() => (competition.value ? validateFormat(competition.value.format, activeEntries.value.length) : null));
+const formatError = computed(() => (competition.value ? validateFormat(competition.value.format, drawCount.value) : null));
 const saveFormat = () =>
   run(async () => {
     const variant = variants.value.find((v) => v.id === variantId.value);
     if (variant) await api('PATCH', `/api/competitions/${competitionId.value}`, { format: variant.format, version: competition.value!.version });
   });
 
+// --- Seeding list ---
+/** Seeding input as the server builds it: manual seed, then the (average) rating */
+const seedingOf = (e: EntryInfo) => {
+  const ratings = e.members.flatMap((m) => (m.rating == null ? [] : [m.rating]));
+  return {
+    id: e.id,
+    seed: e.seed ?? undefined,
+    rating: ratings.length === e.members.length && ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : undefined,
+  };
+};
+const groupDraw = computed(() => competition.value?.format.groups !== undefined);
+const defaultSeedCount = computed(() =>
+  groupDraw.value ? competition.value!.format.groups!.groupCount : Math.max(2, bracketSize(drawCount.value) / 4),
+);
+const seedCount = ref<number | null>(null);
+const seedPlacement = ref<SeedPlacement>('fixed');
+const effectiveSeedCount = computed(() => Math.min(seedCount.value ?? defaultSeedCount.value, drawCount.value));
+watch(
+  () => [competitionId.value, groupDraw.value],
+  () => {
+    seedCount.value = null;
+    seedPlacement.value = groupDraw.value ? 'fixed' : 'drawn';
+  },
+  { immediate: true },
+);
+/** While players wait for a partner the list is the pair draw's (upper half seeded), otherwise the competition draw's */
+const seeding = computed(() => {
+  const pairing = unpaired.value.length > 0;
+  const list = pairing ? unpaired.value : activeEntries.value;
+  const seeded = pairing ? Math.floor(list.length / 2) : effectiveSeedCount.value;
+  const rank = new Map(rankForSeeding(list.map(seedingOf)).map((e, i) => [e.id, i + 1]));
+  return { rank, seeded };
+});
+const sortedEntries = computed(() =>
+  [...(state.value?.entries ?? [])].sort(
+    (a, b) => (seeding.value.rank.get(a.id) ?? Number.POSITIVE_INFINITY) - (seeding.value.rank.get(b.id) ?? Number.POSITIVE_INFINITY),
+  ),
+);
+
+// --- Doubles pairs ---
+const pairMode = ref<PairDrawMode>('seeded');
+const pairSeed = ref('');
+const drawPairs = () =>
+  run(() =>
+    api('POST', `/api/competitions/${competitionId.value}/pairs/draw`, { mode: pairMode.value, ...(pairSeed.value && { seed: pairSeed.value }) }),
+  );
+
 // --- Draw ---
 const seed = ref('');
-const draw = () => run(() => api('POST', `/api/competitions/${competitionId.value}/draw`, seed.value ? { seed: seed.value } : {}));
+const draw = () =>
+  run(() =>
+    api('POST', `/api/competitions/${competitionId.value}/draw`, {
+      ...(seed.value && { seed: seed.value }),
+      seedCount: effectiveSeedCount.value,
+      seedPlacement: seedPlacement.value,
+    }),
+  );
 const undoDraw = () => {
   if (confirm(t('admin.competition.undoConfirm'))) void run(() => api('DELETE', `/api/competitions/${competitionId.value}/draw`));
 };
@@ -128,6 +199,7 @@ const removeCompetition = async () => {
           <table class="data-table">
             <thead>
               <tr>
+                <th scope="col" class="num">{{ t('admin.competition.seedingRank') }}</th>
                 <th scope="col">{{ t('public.entry') }}</th>
                 <th scope="col">{{ t('admin.persons.club') }}</th>
                 <th scope="col" class="num">{{ t('admin.persons.rating') }}</th>
@@ -137,8 +209,13 @@ const removeCompetition = async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="e in state.entries" :key="e.id">
-                <th scope="row">{{ entryName(e) }}</th>
+              <tr v-for="e in sortedEntries" :key="e.id">
+                <td class="num">{{ seeding.rank.get(e.id) ?? '–' }}</td>
+                <th scope="row">
+                  {{ entryName(e) }}
+                  <span v-if="(seeding.rank.get(e.id) ?? Infinity) <= seeding.seeded" class="badge">{{ t('admin.competition.seeded') }}</span>
+                  <span v-if="isDoubles && e.members.length === 1" class="muted small">· {{ t('admin.competition.noPartner') }}</span>
+                </th>
                 <td>{{ [...new Set(e.members.map((m) => m.club).filter(Boolean))].join(' / ') }}</td>
                 <td class="num">{{ e.members.map((m) => m.rating ?? '–').join(' / ') }}</td>
                 <td>
@@ -162,14 +239,28 @@ const removeCompetition = async () => {
                   </select>
                 </td>
                 <td>
-                  <button type="button" class="button icon" :aria-label="`${t('admin.competition.remove')}: ${entryName(e)}`" @click="removeEntry(e)">×</button>
+                  <div class="row-actions">
+                    <button
+                      v-if="isDoubles && e.members.length === 2"
+                      type="button"
+                      class="button secondary small"
+                      :aria-label="`${t('admin.competition.splitPair')}: ${entryName(e)}`"
+                      @click="splitPairs([e.id])"
+                    >
+                      {{ t('admin.competition.splitPair') }}
+                    </button>
+                    <button type="button" class="button icon" :aria-label="`${t('admin.competition.remove')}: ${entryName(e)}`" @click="removeEntry(e)">×</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div v-if="competition.kind === 'singles'" class="stack">
+        <p class="muted small">{{ t('admin.competition.seedingHint') }}</p>
+        <div class="stack">
+          <h4 v-if="isDoubles">{{ t('admin.competition.addPlayers') }}</h4>
+          <p v-if="isDoubles" class="muted small">{{ t('admin.competition.addPlayersHint') }}</p>
           <p v-if="available.length === 0" class="muted">{{ t('admin.competition.everyoneEntered') }}</p>
           <div v-else class="check-grid">
             <label v-for="p in available" :key="p.id" class="check">
@@ -179,7 +270,8 @@ const removeCompetition = async () => {
           </div>
           <div><button type="button" class="button" :disabled="selected.length === 0" @click="addSelected">{{ t('admin.competition.addSelected') }}</button></div>
         </div>
-        <div v-else class="fields">
+        <h4 v-if="isDoubles">{{ t('admin.competition.addFixedPair') }}</h4>
+        <div v-if="isDoubles" class="fields">
           <label v-for="i in [0, 1] as const" :key="i" class="field">
             <span>{{ t(i === 0 ? 'admin.competition.player1' : 'admin.competition.player2') }}</span>
             <select v-model="pair[i]">
@@ -193,15 +285,45 @@ const removeCompetition = async () => {
         </div>
       </section>
 
+      <section v-if="isDoubles" class="card" aria-labelledby="pairs-title">
+        <h3 id="pairs-title">{{ t('admin.competition.pairDraw') }}</h3>
+        <p v-if="unpaired.length === 0" class="muted">{{ t('admin.competition.noUnpaired') }}</p>
+        <template v-else>
+          <p>{{ t('admin.competition.unpairedCount', { n: unpaired.length }) }}</p>
+          <p v-if="unpaired.length % 2 !== 0" class="warning-text">{{ t('admin.competition.oddUnpaired') }}</p>
+          <div class="fields">
+            <label class="field wide">
+              <span>{{ t('admin.competition.pairMode') }}</span>
+              <select v-model="pairMode">
+                <option v-for="mode in ['seeded', 'random'] as const" :key="mode" :value="mode">{{ t(`admin.competition.pairModes.${mode}`) }}</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>{{ t('admin.competition.drawSeed') }}</span>
+              <input v-model="pairSeed" type="text" maxlength="64" />
+            </label>
+            <div class="field form-actions">
+              <button type="button" class="button" :disabled="unpaired.length < 2 || unpaired.length % 2 !== 0" @click="drawPairs">
+                {{ t('admin.competition.drawPairs') }}
+              </button>
+            </div>
+          </div>
+          <p class="muted small">{{ t(`admin.competition.pairModeHints.${pairMode}`) }}</p>
+        </template>
+        <div v-if="activeEntries.some((e) => e.members.length === 2)">
+          <button type="button" class="button secondary small" @click="splitAll">{{ t('admin.competition.splitAll') }}</button>
+        </div>
+      </section>
+
       <section class="card" aria-labelledby="format-title">
         <h3 id="format-title">{{ t('admin.competition.format') }}</h3>
-        <p>{{ describeFormat(t, competition.format, activeEntries.length) }}</p>
-        <p v-if="formatError" class="warning-text">{{ t('admin.competition.formatInvalid', { n: activeEntries.length }) }}</p>
+        <p>{{ describeFormat(t, competition.format, drawCount) }}</p>
+        <p v-if="formatError" class="warning-text">{{ t('admin.competition.formatInvalid', { n: drawCount }) }}</p>
         <div v-if="variants.length > 0" class="fields">
           <label class="field wide">
             <span>{{ t('admin.competition.format') }}</span>
             <select v-model="variantId">
-              <option v-for="v in variants" :key="v.id" :value="v.id">{{ describeFormat(t, v.format, activeEntries.length) }}</option>
+              <option v-for="v in variants" :key="v.id" :value="v.id">{{ describeFormat(t, v.format, drawCount) }}</option>
             </select>
           </label>
           <label class="field">
@@ -218,16 +340,42 @@ const removeCompetition = async () => {
 
       <section class="card" aria-labelledby="draw-title">
         <h3 id="draw-title">{{ t('admin.competition.draw') }}</h3>
+        <p v-if="unpaired.length > 0" class="warning-text">{{ t('admin.competition.drawNeedsPairs') }}</p>
         <div class="fields">
+          <label class="field">
+            <span>{{ t('admin.competition.seedCount') }}</span>
+            <input
+              class="seed-input"
+              type="number"
+              min="0"
+              :max="drawCount"
+              :value="effectiveSeedCount"
+              @change="seedCount = Math.max(0, Number(($event.target as HTMLInputElement).value) || 0)"
+            />
+          </label>
+          <div class="field form-actions">
+            <button type="button" class="button secondary small" @click="seedCount = Math.floor(drawCount / 2)">{{ t('admin.competition.seedHalf') }}</button>
+          </div>
+          <label class="field wide">
+            <span>{{ t('admin.competition.seedPlacement') }}</span>
+            <select v-model="seedPlacement">
+              <option v-for="p in ['fixed', 'drawn'] as const" :key="p" :value="p">
+                {{ t(`admin.competition.seedPlacements.${groupDraw ? 'groups' : 'knockout'}.${p}`) }}
+              </option>
+            </select>
+          </label>
           <label class="field">
             <span>{{ t('admin.competition.drawSeed') }}</span>
             <input v-model="seed" type="text" maxlength="64" />
           </label>
           <div class="field form-actions">
-            <button type="button" class="button" :disabled="formatError !== null" @click="draw">{{ t('admin.competition.draw') }}</button>
+            <button type="button" class="button" :disabled="formatError !== null || unpaired.length > 0" @click="draw">{{ t('admin.competition.draw') }}</button>
           </div>
         </div>
-        <p class="muted small">{{ t('admin.competition.drawSeedHint') }}</p>
+        <p class="muted small">
+          {{ t(groupDraw ? 'admin.competition.unseededHintGroups' : 'admin.competition.unseededHintKnockout') }}
+          {{ t('admin.competition.drawSeedHint') }}
+        </p>
       </section>
     </template>
 

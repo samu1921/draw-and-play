@@ -713,6 +713,14 @@ textarea {
   width: 5rem;
 }
 
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
 .setup-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
