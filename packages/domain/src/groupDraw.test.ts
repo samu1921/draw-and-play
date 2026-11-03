@@ -30,7 +30,7 @@ describe('rankForSeeding', () => {
 describe('drawGroups', () => {
   it('puts the seeds at position 1 of groups A, B, C …', () => {
     const groups = drawGroups(players(10), { groupCount: 3, rng: createRng(1) });
-    expect(groups.map((g) => g.length).sort()).toEqual([3, 3, 4]);
+    expect(groups.map((g) => g.length)).toEqual([4, 3, 3]);
     expect(groups.map((g) => g[0])).toEqual(['P1', 'P2', 'P3']);
     expect(new Set(groups.flat()).size).toBe(10);
   });
@@ -75,6 +75,14 @@ describe('drawGroups', () => {
         expect(new Set(gClubs).size, `seed ${seed}: ${g.join(',')}`).toBe(gClubs.length);
       }
     }
+  });
+
+  it('always fills the larger groups first, matching groupSizes', () => {
+    for (let seed = 0; seed < 20; seed++) {
+      expect(drawGroups(players(10), { groupCount: 3, rng: createRng(seed) }).map((g) => g.length)).toEqual(groupSizes(10, 3));
+      expect(drawGroups(players(16), { groupCount: 3, rng: createRng(seed) }).map((g) => g.length)).toEqual(groupSizes(16, 3));
+    }
+    expect(drawGroups(players(11), { groupCount: 3, snakePots: Infinity }).map((g) => g.length)).toEqual(groupSizes(11, 3));
   });
 
   it('a single group holds everyone in seeding order', () => {

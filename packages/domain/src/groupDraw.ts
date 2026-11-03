@@ -49,7 +49,7 @@ export interface GroupDrawOptions {
  * Group draw by pots: the seeding list is split into pots of `groupCount` entries and each group gets at most
  * one entry per pot. The first pots are distributed in snake order, the rest is drawn, keeping entries with the
  * same `club` apart where possible.
- * Result: entries per group in position order (position 0 = group head).
+ * Larger groups come first, matching `groupSizes`. Result: entries per group in position order (0 = group head).
  */
 export function drawGroups(entries: readonly DrawEntry[], options: GroupDrawOptions): EntryId[][] {
   const { groupCount, rng } = options;
@@ -60,10 +60,12 @@ export function drawGroups(entries: readonly DrawEntry[], options: GroupDrawOpti
   for (let potIndex = 0; potIndex * groupCount < ranked.length; potIndex++) {
     const pot = ranked.slice(potIndex * groupCount, (potIndex + 1) * groupCount);
     const forward = potIndex % 2 === 0;
+    // An incomplete last pot goes to the first groups, so that larger groups come first (as in `groupSizes`).
+    const width = pot.length;
     if (potIndex < snakePots || !rng) {
-      pot.forEach((entry, i) => groups[forward ? i : groupCount - 1 - i]!.push(entry));
+      pot.forEach((entry, i) => groups[forward ? i : width - 1 - i]!.push(entry));
     } else {
-      const targets = assignPot(pot, groups, rng);
+      const targets = assignPot(pot, groups.slice(0, width), rng);
       pot.forEach((entry, i) => groups[targets[i]!]!.push(entry));
     }
   }
