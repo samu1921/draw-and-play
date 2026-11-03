@@ -11,9 +11,9 @@ What sets it apart:
 - **Format changes on the fly.** Whatever has not started yet can still be changed, with a preview of the impact.
 - **Everything in the browser.** Admin desk, result entry on phones via QR code and PIN, projector display and a public read-only view, all updated live.
 
-Background (German): [concept](docs/02-konzept-draw-and-play.md).
+Background (German): [concept](docs/02-konzept-draw-and-play.md). Developer reference: [HTTP API](docs/api.md).
 
-> Status: early development. The test-driven domain library (draw, standings, knockout, scheduling) and the planner UI are in place; data model, API, live updates and match operation come next.
+> Status: early development. The test-driven domain library (draw, standings, knockout, scheduling) the planner UI, the data model and the API with live updates are in place; the match operation UI (table overview, result entry by phone, projector display) comes next.
 
 ## Repository layout
 

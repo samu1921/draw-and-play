@@ -11,9 +11,9 @@ Was sie besonders macht:
 - **Modus im laufenden Turnier änderbar.** Was noch nicht begonnen hat, lässt sich ändern, mit Vorschau der Auswirkungen.
 - **Alles im Browser.** Turnierleitung, Ergebniseingabe per Handy (QR-Code und PIN), Beamer-Anzeige und öffentliche Leseansicht, alles live aktualisiert.
 
-Hintergrund: [Konzept](docs/02-konzept-draw-and-play.md).
+Hintergrund: [Konzept](docs/02-konzept-draw-and-play.md). Für Entwickler: [HTTP-API](docs/api.md) (Englisch).
 
-> Stand: frühe Entwicklung. Die testgetriebene Domänenbibliothek (Auslosung, Tabellen, KO, Zeitplanung) und die Planer-Oberfläche stehen; als Nächstes folgen Datenmodell, API, Echtzeit und Spielbetrieb.
+> Stand: frühe Entwicklung. Die testgetriebene Domänenbibliothek (Auslosung, Tabellen, KO, Zeitplanung) die Planer-Oberfläche, das Datenmodell und die API mit Echtzeit stehen; als Nächstes folgt die Oberfläche für den Spielbetrieb (Tischübersicht, Ergebniseingabe per Handy, Beamer-Anzeige).
 
 ## Aufbau
 

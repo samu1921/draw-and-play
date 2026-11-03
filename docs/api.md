@@ -1,0 +1,103 @@
+# HTTP API
+
+JSON over HTTP, served under `/api`. Admin routes need the session cookie from `POST /api/auth/login`. State-changing requests must be sent as `application/json` (or without a body); anything else is rejected with `415 jsonRequired` as CSRF protection on top of `SameSite=Lax` cookies.
+
+## Errors
+
+Errors carry a stable, language-neutral code that the UI translates:
+
+```json
+{ "error": "playerBusy", "details": { "personIds": ["…"] } }
+```
+
+| Status | Codes |
+|---|---|
+| 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf` |
+| 401 | `notLoggedIn`, `invalidCredentials` |
+| 404 | `notFound` (details: `entity`) |
+| 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `slugTaken`, `duplicateTableName` |
+| 415 | `jsonRequired` |
+| 429 | `tooManyRequests` (login: 10 attempts per 15 minutes) |
+
+## Authentication
+
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| POST | `/api/auth/login` | `{ username, password }` | Sets the `dap_session` cookie (HttpOnly, SameSite=Lax, Secure over HTTPS) |
+| POST | `/api/auth/logout` | – | |
+| GET | `/api/auth/me` | – | `{ user }` or 401 |
+
+The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
+
+## Events, tables, persons
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| GET | `/api/events` | admin | all events |
+| POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount? }` → creates tables "1" … "n" |
+| GET | `/api/events/:idOrSlug` | public | event, tables, competitions |
+| PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames? } }` |
+| PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
+| GET | `/api/events/:id/persons` | admin | persons with personal data |
+| POST | `/api/events/:id/persons` | admin | `{ firstName, lastName, club?, gender?, birthYear?, licenceNo?, rating? }` |
+| PATCH / DELETE | `/api/persons/:id` | admin | |
+| GET | `/api/events/:idOrSlug/stream` | public | Server-Sent Events, see below |
+
+## Competitions and entries
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| POST | `/api/events/:id/competitions` | admin | `{ name, kind?, format, gamesToWin?, matchMinutes?, day?, earliestStart?, startAfterId?, tableIds?, color?, sortOrder? }` |
+| PATCH | `/api/competitions/:id` | admin | same fields + `version`; `format` and `kind` only before the draw |
+| DELETE | `/api/competitions/:id` | admin | only while no match was called or played |
+| GET | `/api/competitions/:id/state` | public | live state, see below; admins also get seeds and the draw seed |
+| POST | `/api/competitions/:id/entries` | admin | `{ personIds: [id] or [id, id], seed?, status? }` |
+| PATCH / DELETE | `/api/entries/:id` | admin | before the draw; afterwards only `status: present/registered` |
+| POST | `/api/competitions/:id/draw` | admin | `{ seed?, fullSnake? }` → `{ draw, seed }`; same seed, same draw |
+| DELETE | `/api/competitions/:id/draw` | admin | only while no match was called or played |
+
+`format` is the domain's `CompetitionFormat`, e.g. `{ "groups": { "groupCount": 2 }, "knockout": { "qualifiersPerGroup": 2, "placements": "thirdPlace" } }`.
+
+### Competition state
+
+```jsonc
+{
+  "competition": { "id": "…", "name": "Singles", "format": { … }, "drawn": true, "version": 3 },
+  "entries": [{ "id": "…", "status": "present", "members": [{ "id": "…", "name": "Max Muster", "club": "TTC" }] }],
+  "groups": [{ "group": 0, "entries": ["…"], "standings": [{ "entryId": "…", "rank": 1, "won": 3, … }], "complete": true }],
+  "matches": [{
+    "id": "…", "key": "GA-1-1", "phase": "group", "group": 0, "round": 1, "places": null,
+    "sides": ["entryId", "entryId"], "status": "ready", "tableId": null, "result": null, "version": 1
+  }],
+  "placements": [{ "entryId": "…", "place": 5, "placeTo": 6 }],
+  "finished": false
+}
+```
+
+Match `status`: `pending` (a side depends on unfinished matches), `ready`, `called`, `finished`. Public views contain names and clubs only; ratings only if the event enables `publicRatings`.
+
+## Match commands (admin)
+
+Every command names the match `version` it saw (optimistic locking) and runs under a per-event lock, so two devices can never call the same table or the same player twice.
+
+| Method | Path | Body |
+|---|---|---|
+| POST | `/api/matches/:id/call` | `{ tableId, version }` |
+| POST | `/api/matches/:id/uncall` | `{ version }` |
+| POST | `/api/matches/:id/result` | `{ notation: "4 -5 9 7", version }` or `{ walkoverWinner: 0 \| 1, version }` |
+
+A result for a finished match is a correction; it is refused with `dependentMatchStarted` once a later match that builds on it has been called or played. Every command is written to the audit log.
+
+## Live updates
+
+`GET /api/events/:idOrSlug/stream` is a Server-Sent Events stream:
+
+```
+event: ready
+data: {"eventId":"…"}
+
+event: change
+data: {"eventId":"…","type":"match","id":"…"}
+```
+
+`type` is one of `event`, `tables`, `persons`, `competition`, `match`. Messages carry no data, so public and admin clients share the stream and refetch what they are allowed to see. A heartbeat comment is sent every 25 seconds.
