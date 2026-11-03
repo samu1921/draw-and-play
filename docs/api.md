@@ -12,7 +12,7 @@ Errors carry a stable, language-neutral code that the UI translates:
 
 | Status | Codes |
 |---|---|
-| 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf` |
+| 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unpairedPlayers` (details: `count`), `oddPlayerCount` (details: `count`), `notDoubles`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf` |
 | 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin` |
 | 403 | `correctionsAdminOnly`, `walkoverAdminOnly` |
 | 404 | `notFound` (details: `entity`) |
@@ -53,10 +53,16 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 | PATCH | `/api/competitions/:id` | admin | same fields + `version`; `format` and `kind` only before the draw |
 | DELETE | `/api/competitions/:id` | admin | only while no match was called or played |
 | GET | `/api/competitions/:id/state` | public | live state, see below; admins also get seeds and the draw seed |
-| POST | `/api/competitions/:id/entries` | admin | `{ personIds: [id] or [id, id], seed?, status? }` |
+| POST | `/api/competitions/:id/entries` | admin | `{ personIds: [id] or [id, id], seed?, status? }`; in doubles a single player waits for the pair draw |
 | PATCH / DELETE | `/api/entries/:id` | admin | before the draw; afterwards only `status: present/registered` |
-| POST | `/api/competitions/:id/draw` | admin | `{ seed?, fullSnake? }` → `{ draw, seed }`; same seed, same draw |
+| POST | `/api/competitions/:id/draw` | admin | `{ seed?, seedCount?, seedPlacement? }` → `{ draw, seed }`; same seed and options, same draw. Doubles need every player paired |
+| POST | `/api/competitions/:id/pairs/draw` | admin | doubles: `{ seed?, mode?: 'seeded' \| 'random' }` → `{ seed, pairs: [{ entryId, personIds }] }`; pairs all players without a partner |
+| POST | `/api/competitions/:id/pairs/split` | admin | doubles: `{ entryIds? }` → `{ split }`; splits the given pairs (default all) back into single players |
 | DELETE | `/api/competitions/:id/draw` | admin | only while no match was called or played |
+
+Draw options: `seedCount` entries from the top of the seeding list (manual seed, then rating) are seeded, by default the group heads or a quarter of the bracket. `seedPlacement: 'fixed'` puts them on their places by seed number (groups in snake order, the default for groups); `'drawn'` draws them evenly, pot by pot, into the groups, or draws seeds 3/4, 5–8, … among their tier in a knockout (the default there). Unseeded entries are drawn freely, keeping clubs apart in groups where possible.
+
+Pair draw: `mode: 'seeded'` (default) gives each player of the upper half of the seeding list a partner drawn from the lower half; the pair keeps the seeded player's seed. `'random'` pairs everyone freely.
 
 `format` is the domain's `CompetitionFormat`, e.g. `{ "groups": { "groupCount": 2 }, "knockout": { "qualifiersPerGroup": 2, "placements": "thirdPlace" } }`.
 

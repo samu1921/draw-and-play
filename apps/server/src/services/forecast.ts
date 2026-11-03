@@ -2,7 +2,7 @@ import { simulatePlan, validateFormat, type CompetitionPlan } from '@draw-and-pl
 import { asc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/client.js';
 import { competitions, eventTables, events } from '../db/schema.js';
-import { loadCompetitionState, personsOfEntries, structureFor } from './competitions.js';
+import { expectedEntryCount, loadCompetitionState, personsOfEntries, structureFor } from './competitions.js';
 
 /** Safety margin of the forecast, shown as a range */
 const BUFFER_PERCENT = 10;
@@ -51,7 +51,7 @@ export async function eventForecast(ex: Executor, event: EventRow, requestedDay?
   for (const competition of selected) {
     const loaded = await loadCompetitionState(ex, competition.id);
     const structure = structureFor(competition);
-    const entryCount = structure?.entryCount ?? loaded.entries.filter((e) => e.status !== 'withdrawn').length;
+    const entryCount = structure?.entryCount ?? expectedEntryCount(competition, loaded.entries);
     const formatError = validateFormat(competition.format, entryCount);
     if (formatError || !firstTable) {
       skipped.push({ id: competition.id, reason: formatError ?? 'noTables' });

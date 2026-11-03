@@ -4,14 +4,17 @@ import {
   createRng,
   dependentMatches,
   drawForStructure,
+  drawPairs,
   tableTennis,
   validateFormat,
+  type CompetitionDrawOptions,
   type MatchResult,
+  type PairDrawMode,
   type Side,
 } from '@draw-and-play/domain';
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/client.js';
-import { auditLog, competitions, eventTables, matches } from '../db/schema.js';
+import { auditLog, competitions, entries, entryMembers, eventTables, matches } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound } from '../errors.js';
 import type { Broadcaster } from '../realtime/broadcaster.js';
 import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, toDrawEntry } from './competitions.js';
@@ -42,26 +45,34 @@ const isUniqueViolation = (error: unknown) =>
 
 // --- Draw ---
 
-export async function drawCompetition(ctx: CommandContext, competitionId: string, input: { seed?: string | undefined; snakePots?: number | undefined }) {
+export interface DrawInput extends CompetitionDrawOptions {
+  seed?: string | undefined;
+}
+
+export async function drawCompetition(ctx: CommandContext, competitionId: string, input: DrawInput) {
   const { eventId } = await loadCompetition(ctx.db, competitionId);
   const result = await withEventLock(ctx.db, eventId, async (tx) => {
     const competition = await loadCompetition(tx, competitionId);
     if (competition.draw) throw conflict('alreadyDrawn');
     const drawEntries = (await loadEntries(tx, competitionId)).filter((e) => e.status !== 'withdrawn');
+    const unpaired = drawEntries.filter((e) => e.members.length < 2).length;
+    if (competition.kind === 'doubles' && unpaired > 0) throw badRequest('unpairedPlayers', { count: unpaired });
     const formatError = validateFormat(competition.format, drawEntries.length);
     if (formatError) throw badRequest('invalidFormat', { reason: formatError, entries: drawEntries.length });
 
     const structure = buildStructure(competition.format, drawEntries.length);
     const seed = input.seed ?? randomBytes(8).toString('hex');
-    const draw = drawForStructure(structure, drawEntries.map(toDrawEntry), createRng(seed), {
-      ...(input.snakePots !== undefined && { snakePots: input.snakePots }),
-    });
+    const options: CompetitionDrawOptions = {
+      ...(input.seedCount !== undefined && { seedCount: input.seedCount }),
+      ...(input.seedPlacement !== undefined && { seedPlacement: input.seedPlacement }),
+    };
+    const draw = drawForStructure(structure, drawEntries.map(toDrawEntry), createRng(seed), options);
     await tx
       .update(competitions)
       .set({ draw, drawSeed: seed, version: competition.version + 1 })
       .where(eq(competitions.id, competitionId));
     await tx.insert(matches).values(structure.matches.map((m) => ({ competitionId, matchKey: m.id })));
-    await audit(tx, ctx, eventId, 'draw', 'competition', competitionId, { seed, draw });
+    await audit(tx, ctx, eventId, 'draw', 'competition', competitionId, { seed, options, draw });
     return { draw, seed };
   });
   ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
@@ -88,6 +99,66 @@ export async function undoDraw(ctx: CommandContext, competitionId: string) {
     await audit(tx, ctx, eventId, 'undoDraw', 'competition', competitionId);
   });
   ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
+}
+
+// --- Doubles pairs ---
+
+/** Players registered without a partner in a doubles competition, which is still open for entries */
+async function openDoubles(tx: Tx, competitionId: string) {
+  const competition = await loadCompetition(tx, competitionId);
+  if (competition.kind !== 'doubles') throw badRequest('notDoubles');
+  if (competition.draw) throw conflict('alreadyDrawn');
+  return loadEntries(tx, competitionId);
+}
+
+/**
+ * Pairs all players without a partner: in seeded mode the upper half of the seeding list gets a partner drawn
+ * from the lower half. The stronger player's entry becomes the pair (keeping its seed), the partner's entry goes.
+ */
+export async function drawDoublesPairs(ctx: CommandContext, competitionId: string, input: { seed?: string | undefined; mode: PairDrawMode }) {
+  const { eventId } = await loadCompetition(ctx.db, competitionId);
+  const result = await withEventLock(ctx.db, eventId, async (tx) => {
+    const singles = (await openDoubles(tx, competitionId)).filter((e) => e.status !== 'withdrawn' && e.members.length === 1);
+    if (singles.length < 2 || singles.length % 2 !== 0) throw badRequest('oddPlayerCount', { count: singles.length });
+
+    const seed = input.seed ?? randomBytes(8).toString('hex');
+    const pairs = drawPairs(singles.map(toDrawEntry), input.mode, createRng(seed));
+    const byId = new Map(singles.map((e) => [e.id, e]));
+    for (const [first, second] of pairs) {
+      const partner = byId.get(second)!;
+      await tx.delete(entries).where(eq(entries.id, second));
+      await tx.insert(entryMembers).values({ entryId: first, personId: partner.members[0]!.id, position: 1 });
+      const bothPresent = byId.get(first)!.status === 'present' && partner.status === 'present';
+      await tx
+        .update(entries)
+        .set({ status: bothPresent ? 'present' : 'registered' })
+        .where(eq(entries.id, first));
+    }
+    const pairPersons = pairs.map((pair) => pair.map((id) => byId.get(id)!.members[0]!.id));
+    await audit(tx, ctx, eventId, 'drawPairs', 'competition', competitionId, { seed, mode: input.mode, pairs: pairPersons });
+    return { seed, pairs: pairs.map(([entryId], i) => ({ entryId, personIds: pairPersons[i]! })) };
+  });
+  ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
+  return result;
+}
+
+/** Splits pairs back into single players (all pairs, or the given entries). The second player gets a new entry. */
+export async function splitDoublesPairs(ctx: CommandContext, competitionId: string, entryIds?: string[]) {
+  const { eventId } = await loadCompetition(ctx.db, competitionId);
+  const split = await withEventLock(ctx.db, eventId, async (tx) => {
+    const pairs = (await openDoubles(tx, competitionId)).filter((e) => e.members.length === 2 && (!entryIds || entryIds.includes(e.id)));
+    if (entryIds && pairs.length !== new Set(entryIds).size) throw notFound('entry');
+    for (const pair of pairs) {
+      const partner = pair.members[1]!;
+      await tx.delete(entryMembers).where(and(eq(entryMembers.entryId, pair.id), eq(entryMembers.position, 1)));
+      const [created] = await tx.insert(entries).values({ competitionId, status: pair.status }).returning();
+      await tx.insert(entryMembers).values({ entryId: created!.id, personId: partner.id, position: 0 });
+    }
+    await audit(tx, ctx, eventId, 'splitPairs', 'competition', competitionId, { entryIds: pairs.map((p) => p.id) });
+    return pairs.length;
+  });
+  ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
+  return { split };
 }
 
 // --- Matches ---

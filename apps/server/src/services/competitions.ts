@@ -47,6 +47,14 @@ export async function loadEntries(ex: Executor, competitionId: string): Promise<
   return [...byId.values()];
 }
 
+/** Entries the draw will have: in doubles, players still waiting for a partner count as half a pair each. */
+export function expectedEntryCount(competition: CompetitionRow, list: readonly EntryWithMembers[]): number {
+  const active = list.filter((e) => e.status !== 'withdrawn');
+  if (competition.kind !== 'doubles') return active.length;
+  const unpaired = active.filter((e) => e.members.length === 1).length;
+  return active.length - unpaired + Math.ceil(unpaired / 2);
+}
+
 /** The structure matching a stored draw: the number of drawn entries fixes group sizes and bracket. */
 export function structureFor(competition: CompetitionRow): CompetitionStructure | null {
   const draw = competition.draw;

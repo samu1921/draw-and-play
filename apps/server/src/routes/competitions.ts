@@ -4,7 +4,17 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { competitions, entries, entryMembers, eventTables, matches, persons } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound, parse } from '../errors.js';
-import { callMatch, drawCompetition, eventOfMatch, recordResult, uncallMatch, undoDraw, type CommandContext } from '../services/commands.js';
+import {
+  callMatch,
+  drawCompetition,
+  drawDoublesPairs,
+  eventOfMatch,
+  recordResult,
+  splitDoublesPairs,
+  uncallMatch,
+  undoDraw,
+  type CommandContext,
+} from '../services/commands.js';
 import { competitionSummary, competitionView, eventSettings, loadCompetition, loadCompetitionState } from '../services/competitions.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
@@ -64,11 +74,16 @@ const updateEntryBody = z.object({
   status: z.enum(['registered', 'present', 'withdrawn']).optional(),
 });
 
+const drawSeed = z.string().trim().min(1).max(64).optional();
 const drawBody = z.object({
-  seed: z.string().trim().min(1).max(64).optional(),
-  /** Distribute every pot in snake order instead of drawing (fully deterministic) */
-  fullSnake: z.boolean().optional(),
+  seed: drawSeed,
+  /** Entries from the top of the seeding list that are seeded */
+  seedCount: z.int().min(0).max(256).optional(),
+  /** fixed: seeds keep their place by seed number; drawn: seeds are drawn among each other */
+  seedPlacement: z.enum(['fixed', 'drawn']).optional(),
 });
+const pairDrawBody = z.object({ seed: drawSeed, mode: z.enum(['seeded', 'random']).default('seeded') });
+const splitPairsBody = z.object({ entryIds: z.array(uuid).min(1).max(256).optional() });
 
 const versionBody = z.object({ version: z.int() });
 const callBody = z.object({ tableId: uuid, version: z.int() });
@@ -183,15 +198,15 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     const body = parse(entryBody, request.body);
     const competition = await loadCompetition(db, id);
     if (competition.draw) throw conflict('alreadyDrawn');
-    const expected = competition.kind === 'doubles' ? 2 : 1;
-    if (body.personIds.length !== expected || new Set(body.personIds).size !== expected) {
-      throw badRequest('wrongMemberCount', { expected });
-    }
+    // Doubles take a pair, or a single player who gets a partner in the pair draw.
+    const allowed = competition.kind === 'doubles' ? [1, 2] : [1];
+    const count = new Set(body.personIds).size;
+    if (count !== body.personIds.length || !allowed.includes(count)) throw badRequest('wrongMemberCount', { expected: allowed.at(-1) });
     const found = await db
       .select({ id: persons.id })
       .from(persons)
       .where(and(eq(persons.eventId, competition.eventId), inArray(persons.id, body.personIds)));
-    if (found.length !== expected) throw badRequest('unknownPerson');
+    if (found.length !== count) throw badRequest('unknownPerson');
     const [already] = await db
       .select({ personId: entryMembers.personId })
       .from(entryMembers)
@@ -240,15 +255,24 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
 
   app.post('/api/competitions/:competitionId/draw', { preHandler: requireAdmin }, async (request) => {
     const body = parse(drawBody, request.body ?? {});
-    return drawCompetition(ctx(request), idParam(request.params, 'competitionId'), {
-      seed: body.seed,
-      ...(body.fullSnake && { snakePots: Number.POSITIVE_INFINITY }),
-    });
+    return drawCompetition(ctx(request), idParam(request.params, 'competitionId'), body);
   });
 
   app.delete('/api/competitions/:competitionId/draw', { preHandler: requireAdmin }, async (request, reply) => {
     await undoDraw(ctx(request), idParam(request.params, 'competitionId'));
     return reply.code(204).send();
+  });
+
+  // --- Doubles pairs ---
+
+  app.post('/api/competitions/:competitionId/pairs/draw', { preHandler: requireAdmin }, async (request) => {
+    const body = parse(pairDrawBody, request.body ?? {});
+    return drawDoublesPairs(ctx(request), idParam(request.params, 'competitionId'), body);
+  });
+
+  app.post('/api/competitions/:competitionId/pairs/split', { preHandler: requireAdmin }, async (request) => {
+    const body = parse(splitPairsBody, request.body ?? {});
+    return splitDoublesPairs(ctx(request), idParam(request.params, 'competitionId'), body.entryIds);
   });
 
   // --- Match commands (admin; results also from devices signed in with the event PIN) ---
