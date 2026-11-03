@@ -35,16 +35,16 @@ describe('drawGroups', () => {
     expect(new Set(groups.flat()).size).toBe(10);
   });
 
-  it('snake order across all pots', () => {
-    const groups = drawGroups(players(8), { groupCount: 2, snakePots: Infinity });
+  it('snake order across all pots without an RNG', () => {
+    const groups = drawGroups(players(8), { groupCount: 2 });
     expect(groups).toEqual([
       ['P1', 'P4', 'P5', 'P8'],
       ['P2', 'P3', 'P6', 'P7'],
     ]);
   });
 
-  it('each pot contributes at most one entry per group', () => {
-    const groups = drawGroups(players(12), { groupCount: 4, rng: createRng('pots') });
+  it('drawn seeds: each pot contributes at most one entry per group', () => {
+    const groups = drawGroups(players(12), { groupCount: 4, seedCount: 12, seedPlacement: 'drawn', rng: createRng('pots') });
     groups.forEach((g) => {
       expect(g).toHaveLength(3);
       // pot 2 = P5–P8, pot 3 = P9–P12
@@ -82,7 +82,51 @@ describe('drawGroups', () => {
       expect(drawGroups(players(10), { groupCount: 3, rng: createRng(seed) }).map((g) => g.length)).toEqual(groupSizes(10, 3));
       expect(drawGroups(players(16), { groupCount: 3, rng: createRng(seed) }).map((g) => g.length)).toEqual(groupSizes(16, 3));
     }
-    expect(drawGroups(players(11), { groupCount: 3, snakePots: Infinity }).map((g) => g.length)).toEqual(groupSizes(11, 3));
+    expect(drawGroups(players(11), { groupCount: 3 }).map((g) => g.length)).toEqual(groupSizes(11, 3));
+    for (const seedCount of [0, 3, 5, 9, 10]) {
+      for (const seedPlacement of ['fixed', 'drawn'] as const) {
+        const groups = drawGroups(players(10), { groupCount: 3, seedCount, seedPlacement, rng: createRng(seedCount) });
+        expect(groups.map((g) => g.length)).toEqual(groupSizes(10, 3));
+        expect(new Set(groups.flat()).size).toBe(10);
+      }
+    }
+  });
+
+  it('fixed seeds follow the snake, the unseeded are drawn into the free places', () => {
+    // 16 entries, 4 groups, half seeded: P1–P4 → A–D, P5–P8 → D–A
+    const heads = new Set<string>();
+    for (let seed = 0; seed < 15; seed++) {
+      const groups = drawGroups(players(16), { groupCount: 4, seedCount: 8, rng: createRng(seed) });
+      expect(groups.map((g) => g.slice(0, 2))).toEqual([
+        ['P1', 'P8'],
+        ['P2', 'P7'],
+        ['P3', 'P6'],
+        ['P4', 'P5'],
+      ]);
+      heads.add(groups.map((g) => g.slice(2).join()).join('|'));
+    }
+    expect(heads.size).toBeGreaterThan(1);
+  });
+
+  it('drawn seeds land in random groups, still one seed per group and pot', () => {
+    const firstGroupOfP1 = new Set<number>();
+    for (let seed = 0; seed < 20; seed++) {
+      const groups = drawGroups(players(16), { groupCount: 4, seedCount: 8, seedPlacement: 'drawn', rng: createRng(seed) });
+      const seedsPerGroup = groups.map((g) => g.filter((id) => Number(id.slice(1)) <= 8));
+      seedsPerGroup.forEach((s) => {
+        expect(s).toHaveLength(2);
+        expect(Number(s[0]!.slice(1))).toBeLessThanOrEqual(4);
+        expect(Number(s[1]!.slice(1))).toBeGreaterThan(4);
+      });
+      firstGroupOfP1.add(groups.findIndex((g) => g.includes('P1')));
+    }
+    expect(firstGroupOfP1.size).toBeGreaterThan(1);
+  });
+
+  it('without seeds everyone is drawn, keeping the group sizes', () => {
+    const groups = drawGroups(players(9), { groupCount: 3, seedCount: 0, rng: createRng('free') });
+    expect(groups.map((g) => g.length)).toEqual([3, 3, 3]);
+    expect(new Set(groups.flat()).size).toBe(9);
   });
 
   it('a single group holds everyone in seeding order', () => {

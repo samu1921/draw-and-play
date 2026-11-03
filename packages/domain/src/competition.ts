@@ -1,6 +1,6 @@
 import { drawKnockout } from './bracket.js';
 import type { CompetitionStructure, SeatRef, StructureMatch } from './format.js';
-import { drawGroups, rankForSeeding, type DrawEntry } from './groupDraw.js';
+import { drawGroups, rankForSeeding, type DrawEntry, type SeedPlacement } from './groupDraw.js';
 import { knockoutPlacements, resolveKnockout, type Placement } from './knockout.js';
 import type { Rng } from './rng.js';
 import type { RankingCriterion, Side } from './sport/types.js';
@@ -29,13 +29,16 @@ export function validateDraw(structure: CompetitionStructure, draw: Draw): DrawE
 }
 
 export interface CompetitionDrawOptions {
-  /** Group stage: pots distributed in snake order (default 1, see `drawGroups`) */
-  snakePots?: number;
-  /** Knockout: number of seeded entries (default a quarter of the bracket, at least 2) */
+  /** Number of seeded entries: default the group heads, or a quarter of the bracket (at least 2) in a knockout */
   seedCount?: number;
+  /**
+   * Groups (default fixed): see `drawGroups`.
+   * Knockout (default drawn): seeds 1 and 2 are always fixed; drawn lets seeds 3/4, 5–8, … be drawn among their tier.
+   */
+  seedPlacement?: SeedPlacement;
 }
 
-/** Draws the entries into the structure: groups by pots with club separation, or a seeded knockout. */
+/** Draws the entries into the structure: groups by seeding list with club separation, or a seeded knockout. */
 export function drawForStructure(
   structure: CompetitionStructure,
   entries: readonly DrawEntry[],
@@ -51,7 +54,8 @@ export function drawForStructure(
       groups: drawGroups(entries, {
         groupCount: structure.groupSizes.length,
         rng,
-        ...(options.snakePots !== undefined && { snakePots: options.snakePots }),
+        ...(options.seedCount !== undefined && { seedCount: options.seedCount }),
+        ...(options.seedPlacement !== undefined && { seedPlacement: options.seedPlacement }),
       }),
     };
   }
@@ -59,7 +63,11 @@ export function drawForStructure(
   const ranked = rankForSeeding(entries).map((e) => e.id);
   return {
     type: 'knockout',
-    seats: drawKnockout(ranked, { seedCount: options.seedCount ?? Math.max(2, size / 4), rng, drawSeedTiers: true }),
+    seats: drawKnockout(ranked, {
+      seedCount: options.seedCount ?? Math.max(2, size / 4),
+      rng,
+      drawSeedTiers: (options.seedPlacement ?? 'drawn') === 'drawn',
+    }),
   };
 }
 

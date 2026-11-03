@@ -66,6 +66,24 @@ describe('drawForStructure', () => {
     expect(draw.seats.map((s) => s === null)).toEqual(structure.knockout!.seats.map((s) => s === null));
     expect(draw.seats[0]).toBe('P1');
   });
+
+  it('passes the seeding options to the group draw', () => {
+    const structure = buildStructure({ groups: { groupCount: 2 } }, 8);
+    const draw = drawForStructure(structure, entries.slice(0, 8), createRng('z'), { seedCount: 4 });
+    expect(draw.type === 'groups' && draw.groups.map((g) => g.slice(0, 2))).toEqual([
+      ['P1', 'P4'],
+      ['P2', 'P3'],
+    ]);
+  });
+
+  it('fixed knockout seeds keep their bracket positions', () => {
+    const structure = buildStructure({ knockout: { placements: 'none' } }, 8);
+    for (let seed = 0; seed < 10; seed++) {
+      const draw = drawForStructure(structure, entries.slice(0, 8), createRng(seed), { seedCount: 4, seedPlacement: 'fixed' });
+      if (draw.type !== 'knockout') throw new Error('expected a knockout draw');
+      expect([draw.seats[0], draw.seats[3], draw.seats[4], draw.seats[7]]).toEqual(['P1', 'P4', 'P3', 'P2']);
+    }
+  });
 });
 
 describe('resolveCompetition', () => {

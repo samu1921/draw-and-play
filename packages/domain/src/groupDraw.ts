@@ -34,45 +34,78 @@ export function rankForSeeding<T extends DrawEntry>(entries: readonly T[]): T[] 
     .map(({ entry }) => entry);
 }
 
+/** How seeded entries reach their groups or knockout positions */
+export type SeedPlacement = 'fixed' | 'drawn';
+
 export interface GroupDrawOptions {
   groupCount: number;
   /**
-   * How many pots (of `groupCount` entries each, taken from the seeding list) are distributed in snake order.
-   * Default 1: only the group heads; `Infinity` = full snake, no randomness.
+   * How many entries from the top of the seeding list are seeded (default `groupCount`: the group heads).
+   * The others are not on the seeding list and are drawn freely into the remaining places.
    */
-  snakePots?: number;
-  /** For the randomly drawn pots; without an RNG they are distributed like the snake */
+  seedCount?: number;
+  /**
+   * fixed (default): seeds go to the groups in snake order (1 → A, 2 → B, …, then back again).
+   * drawn: the seeds are taken in pots of `groupCount` and each pot is drawn into the groups, one seed per group.
+   */
+  seedPlacement?: SeedPlacement;
+  /** Without an RNG nothing is drawn: every entry is placed in snake order */
   rng?: Rng;
 }
 
 /**
- * Group draw by pots: the seeding list is split into pots of `groupCount` entries and each group gets at most
- * one entry per pot. The first pots are distributed in snake order, the rest is drawn, keeping entries with the
- * same `club` apart where possible.
- * Larger groups come first, matching `groupSizes`. Result: entries per group in position order (0 = group head).
+ * Group draw by seeding list. Seeds are distributed pot by pot (pots of `groupCount` entries, at most one per group),
+ * in snake order or drawn. The unseeded entries are then drawn row by row into the free places, one per group and
+ * row. Draws keep entries with the same `club` apart where possible.
+ * Group sizes follow `groupSizes` (larger groups first). Result: entries per group in seeding-list order (0 = group head).
  */
 export function drawGroups(entries: readonly DrawEntry[], options: GroupDrawOptions): EntryId[][] {
   const { groupCount, rng } = options;
-  const snakePots = options.snakePots ?? 1;
   const ranked = rankForSeeding(entries);
+  const seedCount = rng ? Math.max(0, Math.min(options.seedCount ?? groupCount, ranked.length)) : ranked.length;
+  const placement = rng ? (options.seedPlacement ?? 'fixed') : 'fixed';
+  const capacity = groupSizes(ranked.length, groupCount);
   const groups: DrawEntry[][] = Array.from({ length: groupCount }, () => []);
+  /** Groups that still have room, in group order */
+  const open = () => groups.flatMap((g, i) => (g.length < capacity[i]! ? [i] : []));
 
-  for (let potIndex = 0; potIndex * groupCount < ranked.length; potIndex++) {
-    const pot = ranked.slice(potIndex * groupCount, (potIndex + 1) * groupCount);
-    const forward = potIndex % 2 === 0;
-    // An incomplete last pot goes to the first groups, so that larger groups come first (as in `groupSizes`).
-    const width = pot.length;
-    if (potIndex < snakePots || !rng) {
-      pot.forEach((entry, i) => groups[forward ? i : width - 1 - i]!.push(entry));
+  const seeds = ranked.slice(0, seedCount);
+  for (let potIndex = 0; potIndex * groupCount < seeds.length; potIndex++) {
+    const pot = seeds.slice(potIndex * groupCount, (potIndex + 1) * groupCount);
+    if (placement === 'drawn') {
+      place(pot, open(), rng!);
     } else {
-      const targets = assignPot(pot, groups.slice(0, width), rng);
+      // Snake order over the groups with room: an incomplete last pot fills the first groups, as in `groupSizes`.
+      const targets = potIndex % 2 === 0 ? open() : open().reverse();
       pot.forEach((entry, i) => groups[targets[i]!]!.push(entry));
     }
   }
-  return groups.map((g) => g.map((e) => e.id));
+
+  // Each row gives every group with room one entry. The free places always add up to the remaining entries,
+  // so a row never has more groups than entries left.
+  let unseeded = rng ? shuffle(ranked.slice(seedCount), rng) : ranked.slice(seedCount);
+  while (unseeded.length > 0) {
+    const targets = open();
+    const row = unseeded.slice(0, targets.length);
+    unseeded = unseeded.slice(targets.length);
+    if (rng) place(row, targets, rng);
+    else row.forEach((entry, i) => groups[targets[i]!]!.push(entry));
+  }
+  // Positions within a group follow the seeding list, so the group head is position 0.
+  const rank = new Map(ranked.map((e, i) => [e, i]));
+  return groups.map((g) => g.sort((a, b) => rank.get(a)! - rank.get(b)!).map((e) => e.id));
+
+  function place(pot: readonly DrawEntry[], targets: readonly number[], random: Rng) {
+    const assignment = assignPot(
+      pot,
+      targets.map((g) => groups[g]!),
+      random,
+    );
+    pot.forEach((entry, i) => groups[targets[assignment[i]!]!]!.push(entry));
+  }
 }
 
-/** Group per pot entry with as few club conflicts as possible; random among equally good solutions. */
+/** Group (index into `groups`) per pot entry, each group at most once, with as few club conflicts as possible; random among equally good solutions. */
 function assignPot(pot: readonly DrawEntry[], groups: readonly DrawEntry[][], rng: Rng): number[] {
   const conflicts = (entry: DrawEntry, group: number) =>
     entry.club === undefined ? 0 : groups[group]!.filter((e) => e.club === entry.club).length;
