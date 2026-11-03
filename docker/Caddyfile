@@ -1,0 +1,14 @@
+# SITE_ADDRESS = ":80" (local, plain HTTP) or a domain (automatic HTTPS via Let's Encrypt)
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		# Keep public views out of search engines (concept 9.3)
+		X-Robots-Tag "noindex, nofollow"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy app:3000
+}
