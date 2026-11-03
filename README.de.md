@@ -15,6 +15,14 @@ Hintergrund: [Konzept](docs/02-konzept-draw-and-play.md). Für Entwickler: [HTTP
 
 > Stand: frühe Entwicklung. Die testgetriebene Domänenbibliothek (Auslosung, Tabellen, KO, Zeitplanung) die Planer-Oberfläche, das Datenmodell und die API mit Echtzeit stehen; als Nächstes folgt die Oberfläche für den Spielbetrieb (Tischübersicht, Ergebniseingabe per Handy, Beamer-Anzeige).
 
+## Turniertag in Kürze
+
+1. Unter `/login` anmelden (erster Admin aus `ADMIN_USERNAME` / `ADMIN_PASSWORD` in der `.env`).
+2. **Turnierleitung → Veranstaltung anlegen**, dann Spieler erfassen, Konkurrenzen anlegen (Modus wie im Planer), Spieler melden und auslosen.
+3. **Einrichtung:** PIN erzeugen und die QR-Codes für die Tische drucken. Die Beamer-Anzeige läuft unter `/e/<kurzname>/display` (rotierend; `?view=tables` oder `?view=next` hält eine Ansicht fest, `?interval=30` ändert das Tempo).
+4. **Spielbetrieb:** Spielbereite Spiele auf freie Tische aufrufen. Die Spieler scannen den QR-Code am Tisch, geben einmal die PIN ein und tippen das Ergebnis; die Turnierleitung kann jederzeit selbst eintragen oder korrigieren.
+5. Alle anderen verfolgen das Turnier unter `/e/<kurzname>`.
+
 ## Aufbau
 
 | Pfad | Inhalt |
@@ -54,6 +62,7 @@ Frontend: http://localhost:5173
 | `npm test` | Alle Tests (Vitest) |
 | `npm run typecheck` | Typprüfung aller Pakete |
 | `npm run build` | Frontend und Server bauen |
+| `npm run e2e` | Einen ganzen Turniertag im echten Browser durchklicken (Playwright in Docker, Stack muss laufen); Screenshots in `e2e/screenshots/` |
 | `npm run db:generate -w @draw-and-play/server` | Migration aus dem Drizzle-Schema erzeugen |
 
 ## Mitarbeit

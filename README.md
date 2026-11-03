@@ -15,6 +15,14 @@ Background (German): [concept](docs/02-konzept-draw-and-play.md). Developer refe
 
 > Status: early development. The test-driven domain library (draw, standings, knockout, scheduling) the planner UI, the data model and the API with live updates are in place; the match operation UI (table overview, result entry by phone, projector display) comes next.
 
+## Tournament day in short
+
+1. Sign in at `/login` (first admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`).
+2. **Tournament desk → create event**, then add players, create competitions (format chosen like in the planner), enter players and draw.
+3. **Setup:** generate a PIN and print the QR codes for the tables. Open the projector display at `/e/<slug>/display` (rotating; `?view=tables` or `?view=next` pins a view, `?interval=30` changes the pace).
+4. **Match desk:** call ready matches to free tables. Players scan the QR code at their table, enter the PIN once and type the result; the desk can always enter or correct results itself.
+5. Everybody else follows along at `/e/<slug>`.
+
 ## Repository layout
 
 | Path | Contents |
@@ -54,6 +62,7 @@ Frontend: http://localhost:5173
 | `npm test` | Run all tests (Vitest) |
 | `npm run typecheck` | Type-check all packages |
 | `npm run build` | Build frontend and server |
+| `npm run e2e` | Click through a whole tournament day in a real browser (Playwright in Docker, needs the stack running); screenshots in `e2e/screenshots/` |
 | `npm run db:generate -w @draw-and-play/server` | Generate a migration from the Drizzle schema |
 
 ## Contributing
