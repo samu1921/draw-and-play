@@ -108,6 +108,12 @@ Devices may only use `POST /api/matches/:id/result` with a notation, and only fo
 
 `GET /api/events/:idOrSlug/operations` (public) returns everything the match desk, phones and the projector need: `tables` (each with its called match or `null`), `queue` (ready matches; `busy: true` when a player is currently at another table) and `recent` (latest results). Matches carry the competition id and resolved sides `{ entryId, name, clubs, personIds }`.
 
+## Forecast
+
+`GET /api/events/:idOrSlug/forecast?day=YYYY-MM-DD` (public) plans one tournament day from the real state with the domain planner: finished matches drop out, called matches keep their table until they are expected to end, everything else is scheduled from now on (on the current day) or from the day's first start (on a future day). Once three matches of a competition are played, their average duration replaces the estimate. Without `day` the current day is used, or else the next day with competitions.
+
+Returns `day`, `days`, `live`, `now`, `end`/`endLate` (10 % buffer), per competition `start`, `groupStageEnd`, `end`, `endLate`, `matchMinutes`, and the planned `matches` (`competitionId`, `matchKey`, `tableId`, `start`, `end`) – the desk uses them to suggest the next calls.
+
 ## Live updates
 
 `GET /api/events/:idOrSlug/stream` is a Server-Sent Events stream:

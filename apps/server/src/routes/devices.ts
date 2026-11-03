@@ -5,6 +5,7 @@ import { createDeviceSession, DEVICE_COOKIE, findDevice, generatePin, type Devic
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { auditLog, deviceSessions, events } from '../db/schema.js';
 import { ApiError, conflict, parse } from '../errors.js';
+import { eventForecast } from '../services/forecast.js';
 import { eventOperations } from '../services/operations.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
@@ -73,5 +74,12 @@ export async function deviceRoutes(app: FastifyInstance, { db, broadcaster }: Ro
   app.get('/api/events/:eventRef/operations', async (request) => {
     const event = await findEvent(db, (request.params as { eventRef: string }).eventRef);
     return eventOperations(db, event.id, event.settings, request.user ? 'admin' : 'public');
+  });
+
+  /** Live forecast of a tournament day (default: today, or the next day with competitions) */
+  app.get('/api/events/:eventRef/forecast', async (request) => {
+    const event = await findEvent(db, (request.params as { eventRef: string }).eventRef);
+    const { day } = parse(z.object({ day: z.iso.date().optional() }), request.query);
+    return eventForecast(db, event, day);
   });
 }
