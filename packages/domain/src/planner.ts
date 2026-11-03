@@ -27,6 +27,15 @@ export interface CompetitionPlan {
    * (someone playing doubles and singles). Without it every seat is a separate placeholder person.
    */
   participants?: (seat: SeatRef) => readonly string[] | undefined;
+  /** The real state while the tournament runs, keyed by structure match id */
+  live?: LiveState;
+}
+
+export interface LiveState {
+  /** People of matches whose sides are already known (takes precedence over `participants`) */
+  participants?: ReadonlyMap<string, readonly string[]>;
+  /** Played and running matches: they keep their table and times; everything else is planned around them */
+  fixed?: ReadonlyMap<string, { table: string; start: number; end: number }>;
 }
 
 export interface PlanInput {
@@ -96,7 +105,7 @@ export function simulatePlan(input: PlanInput): PlanResult {
     return structure.matches.map((m) => ({
       id: taskId(plan.id, m.id),
       durationMin: plan.matchMinutes,
-      participants: m.sides.flatMap((seat) => plan.participants?.(seat) ?? seatToken(plan.id, seat) ?? []),
+      participants: plan.live?.participants?.get(m.id) ?? m.sides.flatMap((seat) => plan.participants?.(seat) ?? seatToken(plan.id, seat) ?? []),
       // Roots wait for the preceding competitions; everything else follows them transitively.
       dependsOn: m.dependsOn.length > 0 ? m.dependsOn.map((d) => taskId(plan.id, d)) : before,
       ...(plan.earliestStart !== undefined && { earliestStart: plan.earliestStart }),
@@ -109,6 +118,9 @@ export function simulatePlan(input: PlanInput): PlanResult {
     tables: input.tables,
     startMin: input.startMin,
     ...(input.minRestMin !== undefined && { minRestMin: input.minRestMin }),
+    fixed: built.flatMap(({ plan }) =>
+      [...(plan.live?.fixed ?? [])].map(([matchId, slot]) => ({ taskId: taskId(plan.id, matchId), ...slot })),
+    ),
   });
   const byTask = new Map(result.matches.map((m) => [m.taskId, m]));
   const late = (end: number) =>

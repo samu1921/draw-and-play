@@ -186,3 +186,62 @@ describe('compareVariants', () => {
     expect(new Set(rows.map((r) => r.forecast.start)).size).toBe(1);
   });
 });
+
+describe('simulatePlan with the live state (forecast during the tournament)', () => {
+  const live = (fixed: [string, { table: string; start: number; end: number }][], participants: [string, string[]][] = []) => ({
+    fixed: new Map(fixed),
+    participants: new Map(participants),
+  });
+
+  it('keeps played and running matches and plans only the rest from now on', () => {
+    // 4 entries round robin on 2 tables: round 1 is played, one match of round 2 is running.
+    const plan = simulatePlan({
+      tables: tables(2),
+      startMin: 650,
+      competitions: [
+        {
+          id: 'c',
+          entryCount: 4,
+          format: rr,
+          matchMinutes: 30,
+          live: live([
+            ['GA-1-1', { table: 'T1', start: 600, end: 630 }],
+            ['GA-1-2', { table: 'T2', start: 600, end: 635 }],
+            ['GA-2-1', { table: 'T1', start: 640, end: 670 }],
+          ]),
+        },
+      ],
+    });
+    const byKey = new Map(plan.matches.map((m) => [m.match.id, m]));
+    expect(byKey.get('GA-1-1')).toMatchObject({ start: 600, end: 630, table: 'T1' });
+    // The free table takes the other round-2 match right now; round 3 follows once its players are free.
+    expect(byKey.get('GA-2-2')).toMatchObject({ start: 650, table: 'T2' });
+    expect(plan.competitions[0]!.start).toBe(600);
+    expect(plan.end).toBe(710);
+  });
+
+  it('uses the real players of known matches, so people are not booked twice across competitions', () => {
+    const plan = simulatePlan({
+      tables: tables(4),
+      startMin: 600,
+      competitions: [
+        { id: 'a', entryCount: 2, format: rr, matchMinutes: 30, live: live([], [['GA-1-1', ['Sam', 'Kim']]]) },
+        { id: 'b', entryCount: 2, format: rr, matchMinutes: 30, live: live([], [['GA-1-1', ['Sam', 'Lou']]]) },
+      ],
+    });
+    const [a, b] = plan.matches.sort((x, y) => x.start - y.start);
+    expect(b!.start).toBeGreaterThanOrEqual(a!.end);
+  });
+
+  it('keeps a running match on its table until it is expected to finish', () => {
+    const plan = simulatePlan({
+      tables: tables(1),
+      startMin: 610,
+      competitions: [
+        { id: 'c', entryCount: 3, format: rr, matchMinutes: 30, live: live([['GA-1-1', { table: 'T1', start: 600, end: 630 }]]) },
+      ],
+    });
+    const next = plan.matches.filter((m) => m.match.id !== 'GA-1-1').sort((x, y) => x.start - y.start)[0]!;
+    expect(next.start).toBe(630);
+  });
+});
