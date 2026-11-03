@@ -13,11 +13,12 @@ Errors carry a stable, language-neutral code that the UI translates:
 | Status | Codes |
 |---|---|
 | 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf` |
-| 401 | `notLoggedIn`, `invalidCredentials` |
+| 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin`, `noDevice` |
+| 403 | `correctionsAdminOnly`, `walkoverAdminOnly` |
 | 404 | `notFound` (details: `entity`) |
-| 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `slugTaken`, `duplicateTableName` |
+| 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `slugTaken`, `duplicateTableName`, `pinDisabled` |
 | 415 | `jsonRequired` |
-| 429 | `tooManyRequests` (login: 10 attempts per 15 minutes) |
+| 429 | `tooManyRequests` (login: 10 attempts, PIN: 5 attempts per 15 minutes) |
 
 ## Authentication
 
@@ -87,6 +88,23 @@ Every command names the match `version` it saw (optimistic locking) and runs und
 | POST | `/api/matches/:id/result` | `{ notation: "4 -5 9 7", version }` or `{ walkoverWinner: 0 \| 1, version }` |
 
 A result for a finished match is a correction; it is refused with `dependentMatchStarted` once a later match that builds on it has been called or played. Every command is written to the audit log.
+
+## Result entry by PIN
+
+Phones at the tables (QR code) sign in once with the event's six-digit PIN and are remembered as a device session (cookie `dap_device`, 72 hours). A new PIN signs out every device.
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| POST | `/api/events/:id/pin` | admin | → `{ pin }`, shown only once; rotates the PIN |
+| DELETE | `/api/events/:id/pin` | admin | turns result entry by PIN off |
+| POST | `/api/events/:idOrSlug/device` | public | `{ pin, label? }` → sets the device cookie |
+| GET | `/api/events/:idOrSlug/device` | device | `{ device }` or 401 |
+
+Devices may only use `POST /api/matches/:id/result` with a notation, and only for called matches: no walkovers, no corrections, no calls.
+
+## Operations view
+
+`GET /api/events/:idOrSlug/operations` (public) returns everything the match desk, phones and the projector need: `tables` (each with its called match or `null`), `queue` (ready matches; `busy: true` when a player is currently at another table) and `recent` (latest results). Matches carry the competition id and resolved sides `{ entryId, name, clubs, personIds }`.
 
 ## Live updates
 

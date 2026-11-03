@@ -3,11 +3,12 @@ import { and, eq, inArray, ne } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { competitions, entries, entryMembers, eventTables, matches, persons } from '../db/schema.js';
-import { badRequest, conflict, notFound, parse } from '../errors.js';
-import { callMatch, drawCompetition, recordResult, uncallMatch, undoDraw, type CommandContext } from '../services/commands.js';
+import { ApiError, badRequest, conflict, notFound, parse } from '../errors.js';
+import { callMatch, drawCompetition, eventOfMatch, recordResult, uncallMatch, undoDraw, type CommandContext } from '../services/commands.js';
 import { competitionSummary, competitionView, eventSettings, loadCompetition, loadCompetitionState } from '../services/competitions.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
+import { deviceOf } from './devices.js';
 
 const uuid = z.uuid();
 
@@ -250,7 +251,7 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     return reply.code(204).send();
   });
 
-  // --- Match commands (admin; PIN-based result entry follows with match operation) ---
+  // --- Match commands (admin; results also from devices signed in with the event PIN) ---
 
   app.post('/api/matches/:matchId/call', { preHandler: requireAdmin }, async (request) => {
     const body = parse(callBody, request.body);
@@ -262,8 +263,13 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     return { match: await uncallMatch(ctx(request), idParam(request.params, 'matchId'), body) };
   });
 
-  app.post('/api/matches/:matchId/result', { preHandler: requireAdmin }, async (request) => {
+  app.post('/api/matches/:matchId/result', async (request) => {
     const body = parse(resultBody, request.body);
-    return { match: await recordResult(ctx(request), idParam(request.params, 'matchId'), body) };
+    const matchId = idParam(request.params, 'matchId');
+    if (request.user) return { match: await recordResult(ctx(request), matchId, body) };
+    const device = await deviceOf(request, db, await eventOfMatch(db, matchId));
+    if (!device) throw new ApiError(401, 'notLoggedIn');
+    const deviceCtx = { db, broadcaster, actor: `device:${device.id.slice(0, 12)}` };
+    return { match: await recordResult(deviceCtx, matchId, { ...body, byDevice: true }) };
   });
 }

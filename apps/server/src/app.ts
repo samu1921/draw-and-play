@@ -9,6 +9,7 @@ import { ApiError } from './errors.js';
 import { Broadcaster } from './realtime/broadcaster.js';
 import { authRoutes } from './routes/auth.js';
 import { competitionRoutes } from './routes/competitions.js';
+import { deviceRoutes } from './routes/devices.js';
 import { eventRoutes } from './routes/events.js';
 
 export interface AppOptions {
@@ -70,6 +71,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await authRoutes(app, deps);
     await eventRoutes(app, deps);
     await competitionRoutes(app, deps);
+    await deviceRoutes(app, deps);
   }
 
   if (options.webDist && existsSync(options.webDist)) {

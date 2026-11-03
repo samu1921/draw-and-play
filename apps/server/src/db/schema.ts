@@ -58,8 +58,29 @@ export const events = pgTable('events', {
   timezone: text('timezone').notNull().default('Europe/Berlin'),
   sport: text('sport').notNull().default('table-tennis'),
   settings: jsonb('settings').$type<EventSettings>().notNull().default({}),
+  /** Argon2 hash of the result-entry PIN; null = result entry by PIN is off */
+  pinHash: text('pin_hash'),
+  /** Bumped on every new PIN, which signs out all devices */
+  pinVersion: integer('pin_version').notNull().default(0),
   createdAt: createdAt(),
 });
+
+/** A phone or tablet that entered the event's PIN and may enter results of called matches */
+export const deviceSessions = pgTable(
+  'device_sessions',
+  {
+    /** SHA-256 of the device token */
+    id: text('id').primaryKey(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    pinVersion: integer('pin_version').notNull(),
+    label: text('label'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('device_sessions_event_idx').on(t.eventId)],
+);
 
 export const eventTables = pgTable(
   'event_tables',

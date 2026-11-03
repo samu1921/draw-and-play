@@ -55,6 +55,12 @@ function slugify(name: string): string {
   return base || 'event';
 }
 
+/** Event as returned by the API: the PIN hash never leaves the server */
+export function eventView(event: typeof events.$inferSelect) {
+  const { pinHash, pinVersion: _pinVersion, ...rest } = event;
+  return { ...rest, pinEnabled: pinHash !== null };
+}
+
 /** Events are addressed by id or slug (the slug makes public URLs readable). */
 export async function findEvent(ex: Executor, ref: string) {
   const condition = uuid.safeParse(ref).success ? or(eq(events.id, ref), eq(events.slug, ref)) : eq(events.slug, ref);
@@ -73,7 +79,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
   const publish = (eventId: string, type: 'event' | 'tables' | 'persons', id = eventId) => broadcaster.publish({ eventId, type, id });
 
   app.get('/api/events', { preHandler: requireAdmin }, async () => {
-    return { events: await db.select().from(events).orderBy(asc(events.startsOn), asc(events.name)) };
+    return { events: (await db.select().from(events).orderBy(asc(events.startsOn), asc(events.name))).map(eventView) };
   });
 
   app.post('/api/events', { preHandler: requireAdmin }, async (request, reply) => {
@@ -92,7 +98,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
       await tx.insert(auditLog).values({ eventId: event!.id, actor: actorOf(request), action: 'create', entityType: 'event', entityId: event!.id });
       return event!;
     });
-    return reply.code(201).send({ event: created });
+    return reply.code(201).send({ event: eventView(created) });
   });
 
   /** Public overview: event, tables and competitions */
@@ -104,7 +110,17 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
       db.select().from(competitions).where(eq(competitions.eventId, event.id)).orderBy(asc(competitions.sortOrder), asc(competitions.createdAt)),
     ]);
     return {
-      event: { id: event.id, slug: event.slug, name: event.name, startsOn: event.startsOn, endsOn: event.endsOn, timezone: event.timezone, sport: event.sport, settings: event.settings },
+      event: {
+        id: event.id,
+        slug: event.slug,
+        name: event.name,
+        startsOn: event.startsOn,
+        endsOn: event.endsOn,
+        timezone: event.timezone,
+        sport: event.sport,
+        settings: event.settings,
+        pinEnabled: event.pinHash !== null,
+      },
       tables: tables.map((t) => ({ id: t.id, name: t.name, sortOrder: t.sortOrder })),
       competitions: comps.map(competitionSummary),
     };
@@ -124,7 +140,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
       .where(eq(events.id, event.id))
       .returning();
     publish(event.id, 'event');
-    return { event: updated };
+    return { event: eventView(updated!) };
   });
 
   /** Replaces the table list by name. Tables holding a called match cannot be removed. */

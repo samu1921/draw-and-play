@@ -12,7 +12,7 @@ import {
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/client.js';
 import { auditLog, competitions, eventTables, matches } from '../db/schema.js';
-import { badRequest, conflict, notFound } from '../errors.js';
+import { ApiError, badRequest, conflict, notFound } from '../errors.js';
 import type { Broadcaster } from '../realtime/broadcaster.js';
 import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, toDrawEntry } from './competitions.js';
 
@@ -92,7 +92,7 @@ export async function undoDraw(ctx: CommandContext, competitionId: string) {
 
 // --- Matches ---
 
-async function eventOfMatch(db: Db, matchId: string): Promise<string> {
+export async function eventOfMatch(db: Db, matchId: string): Promise<string> {
   const [row] = await db
     .select({ eventId: competitions.eventId })
     .from(matches)
@@ -194,6 +194,8 @@ export interface ResultInput {
   /** Walkover: the side that wins without playing */
   walkoverWinner?: Side | undefined;
   version: number;
+  /** Result entry by a device (PIN): only for called matches, no corrections, no walkovers */
+  byDevice?: boolean;
 }
 
 export async function recordResult(ctx: CommandContext, matchId: string, input: ResultInput) {
@@ -201,6 +203,11 @@ export async function recordResult(ctx: CommandContext, matchId: string, input: 
   const updated = await withEventLock(ctx.db, eventId, async (tx) => {
     const { row, loaded, resolved } = await matchContext(tx, matchId, input.version);
     if (resolved.status === 'pending') throw conflict('matchNotReady');
+    if (input.byDevice) {
+      if (row.status === 'finished') throw new ApiError(403, 'correctionsAdminOnly');
+      if (input.walkoverWinner !== undefined) throw new ApiError(403, 'walkoverAdminOnly');
+      if (row.status !== 'called') throw conflict('notCalled');
+    }
 
     let result: MatchResult;
     if (input.walkoverWinner !== undefined) {
