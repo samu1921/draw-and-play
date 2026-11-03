@@ -64,7 +64,7 @@ KO startet erst, wenn alle Gruppen fertig sind. „Top 2“ heißt, die ersten b
 |---|---|---|---|
 | 1 Gruppe, jeder gegen jeden | 45 | 9 | ~4:30 h |
 | 2 × 5, Top 2 → Halbfinale/Finale | 23 (+1 Platz 3) | 4–6 | ~3:30 h |
-| 3 × (4/3/3), Top 2 → KO 8 (2 Freilose) | 17 | 2–5 | ~3:00 h |
+| 3 × (4/3/3), Top 2 → KO 8 (2 Freilose) | 17 | 2–6 | ~3:00 h |
 
 **Einzel, 12 Teilnehmer**
 
