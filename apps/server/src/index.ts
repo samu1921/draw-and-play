@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.js';
 import { ensureAdmin } from './bootstrap.js';
 import { loadConfig } from './config.js';
+import { DEMO_SLUG, seedDemo } from './demo/seed.js';
 import { createDatabase, runMigrations } from './db/client.js';
 
 const config = loadConfig();
@@ -24,6 +25,7 @@ try {
   app.log.info(migrated ? 'Migrations applied' : 'No migrations found');
   const admin = await ensureAdmin(database.db, config.adminUsername, config.adminPassword);
   if (admin === 'created') app.log.info(`Admin user "${config.adminUsername}" created`);
+  if (config.demoSeed && (await seedDemo(database.db))) app.log.info(`Demo event "${DEMO_SLUG}" created`);
 } catch (error) {
   app.log.error(error, 'Startup failed');
   process.exit(1);

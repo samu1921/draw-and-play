@@ -9,6 +9,8 @@ export interface Config {
   adminUsername: string | undefined;
   adminPassword: string | undefined;
   sessionTtlHours: number;
+  /** Create the demo event on startup (separate demo stack only) */
+  demoSeed: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -29,5 +31,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     adminUsername: env.ADMIN_USERNAME || undefined,
     adminPassword: env.ADMIN_PASSWORD || undefined,
     sessionTtlHours: Number(env.SESSION_TTL_HOURS ?? 24) || 24,
+    demoSeed: env.DEMO_SEED === 'true',
   };
 }
