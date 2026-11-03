@@ -54,10 +54,8 @@ export async function authRoutes(app: FastifyInstance, { db, sessionTtlHours }: 
     return reply.code(204).send();
   });
 
-  app.get('/api/auth/me', async (request) => {
-    if (!request.user) throw new ApiError(401, 'notLoggedIn');
-    return { user: request.user };
-  });
+  /** `{ user: null }` when signed out: not an error, every page asks this once. */
+  app.get('/api/auth/me', async (request) => ({ user: request.user }));
 }
 
 /** preHandler for admin-only routes */

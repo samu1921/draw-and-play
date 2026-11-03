@@ -110,7 +110,7 @@ describe.skipIf(!databaseAvailable)('result entry by PIN and the operations view
   it('signs out every device when the PIN is rotated', async () => {
     await api('POST', `/api/events/${eventId}/pin`);
     const me = await app.inject({ method: 'GET', url: '/api/events/pin-test/device', cookies: { dap_device: deviceCookie } });
-    expect(me.statusCode).toBe(401);
+    expect(me.json()).toEqual({ device: null });
   });
 
   it('limits PIN attempts', async () => {

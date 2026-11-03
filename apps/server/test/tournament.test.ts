@@ -94,6 +94,15 @@ describe.skipIf(!databaseAvailable)('tournament flow via the API', () => {
     expect(s.matches.filter((m) => m.phase === 'group')).toHaveLength(12);
     expect(s.matches.filter((m) => m.phase === 'knockout')).toHaveLength(4);
     expect(s.matches.filter((m) => m.status === 'ready')).toHaveLength(12);
+
+    // Open knockout sides say where they come from: semifinal 1 is winner A vs runner-up B
+    const semi = (s.matches as unknown as { phase: string; places: number[] | null; sources: unknown[] }[]).find(
+      (m) => m.phase === 'knockout' && m.places?.[1] === 4,
+    )!;
+    expect(semi.sources).toEqual([
+      { type: 'qualifier', group: 0, rank: 1 },
+      { type: 'qualifier', group: 1, rank: 2 },
+    ]);
   });
 
   it('shows public views without personal data', async () => {

@@ -66,8 +66,7 @@ export async function deviceRoutes(app: FastifyInstance, { db, broadcaster }: Ro
   app.get('/api/events/:eventRef/device', async (request) => {
     const event = await findEvent(db, (request.params as { eventRef: string }).eventRef);
     const device = await deviceOf(request, db, event.id);
-    if (!device) throw new ApiError(401, 'noDevice');
-    return { device: { eventId: device.eventId, label: device.label } };
+    return { device: device ? { eventId: device.eventId, label: device.label } : null };
   });
 
   /** Tables, queue and recent results for the match desk, phones and the projector */

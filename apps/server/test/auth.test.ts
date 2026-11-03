@@ -26,7 +26,7 @@ describe.skipIf(!databaseAvailable)('authentication', () => {
     const logout = await app.inject({ method: 'POST', url: '/api/auth/logout', cookies: { dap_session: cookie.value } });
     expect(logout.statusCode).toBe(204);
     const after = await app.inject({ method: 'GET', url: '/api/auth/me', cookies: { dap_session: cookie.value } });
-    expect(after.statusCode).toBe(401);
+    expect(after.json()).toEqual({ user: null });
   });
 
   it('rejects wrong credentials without revealing whether the user exists', async () => {

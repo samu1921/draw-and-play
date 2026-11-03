@@ -5,6 +5,7 @@ import {
   type CompetitionState,
   type CompetitionStructure,
   type DrawEntry,
+  type SeatRef,
   type MatchResult,
 } from '@draw-and-play/domain';
 import { asc, eq, inArray } from 'drizzle-orm';
@@ -138,7 +139,19 @@ export function competitionSummary(c: CompetitionRow) {
 export function competitionView(loaded: LoadedCompetition, settings: EventSettings, audience: Audience) {
   const { competition, state, structure, matchRows } = loaded;
   const rowByKey = new Map(matchRows.map((m) => [m.matchKey, m]));
-  const bracketOf = new Map(structure?.matches.map((m) => [m.id, m.bracketMatch]) ?? []);
+  const structureOf = new Map(structure?.matches.map((m) => [m.id, m]) ?? []);
+  /** Where a side comes from, so clients can show "1st group A" or "winner semifinal 1" while it is open */
+  const sourceOf = (seat: SeatRef) => {
+    switch (seat.type) {
+      case 'qualifier':
+        return { type: 'qualifier' as const, group: seat.group, rank: seat.rank };
+      case 'winner':
+      case 'loser':
+        return { type: seat.type, matchKey: seat.match };
+      default:
+        return { type: 'draw' as const };
+    }
+  };
   return {
     competition: competitionSummary(competition),
     ...(audience === 'admin' && { drawSeed: competition.drawSeed }),
@@ -153,7 +166,8 @@ export function competitionView(loaded: LoadedCompetition, settings: EventSettin
     matches:
       state?.matches.map((m) => {
         const row = rowByKey.get(m.id);
-        const places = bracketOf.get(m.id)?.places;
+        const structureMatch = structureOf.get(m.id);
+        const places = structureMatch?.bracketMatch?.places;
         return {
           id: row?.id ?? null,
           key: m.id,
@@ -162,6 +176,7 @@ export function competitionView(loaded: LoadedCompetition, settings: EventSettin
           round: m.round,
           places: places ?? null,
           sides: m.sides,
+          sources: structureMatch ? [sourceOf(structureMatch.sides[0]), sourceOf(structureMatch.sides[1])] : null,
           status: m.status === 'finished' ? 'finished' : row?.status === 'called' ? 'called' : m.status,
           tableId: row?.status === 'called' ? row.tableId : null,
           calledAt: row?.calledAt ?? null,

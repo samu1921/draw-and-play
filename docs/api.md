@@ -13,7 +13,7 @@ Errors carry a stable, language-neutral code that the UI translates:
 | Status | Codes |
 |---|---|
 | 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf` |
-| 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin`, `noDevice` |
+| 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin` |
 | 403 | `correctionsAdminOnly`, `walkoverAdminOnly` |
 | 404 | `notFound` (details: `entity`) |
 | 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `slugTaken`, `duplicateTableName`, `pinDisabled` |
@@ -26,7 +26,7 @@ Errors carry a stable, language-neutral code that the UI translates:
 |---|---|---|---|
 | POST | `/api/auth/login` | `{ username, password }` | Sets the `dap_session` cookie (HttpOnly, SameSite=Lax, Secure over HTTPS) |
 | POST | `/api/auth/logout` | – | |
-| GET | `/api/auth/me` | – | `{ user }` or 401 |
+| GET | `/api/auth/me` | – | `{ user }`, or `{ user: null }` when signed out |
 
 The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 
@@ -68,14 +68,15 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
   "groups": [{ "group": 0, "entries": ["…"], "standings": [{ "entryId": "…", "rank": 1, "won": 3, … }], "complete": true }],
   "matches": [{
     "id": "…", "key": "GA-1-1", "phase": "group", "group": 0, "round": 1, "places": null,
-    "sides": ["entryId", "entryId"], "status": "ready", "tableId": null, "result": null, "version": 1
+    "sides": ["entryId", null], "sources": [{ "type": "draw" }, { "type": "winner", "matchKey": "KO-r1p1m2" }],
+    "status": "pending", "tableId": null, "result": null, "version": 1
   }],
   "placements": [{ "entryId": "…", "place": 5, "placeTo": 6 }],
   "finished": false
 }
 ```
 
-Match `status`: `pending` (a side depends on unfinished matches), `ready`, `called`, `finished`. Public views contain names and clubs only; ratings only if the event enables `publicRatings`.
+Match `status`: `pending` (a side depends on unfinished matches), `ready`, `called`, `finished`. `sources` says where each side comes from (`draw`, `qualifier` with group and rank, or `winner`/`loser` of another match), so open sides can be shown as "1st group A" or "winner semifinal 1". Public views contain names and clubs only; ratings only if the event enables `publicRatings`.
 
 ## Match commands (admin)
 
@@ -98,7 +99,7 @@ Phones at the tables (QR code) sign in once with the event's six-digit PIN and a
 | POST | `/api/events/:id/pin` | admin | → `{ pin }`, shown only once; rotates the PIN |
 | DELETE | `/api/events/:id/pin` | admin | turns result entry by PIN off |
 | POST | `/api/events/:idOrSlug/device` | public | `{ pin, label? }` → sets the device cookie |
-| GET | `/api/events/:idOrSlug/device` | device | `{ device }` or 401 |
+| GET | `/api/events/:idOrSlug/device` | public | `{ device }`, or `{ device: null }` if this browser is not signed in |
 
 Devices may only use `POST /api/matches/:id/result` with a notation, and only for called matches: no walkovers, no corrections, no calls.
 
