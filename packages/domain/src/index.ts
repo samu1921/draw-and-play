@@ -13,3 +13,4 @@ export * from './transition.js';
 export * from './format.js';
 export * from './scheduler.js';
 export * from './planner.js';
+export * from './competition.js';
