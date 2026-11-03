@@ -3,7 +3,7 @@ import type { ServerResponse } from 'node:http';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Executor } from '../db/client.js';
-import { auditLog, competitions, eventTables, events, matches, persons } from '../db/schema.js';
+import { auditLog, competitions, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
 import { conflict, notFound, parse } from '../errors.js';
 import { competitionSummary, personView } from '../services/competitions.js';
 import { actorOf, requireAdmin } from './auth.js';
@@ -143,6 +143,13 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
     return { event: eventView(updated!) };
   });
 
+  app.delete('/api/events/:eventId', { preHandler: requireAdmin }, async (request, reply) => {
+    const event = await findEvent(db, (request.params as { eventId: string }).eventId);
+    await db.delete(events).where(eq(events.id, event.id));
+    publish(event.id, 'event');
+    return reply.code(204).send();
+  });
+
   /** Replaces the table list by name. Tables holding a called match cannot be removed. */
   app.put('/api/events/:eventId/tables', { preHandler: requireAdmin }, async (request) => {
     const event = await findEvent(db, (request.params as { eventId: string }).eventId);
@@ -199,14 +206,14 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
 
   app.delete('/api/persons/:personId', { preHandler: requireAdmin }, async (request, reply) => {
     const personId = parse(uuid, (request.params as { personId: string }).personId);
-    try {
-      const [person] = await db.delete(persons).where(eq(persons.id, personId)).returning();
-      if (!person) throw notFound('person');
-      publish(person.eventId, 'persons', person.id);
-    } catch (error) {
-      if ((error as { cause?: { code?: string } }).cause?.code === '23503') throw conflict('personHasEntries');
-      throw error;
-    }
+    const person = await db.transaction(async (tx) => {
+      const [entered] = await tx.select({ entryId: entryMembers.entryId }).from(entryMembers).where(eq(entryMembers.personId, personId)).limit(1);
+      if (entered) throw conflict('personHasEntries');
+      const [deleted] = await tx.delete(persons).where(eq(persons.id, personId)).returning();
+      if (!deleted) throw notFound('person');
+      return deleted;
+    });
+    publish(person.eventId, 'persons', person.id);
     return reply.code(204).send();
   });
 

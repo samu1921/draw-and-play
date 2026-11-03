@@ -37,6 +37,7 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 | GET | `/api/events` | admin | all events |
 | POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount? }` → creates tables "1" … "n" |
 | GET | `/api/events/:idOrSlug` | public | event, tables, competitions |
+| DELETE | `/api/events/:id` | admin | deletes the event with all its data |
 | PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames? } }` |
 | PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
 | GET | `/api/events/:id/persons` | admin | persons with personal data |

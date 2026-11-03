@@ -166,9 +166,11 @@ export const entryMembers = pgTable(
     entryId: uuid('entry_id')
       .notNull()
       .references(() => entries.id, { onDelete: 'cascade' }),
+    // Cascade, so deleting a whole event (persons and entries alike) works. Deleting a single person who is
+    // entered somewhere is refused by the API instead (a restrict constraint would also block the event delete).
     personId: uuid('person_id')
       .notNull()
-      .references(() => persons.id, { onDelete: 'restrict' }),
+      .references(() => persons.id, { onDelete: 'cascade' }),
     position: integer('position').notNull(),
   },
   (t) => [primaryKey({ columns: [t.entryId, t.position] }), index('entry_members_person_idx').on(t.personId)],

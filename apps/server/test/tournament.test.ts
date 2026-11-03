@@ -188,6 +188,18 @@ describe.skipIf(!databaseAvailable)('tournament flow via the API', () => {
     expect(undo.json()).toEqual({ error: 'matchesStarted' });
   });
 
+  it('refuses to delete an entered person, but deletes a whole event with everything in it', async () => {
+    const blocked = await api('DELETE', `/api/persons/${personIds[0]}`);
+    expect(blocked.json()).toEqual({ error: 'personHasEntries' });
+
+    const other = (await api('POST', '/api/events', { name: 'Throwaway', slug: 'throwaway' })).json().event.id;
+    const person = (await api('POST', `/api/events/${other}/persons`, { firstName: 'Tmp', lastName: 'Tmp' })).json().person.id;
+    const comp = (await api('POST', `/api/events/${other}/competitions`, { name: 'X', format: { groups: { groupCount: 1 } } })).json().competition.id;
+    await api('POST', `/api/competitions/${comp}/entries`, { personIds: [person] });
+    expect((await api('DELETE', `/api/events/${other}`)).statusCode).toBe(204);
+    expect((await app.inject({ method: 'GET', url: '/api/events/throwaway' })).statusCode).toBe(404);
+  });
+
   it('writes every command to the audit log', async () => {
     const actions = new Set((await db.select({ action: auditLog.action }).from(auditLog)).map((r) => r.action));
     expect([...actions].sort()).toEqual(['call', 'correctResult', 'create', 'draw', 'result', 'undoDraw']);
