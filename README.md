@@ -13,7 +13,7 @@ What sets it apart:
 
 Background (German): [concept](docs/02-konzept-draw-and-play.md).
 
-> Status: early development. The domain library (draw, standings, knockout, scheduling) is built first, test-driven.
+> Status: early development. The test-driven domain library (draw, standings, knockout, scheduling) and the planner UI are in place; data model, API, live updates and match operation come next.
 
 ## Repository layout
 

@@ -13,7 +13,7 @@ Was sie besonders macht:
 
 Hintergrund: [Konzept](docs/02-konzept-draw-and-play.md).
 
-> Stand: frühe Entwicklung. Zuerst entsteht testgetrieben die Domänenbibliothek (Auslosung, Tabellen, KO, Zeitplanung).
+> Stand: frühe Entwicklung. Die testgetriebene Domänenbibliothek (Auslosung, Tabellen, KO, Zeitplanung) und die Planer-Oberfläche stehen; als Nächstes folgen Datenmodell, API, Echtzeit und Spielbetrieb.
 
 ## Aufbau
 

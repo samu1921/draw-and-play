@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { RouterView } from 'vue-router';
+import { RouterLink, RouterView } from 'vue-router';
 import { locales, setLocale, type Locale } from './i18n/index.js';
 
 const { t, locale } = useI18n();
@@ -12,7 +12,11 @@ function onLocaleChange(event: Event) {
 
 <template>
   <header class="app-header">
-    <span class="brand">draw-and-play</span>
+    <RouterLink to="/" class="brand">draw-and-play</RouterLink>
+    <nav class="app-nav">
+      <RouterLink to="/">{{ t('nav.planner') }}</RouterLink>
+      <RouterLink to="/status">{{ t('nav.status') }}</RouterLink>
+    </nav>
     <label class="locale">
       <span class="visually-hidden">{{ t('language.label') }}</span>
       <select :value="locale" @change="onLocaleChange">
