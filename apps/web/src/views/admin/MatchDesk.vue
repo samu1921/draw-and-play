@@ -1,0 +1,126 @@
+<script setup lang="ts">
+import { computed, reactive, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import ResultDialog from '../../components/live/ResultDialog.vue';
+import TableCard from '../../components/live/TableCard.vue';
+import { injectLiveEvent } from '../../composables/useLiveEvent.js';
+import { useNow } from '../../composables/useNow.js';
+import { api, type OperationsMatch } from '../../lib/api.js';
+import { matchLabel } from '../../lib/describe.js';
+import { errorText } from '../../lib/messages.js';
+
+const { t, te } = useI18n();
+const live = injectLiveEvent();
+const now = useNow();
+const ops = computed(() => live.operations.value);
+const competitions = computed(() => new Map((ops.value?.competitions ?? []).map((c) => [c.id, c])));
+const rulesOf = (m: OperationsMatch | null) => live.overview.value?.competitions.find((c) => c.id === m?.competitionId)?.matchRules;
+
+const error = ref('');
+const editing = ref<OperationsMatch | null>(null);
+/** Chosen table per queued match */
+const chosen = reactive<Record<string, string>>({});
+
+const freeTables = computed(() => (ops.value?.tables ?? []).filter((t) => !t.match));
+function tablesFor(m: OperationsMatch) {
+  const allowed = live.overview.value?.competitions.find((c) => c.id === m.competitionId)?.tableIds;
+  return freeTables.value.filter((t) => !allowed || allowed.includes(t.id));
+}
+
+async function run(action: () => Promise<unknown>) {
+  error.value = '';
+  try {
+    await action();
+  } catch (e) {
+    error.value = errorText(t, te, e);
+  } finally {
+    await live.reload();
+  }
+}
+
+/** Callable matches first; matches with a busy player keep their order below */
+const queue = computed(() => [...(ops.value?.queue ?? [])].sort((a, b) => Number(a.busy ?? false) - Number(b.busy ?? false)));
+const selectedTable = (m: OperationsMatch) => {
+  const options = tablesFor(m);
+  return options.some((t) => t.id === chosen[m.id]) ? chosen[m.id]! : (options[0]?.id ?? '');
+};
+
+const call = (m: OperationsMatch) => {
+  const tableId = selectedTable(m);
+  if (tableId) void run(() => api('POST', `/api/matches/${m.id}/call`, { tableId, version: m.version }));
+};
+const uncall = (m: OperationsMatch) => run(() => api('POST', `/api/matches/${m.id}/uncall`, { version: m.version }));
+const sideNames = (m: OperationsMatch) => `${m.sides[0]?.name ?? '—'} – ${m.sides[1]?.name ?? '—'}`;
+function score(m: OperationsMatch) {
+  if (!m.result) return '';
+  if (m.result.walkover) return t('public.walkover');
+  const won = m.result.games.filter(([a, b]) => a > b).length;
+  return `${won}:${m.result.games.length - won}`;
+}
+async function onSaved() {
+  editing.value = null;
+  await live.reload();
+}
+</script>
+
+<template>
+  <div v-if="ops" class="desk">
+    <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
+
+    <section aria-labelledby="desk-tables">
+      <h2 id="desk-tables">{{ t('admin.desk.tables') }}</h2>
+      <div class="table-grid">
+        <TableCard v-for="table in ops.tables" :key="table.id" :table="table" :competitions="competitions" :now="now">
+          <template v-if="table.match">
+            <button type="button" class="button small" @click="editing = table.match">{{ t('admin.desk.result') }}</button>
+            <button type="button" class="button secondary small" @click="uncall(table.match)">{{ t('admin.desk.uncall') }}</button>
+          </template>
+        </TableCard>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="desk-queue">
+      <h2 id="desk-queue">{{ t('admin.desk.queue') }} ({{ ops.queue.length }})</h2>
+      <p v-if="ops.queue.length === 0" class="muted">{{ t('admin.desk.queueEmpty') }}</p>
+      <ul v-else class="queue">
+        <li v-for="m in queue" :key="m.id" class="queue-item" :class="{ blocked: m.busy }">
+          <div class="queue-text">
+            <span class="queue-meta">
+              <span class="swatch" :style="{ background: `var(--series-${(competitions.get(m.competitionId)?.color ?? 0) + 1})` }" aria-hidden="true"></span>
+              {{ competitions.get(m.competitionId)?.name }} · {{ matchLabel(t, m) }}
+            </span>
+            <span class="queue-players">{{ sideNames(m) }}</span>
+            <span v-if="m.busy" class="busy-note">
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1" /><rect x="9.5" y="2" width="3.5" height="12" rx="1" /></svg>
+              {{ t('admin.desk.busy') }}
+            </span>
+          </div>
+          <div class="queue-actions">
+            <template v-if="tablesFor(m).length > 0">
+              <select :value="selectedTable(m)" :aria-label="t('admin.desk.table')" @change="chosen[m.id] = ($event.target as HTMLSelectElement).value">
+                <option v-for="table in tablesFor(m)" :key="table.id" :value="table.id">{{ t('table.title', { name: table.name }) }}</option>
+              </select>
+              <button type="button" class="button small" :disabled="m.busy" @click="call(m)">{{ t('admin.desk.call') }}</button>
+            </template>
+            <span v-else class="muted small">{{ t('admin.desk.noFreeTable') }}</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section v-if="ops.recent.length > 0" class="card" aria-labelledby="desk-recent">
+      <h2 id="desk-recent">{{ t('admin.desk.recent') }}</h2>
+      <ul class="queue">
+        <li v-for="m in ops.recent" :key="m.id" class="queue-item">
+          <div class="queue-text">
+            <span class="queue-meta">{{ competitions.get(m.competitionId)?.name }} · {{ matchLabel(t, m) }}</span>
+            <span class="queue-players">{{ sideNames(m) }} <strong>{{ score(m) }}</strong></span>
+          </div>
+          <button type="button" class="button secondary small" @click="editing = m">{{ t('admin.desk.correct') }}</button>
+        </li>
+      </ul>
+    </section>
+
+    <ResultDialog :match="editing" :rules="rulesOf(editing)" allow-walkover @close="editing = null" @saved="onSaved" />
+  </div>
+</template>

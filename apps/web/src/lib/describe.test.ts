@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createI18n } from 'vue-i18n';
 import de from '../i18n/locales/de.js';
 import en from '../i18n/locales/en.js';
-import { describeFormat, groupSizesText, matchLabel, rangeText, type Translate } from './describe.js';
+import { describeFormat, groupSizesText, matchLabel, rangeText, sameFormat, type Translate } from './describe.js';
 
 const translator = (locale: 'en' | 'de') =>
   createI18n({ legacy: false, locale, messages: { en, de } }).global.t as unknown as Translate;
@@ -55,5 +55,15 @@ describe('matchLabel', () => {
     expect(matchLabel(tEn, semi)).toBe('Semifinal');
     expect(matchLabel(tDe, semi, true)).toBe('HF');
     expect(matchLabel(tDe, third)).toBe('Spiel um Platz 3');
+  });
+});
+
+describe('sameFormat', () => {
+  it('compares by content, not key order', () => {
+    const a = { knockout: { placements: 'none' as const, qualifiersPerGroup: 2 }, groups: { groupCount: 3 } };
+    expect(sameFormat(a, groupsKo(3, 2))).toBe(true);
+    expect(sameFormat(a, groupsKo(3, 1))).toBe(false);
+    expect(sameFormat({ groups: { groupCount: 1 } }, { groups: { groupCount: 1, double: false } })).toBe(true);
+    expect(sameFormat({ groups: { groupCount: 1 } }, groupsKo(1, 2))).toBe(false);
   });
 });

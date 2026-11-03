@@ -1,0 +1,69 @@
+import { inject, onBeforeUnmount, provide, ref, watch, type InjectionKey, type Ref } from 'vue';
+import { api, type EventOverview, type Operations } from '../lib/api.js';
+import { useEventStream } from './useEventStream.js';
+
+export interface LiveEvent {
+  overview: Ref<EventOverview | null>;
+  operations: Ref<Operations | null>;
+  error: Ref<unknown>;
+  status: ReturnType<typeof useEventStream>['status'];
+  reload: () => Promise<void>;
+  /** Runs `callback` after every change pushed by the server, until the calling component unmounts */
+  onChange: (callback: () => void) => void;
+}
+
+const LIVE_EVENT: InjectionKey<LiveEvent> = Symbol('liveEvent');
+
+/**
+ * Loads an event (and optionally its operations view) and keeps it current through one live stream per page.
+ * Child components get it with `injectLiveEvent()`.
+ */
+export function useLiveEvent(eventRef: Ref<string | undefined>, options: { operations?: boolean } = {}): LiveEvent {
+  const overview = ref<EventOverview | null>(null);
+  const operations = ref<Operations | null>(null);
+  const error = ref<unknown>(null);
+  const listeners = new Set<() => void>();
+
+  async function reload() {
+    const value = eventRef.value;
+    if (!value) return;
+    try {
+      const path = `/api/events/${encodeURIComponent(value)}`;
+      const [o, ops] = await Promise.all([
+        api<EventOverview>('GET', path),
+        options.operations ? api<Operations>('GET', `${path}/operations`) : Promise.resolve(null),
+      ]);
+      overview.value = o;
+      operations.value = ops;
+      error.value = null;
+    } catch (e) {
+      error.value = e;
+    }
+  }
+
+  const { status } = useEventStream(eventRef, () => {
+    void reload();
+    for (const listener of listeners) listener();
+  });
+  watch(eventRef, () => void reload(), { immediate: true });
+
+  const live: LiveEvent = {
+    overview,
+    operations,
+    error,
+    status,
+    reload,
+    onChange(callback) {
+      listeners.add(callback);
+      onBeforeUnmount(() => listeners.delete(callback));
+    },
+  };
+  provide(LIVE_EVENT, live);
+  return live;
+}
+
+export function injectLiveEvent(): LiveEvent {
+  const live = inject(LIVE_EVENT);
+  if (!live) throw new Error('injectLiveEvent() needs useLiveEvent() in a parent component');
+  return live;
+}

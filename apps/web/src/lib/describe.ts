@@ -33,6 +33,17 @@ function bracketText(t: Translate, size: number): string {
   return t('format.ko.bracket', { size });
 }
 
+/** Same format, compared by content rather than by object identity or key order */
+export function sameFormat(a: CompetitionFormat, b: CompetitionFormat): boolean {
+  return (
+    a.groups?.groupCount === b.groups?.groupCount &&
+    (a.groups?.double ?? false) === (b.groups?.double ?? false) &&
+    (a.knockout === undefined) === (b.knockout === undefined) &&
+    a.knockout?.qualifiersPerGroup === b.knockout?.qualifiersPerGroup &&
+    a.knockout?.placements === b.knockout?.placements
+  );
+}
+
 /** Human-readable format, e.g. "Groups 3 × (4/3/3), top 2 → quarterfinals, 2 byes" */
 export function describeFormat(t: Translate, format: CompetitionFormat, entryCount: number): string {
   const groups = format.groups;
@@ -70,10 +81,19 @@ export function roundName(t: Translate, name: KnockoutRoundName, short = false):
   }
 }
 
+/** The parts of a match that its label depends on: from the planner structure or from the API */
+export interface MatchLabelSource {
+  phase: 'group' | 'knockout';
+  group?: number | null | undefined;
+  round: number;
+  places?: [number, number] | null | undefined;
+}
+
 /** "Group A, round 2" / "Semifinal"; short: "A·2" / "SF" */
-export function matchLabel(t: Translate, match: StructureMatch, short = false): string {
+export function matchLabel(t: Translate, match: StructureMatch | MatchLabelSource, short = false): string {
   if (match.phase === 'group') {
     return t(short ? 'match.groupShort' : 'match.group', { group: groupLetter(match.group ?? 0), round: match.round });
   }
-  return match.bracketMatch ? roundName(t, knockoutRoundName(match.bracketMatch), short) : '';
+  const places = 'bracketMatch' in match ? match.bracketMatch?.places : (match as MatchLabelSource).places;
+  return places ? roundName(t, knockoutRoundName({ places }), short) : '';
 }
