@@ -1,4 +1,11 @@
-import { buildStructure, type CompetitionFormat, type PlacementMode, type SeatRef, type StructureOptions } from './format.js';
+import {
+  buildStructure,
+  type CompetitionFormat,
+  type PlacementMode,
+  type SeatRef,
+  type StructureMatch,
+  type StructureOptions,
+} from './format.js';
 import { groupSizes } from './groupDraw.js';
 import { scheduleTasks, type ScheduledMatch, type ScheduleTask } from './scheduler.js';
 
@@ -51,7 +58,8 @@ export interface CompetitionForecast {
 
 export interface PlannedMatch extends ScheduledMatch {
   competitionId: string;
-  matchId: string;
+  /** Phase, group, round and bracket position, e.g. for labels */
+  match: StructureMatch;
 }
 
 export interface PlanResult {
@@ -156,11 +164,10 @@ export function simulatePlan(input: PlanInput): PlanResult {
     };
   });
 
-  const competitionOf = new Map(tasks.map((t) => [t.id, t.id.slice(0, t.id.indexOf(':'))]));
-  const matches = result.matches.map((m) => {
-    const competitionId = competitionOf.get(m.taskId)!;
-    return { ...m, competitionId, matchId: m.taskId.slice(competitionId.length + 1) };
-  });
+  const matchOf = new Map(
+    built.flatMap(({ plan, structure }) => structure.matches.map((m) => [taskId(plan.id, m.id), { competitionId: plan.id, match: m }] as const)),
+  );
+  const matches = result.matches.map((m): PlannedMatch => ({ ...m, ...matchOf.get(m.taskId)! }));
   const span = result.end - input.startMin;
   return {
     competitions,

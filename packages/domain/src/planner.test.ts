@@ -87,6 +87,7 @@ describe('simulatePlan across competitions', () => {
     });
     expect(plan.competitions[0]!.start).toBe(13 * 60);
     expect(new Set(plan.matches.map((m) => m.table))).toEqual(new Set(['T7', 'T8']));
+    expect(plan.matches.every((m) => m.competitionId === 'hobby' && m.match.phase === 'group')).toBe(true);
   });
 
   it('never schedules the same person in two competitions at once', () => {
