@@ -282,9 +282,6 @@ const de: typeof en = {
     title: 'Turnierplaner',
     intro:
       'Trage die Konkurrenzen eines Tages ein. Der Planer simuliert den Zeitplan auf den gemeinsamen Tischen, achtet darauf, dass niemand zwei Spiele gleichzeitig hat, und vergleicht alle sinnvollen Modi.',
-    presets: 'Beispiel laden',
-    presetSaturday: 'Samstag: Doppel, Einzel, Hobby',
-    presetFriday: 'Freitag: drei Jugendkonkurrenzen',
     day: {
       title: 'Tag',
       tables: 'Tische',
@@ -314,14 +311,6 @@ const de: typeof en = {
       tablesTo: 'bis Tisch',
       compare: 'Modi vergleichen',
       noFormat: 'Zu wenige Teilnehmer für einen Modus.',
-    },
-    names: {
-      doubles: 'Doppel',
-      singles: 'Einzel',
-      hobby: 'Hobby',
-      youthU19: 'Jugend U19',
-      youthU14: 'Jugend U14',
-      youthBeginners: 'Jugend Anfänger',
     },
     forecast: {
       title: 'Prognose',

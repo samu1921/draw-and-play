@@ -281,9 +281,6 @@ export default {
     title: 'Tournament planner',
     intro:
       'Enter the competitions of one day. The planner simulates the schedule on the shared tables, keeps players from playing two matches at once and compares every sensible format.',
-    presets: 'Load example',
-    presetSaturday: 'Saturday: doubles, singles, hobby',
-    presetFriday: 'Friday: three youth competitions',
     day: {
       title: 'Day',
       tables: 'Tables',
@@ -313,14 +310,6 @@ export default {
       tablesTo: 'to table',
       compare: 'Compare formats',
       noFormat: 'Not enough entries for any format.',
-    },
-    names: {
-      doubles: 'Doubles',
-      singles: 'Singles',
-      hobby: 'Hobby',
-      youthU19: 'Youth U19',
-      youthU14: 'Youth U14',
-      youthBeginners: 'Youth beginners',
     },
     forecast: {
       title: 'Forecast',

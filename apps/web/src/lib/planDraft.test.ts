@@ -1,8 +1,20 @@
 import { simulatePlan } from '@draw-and-play/domain';
 import { describe, expect, it } from 'vitest';
-import { allowedTables, createCompetition, nextColor, preset, resolveVariant, toPlanInput, type PlannerDraft } from './planDraft.js';
+import { allowedTables, createCompetition, emptyDraft, nextColor, resolveVariant, toPlanInput, type PlannerDraft } from './planDraft.js';
 
-const name = (key: string) => key;
+/** The Saturday of the concept: doubles, then singles; hobby from 13:00 */
+function saturday(): PlannerDraft {
+  const draft = emptyDraft();
+  const add = (values: Parameters<typeof createCompetition>[1]) => {
+    const c = createCompetition(draft.competitions, values);
+    draft.competitions.push(c);
+    return c;
+  };
+  const doubles = add({ name: 'Doubles', entryCount: 8, variantId: 'g2-top2' });
+  add({ name: 'Singles', entryCount: 12, variantId: 'g3-top2', startAfter: doubles.id });
+  add({ name: 'Hobby', entryCount: 5, gamesToWin: 2, variantId: 'rr', earliestStart: '13:00' });
+  return draft;
+}
 
 describe('createCompetition', () => {
   it('derives the match duration from the scoring and picks a valid format', () => {
@@ -40,8 +52,13 @@ describe('allowedTables', () => {
 });
 
 describe('toPlanInput', () => {
-  it('converts the Saturday example into a plan the domain can simulate', () => {
-    const draft = preset('saturday', name);
+  it('starts empty', () => {
+    expect(emptyDraft().competitions).toEqual([]);
+    expect(toPlanInput(emptyDraft()).competitions).toEqual([]);
+  });
+
+  it('converts a planned day into a plan the domain can simulate', () => {
+    const draft = saturday();
     const input = toPlanInput(draft);
     expect(input.tables).toEqual(['1', '2', '3', '4']);
     expect(input.startMin).toBe(600);
@@ -58,13 +75,13 @@ describe('toPlanInput', () => {
   });
 
   it('ignores a start dependency on a later competition', () => {
-    const draft = preset('saturday', name);
+    const draft = saturday();
     const swapped: PlannerDraft = { ...draft, competitions: [draft.competitions[1]!, draft.competitions[0]!] };
     expect(toPlanInput(swapped).competitions[0]!.startAfter).toBeUndefined();
   });
 
   it('leaves out competitions without a valid format', () => {
-    const draft = preset('friday', name);
+    const draft = saturday();
     draft.competitions[0]!.entryCount = 1;
     expect(toPlanInput(draft).competitions).toHaveLength(2);
   });

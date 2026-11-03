@@ -4,19 +4,17 @@ import { computed, ref, watch } from 'vue';
 import { i18n } from '../i18n/index.js';
 import {
   createCompetition,
+  emptyDraft,
   MAX_COMPETITIONS,
-  preset,
   resolveVariant,
   toPlanInput,
   variantsFor,
   type CompetitionDraft,
   type PlannerDraft,
-  type PresetId,
 } from '../lib/planDraft.js';
 
-const STORAGE_KEY = 'draw-and-play.planner.v1';
-
-const presetName = (key: string) => i18n.global.t(`planner.names.${key}`);
+// v2: drafts saved by earlier versions contained the example day and are ignored.
+const STORAGE_KEY = 'draw-and-play.planner.v2';
 
 function load(): PlannerDraft | null {
   try {
@@ -74,7 +72,7 @@ function sanitize(draft: PlannerDraft) {
 }
 
 export const usePlannerStore = defineStore('planner', () => {
-  const draft = ref<PlannerDraft>(load() ?? preset('saturday', presetName));
+  const draft = ref<PlannerDraft>(load() ?? emptyDraft());
   const selectedId = ref(draft.value.competitions[0]?.id ?? '');
 
   watch(
@@ -97,11 +95,6 @@ export const usePlannerStore = defineStore('planner', () => {
   });
   const canAdd = computed(() => draft.value.competitions.length < MAX_COMPETITIONS);
   const byId = computed(() => new Map(draft.value.competitions.map((c) => [c.id, c])));
-
-  function loadPreset(id: PresetId) {
-    draft.value = preset(id, presetName);
-    selectedId.value = draft.value.competitions[0]?.id ?? '';
-  }
 
   function addCompetition() {
     if (!canAdd.value) return;
@@ -140,7 +133,6 @@ export const usePlannerStore = defineStore('planner', () => {
     comparison,
     canAdd,
     byId,
-    loadPreset,
     addCompetition,
     removeCompetition,
     setGamesToWin,

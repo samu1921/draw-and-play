@@ -5,10 +5,8 @@ import DaySettings from '../components/planner/DaySettings.vue';
 import ForecastSummary from '../components/planner/ForecastSummary.vue';
 import ScheduleTimeline from '../components/planner/ScheduleTimeline.vue';
 import VariantComparison from '../components/planner/VariantComparison.vue';
-import { usePlannerStore } from '../stores/planner.js';
 
 const { t } = useI18n();
-const store = usePlannerStore();
 </script>
 
 <template>
@@ -17,15 +15,6 @@ const store = usePlannerStore();
       <div>
         <h1>{{ t('planner.title') }}</h1>
         <p class="intro">{{ t('planner.intro') }}</p>
-      </div>
-      <div class="presets" role="group" :aria-label="t('planner.presets')">
-        <span class="muted">{{ t('planner.presets') }}:</span>
-        <button type="button" class="button secondary small" @click="store.loadPreset('saturday')">
-          {{ t('planner.presetSaturday') }}
-        </button>
-        <button type="button" class="button secondary small" @click="store.loadPreset('friday')">
-          {{ t('planner.presetFriday') }}
-        </button>
       </div>
     </header>
 

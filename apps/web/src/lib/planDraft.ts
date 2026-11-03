@@ -130,22 +130,7 @@ export function createCompetition(
   return { ...draft, variantId: resolveVariant(draft)?.id ?? '' };
 }
 
-export type PresetId = 'saturday' | 'friday';
-
-/** Example days from the concept (chapter 2); `name` translates the competition names. */
-export function preset(id: PresetId, name: (key: string) => string): PlannerDraft {
-  const competitions: CompetitionDraft[] = [];
-  const add = (values: Parameters<typeof createCompetition>[1]) => {
-    const c = createCompetition(competitions, values);
-    competitions.push(c);
-    return c;
-  };
-  if (id === 'saturday') {
-    const doubles = add({ name: name('doubles'), entryCount: 8, variantId: 'g2-top2' });
-    add({ name: name('singles'), entryCount: 12, variantId: 'g3-top2', startAfter: doubles.id });
-    add({ name: name('hobby'), entryCount: 5, gamesToWin: 2, variantId: 'rr', earliestStart: '13:00' });
-    return { day: { tableCount: 4, start: '10:00', minRestMin: 0, bufferPercent: 10, bufferMinutes: 0 }, competitions };
-  }
-  for (const key of ['youthU19', 'youthU14', 'youthBeginners']) add({ name: name(key), entryCount: 5, variantId: 'rr' });
-  return { day: { tableCount: 6, start: '17:00', minRestMin: 0, bufferPercent: 10, bufferMinutes: 0 }, competitions };
+/** A fresh planner: one tournament day with four tables, no competitions yet */
+export function emptyDraft(): PlannerDraft {
+  return { day: { tableCount: 4, start: '10:00', minRestMin: 0, bufferPercent: 10, bufferMinutes: 0 }, competitions: [] };
 }
