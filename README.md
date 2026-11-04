@@ -57,6 +57,24 @@ Then open http://localhost:8080 (health check: http://localhost:8080/api/health)
 
 On a server, set `SITE_ADDRESS=tournament.example.org`, `HTTP_PORT=80` and `HTTPS_PORT=443` in `.env`. Caddy then obtains the certificate automatically.
 
+## Backups
+
+The `backup` service writes a database dump into `./backups` every hour (`BACKUP_INTERVAL_MINUTES`, `BACKUP_KEEP_DAYS` and `BACKUP_DIR` in `.env`). On the tournament day a shorter interval such as 15 minutes is sensible. A dump right now, for example before the event starts:
+
+```bash
+docker compose exec backup sh /usr/local/bin/backup.sh once
+```
+
+Restore a dump (replaces the whole database):
+
+```bash
+docker compose stop app
+docker compose exec -T db pg_restore --clean --if-exists --no-owner -U drawandplay -d drawandplay < backups/drawandplay-<timestamp>.dump
+docker compose start app
+```
+
+The dumps lie on the same server as the database. Copy them somewhere else from time to time, for example with `scp` or `rclone`.
+
 ## Development with hot reload
 
 ```bash
