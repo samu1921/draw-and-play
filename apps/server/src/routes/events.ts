@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { Executor } from '../db/client.js';
 import { auditLog, competitions, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
 import { conflict, notFound, parse } from '../errors.js';
+import { eventSettingsSchema } from '../schemas.js';
 import { competitionSummary, personView } from '../services/competitions.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
@@ -29,7 +30,7 @@ const updateEventBody = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   startsOn: isoDate.nullable().optional(),
   endsOn: isoDate.nullable().optional(),
-  settings: z.object({ publicRatings: z.boolean().optional(), shortNames: z.boolean().optional() }).optional(),
+  settings: eventSettingsSchema.optional(),
 });
 
 const tablesBody = z.object({ names: z.array(z.string().trim().min(1).max(20)).min(1).max(64) });

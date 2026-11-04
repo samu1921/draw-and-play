@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { displayProfiles, users, type DisplaySettings } from '../db/schema.js';
 import { conflict, notFound, parse } from '../errors.js';
+import { displaySettingsSchema as settingsSchema } from '../schemas.js';
 import { requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
 import { findEvent } from './events.js';
@@ -18,18 +19,6 @@ export const displayDefaults: DisplaySettings = {
   todayOnly: false,
   liveDraw: true,
 };
-
-const settingsSchema = z
-  .object({
-    slideSeconds: z.int().min(5).max(600),
-    tables: z.boolean(),
-    next: z.boolean(),
-    entries: z.boolean(),
-    competitionIds: z.array(uuid).max(64).nullable(),
-    todayOnly: z.boolean(),
-    liveDraw: z.boolean(),
-  })
-  .partial();
 
 const name = z.string().trim().min(1).max(60);
 const createBody = z.object({ name, settings: settingsSchema.optional() });

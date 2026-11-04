@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { competitions, entries, entryMembers, eventTables, matches, persons } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound, parse } from '../errors.js';
+import { formatSchema } from '../schemas.js';
 import {
   callMatch,
   drawCompetition,
@@ -21,19 +22,6 @@ import type { RouteDeps } from './deps.js';
 import { deviceOf } from './devices.js';
 
 const uuid = z.uuid();
-
-const formatSchema = z
-  .object({
-    groups: z.object({ groupCount: z.int().min(1).max(64), double: z.boolean().optional() }).optional(),
-    knockout: z
-      .object({
-        qualifiersPerGroup: z.int().min(1).max(16).optional(),
-        placements: z.enum(['none', 'thirdPlace', 'all']),
-      })
-      .optional(),
-  })
-  .refine((f) => f.groups !== undefined || f.knockout !== undefined, { message: 'noStages' })
-  .refine((f) => !(f.groups && f.knockout) || f.knockout.qualifiersPerGroup !== undefined, { message: 'missingQualifiers' });
 
 const competitionFields = {
   name: z.string().trim().min(1).max(80),
