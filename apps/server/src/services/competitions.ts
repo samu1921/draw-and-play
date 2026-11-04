@@ -37,7 +37,7 @@ export async function loadEntries(ex: Executor, competitionId: string): Promise<
     .leftJoin(entryMembers, eq(entryMembers.entryId, entries.id))
     .leftJoin(persons, eq(persons.id, entryMembers.personId))
     .where(eq(entries.competitionId, competitionId))
-    .orderBy(asc(entries.createdAt), asc(entryMembers.position));
+    .orderBy(asc(entries.createdAt), asc(entries.id), asc(entryMembers.position));
   const byId = new Map<string, EntryWithMembers>();
   for (const { entry, person } of rows) {
     const e = byId.get(entry.id) ?? { id: entry.id, seed: entry.seed, status: entry.status, members: [] };

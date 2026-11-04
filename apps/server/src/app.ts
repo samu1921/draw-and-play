@@ -12,6 +12,7 @@ import { competitionRoutes } from './routes/competitions.js';
 import { deviceRoutes } from './routes/devices.js';
 import { displayRoutes } from './routes/displays.js';
 import { eventRoutes } from './routes/events.js';
+import { transferRoutes } from './routes/transfer.js';
 
 export interface AppOptions {
   logLevel?: string;
@@ -74,6 +75,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await competitionRoutes(app, deps);
     await deviceRoutes(app, deps);
     await displayRoutes(app, deps);
+    await transferRoutes(app, deps);
   }
 
   if (options.webDist && existsSync(options.webDist)) {

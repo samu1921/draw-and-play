@@ -12,7 +12,7 @@ Errors carry a stable, language-neutral code that the UI translates:
 
 | Status | Codes |
 |---|---|
-| 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unpairedPlayers` (details: `count`), `oddPlayerCount` (details: `count`), `notDoubles`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf` |
+| 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unpairedPlayers` (details: `count`), `oddPlayerCount` (details: `count`), `notDoubles`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf`, `unsupportedFormat`, `invalidImport` (details: `reason`, `at`) |
 | 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin` |
 | 403 | `correctionsAdminOnly`, `walkoverAdminOnly` |
 | 404 | `notFound` (details: `entity`) |
@@ -44,6 +44,15 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 | POST | `/api/events/:id/persons` | admin | `{ firstName, lastName, club?, gender?, birthYear?, licenceNo?, rating? }` |
 | PATCH / DELETE | `/api/persons/:id` | admin | |
 | GET | `/api/events/:idOrSlug/stream` | public | Server-Sent Events, see below |
+
+## Export and import
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| GET | `/api/events/:idOrSlug/export` | admin | the whole event as a JSON file (`Content-Disposition: attachment`): tables, persons, competitions with draws, entries, matches with results, display profiles. The PIN, device sessions, users and the audit log are not included |
+| POST | `/api/events/import` | admin | body: an export file (up to 20 MB) → `201 { event }`. Always creates a new event with new ids; a taken slug gets a random suffix. Result entry by PIN starts switched off |
+
+The file has `format: "draw-and-play-event"` and `formatVersion: 1`; anything else is rejected with `unsupportedFormat`. Files whose parts do not fit together (unknown references, duplicate ids, a draw that does not match the format, matches that do not exist in the structure) are rejected with `invalidImport`, and nothing is written.
 
 ## Competitions and entries
 
