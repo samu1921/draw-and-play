@@ -1178,151 +1178,611 @@ textarea {
   color: var(--fg-secondary);
 }
 
-/* --- Projector --- */
+/* --- Display profiles (admin) --- */
 
-.display {
+.displays {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
-  padding: 1.5vw 2vw;
-  gap: 1vw;
-  font-size: clamp(1rem, 1.35vw, 2.2rem);
-}
-
-.display-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
   gap: 1rem;
+  align-items: start;
 }
 
-.display-head h1 {
-  margin: 0;
-  font-size: 1.6em;
-}
-
-.display-meta {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.display-clock {
-  font-size: 1.6em;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.display-body h2 {
-  margin: 0 0 0.6em;
-  font-size: 1.3em;
-}
-
-.display .table-grid.large {
-  grid-template-columns: repeat(auto-fill, minmax(18em, 1fr));
-  gap: 0.8em;
-}
-
-.table-card.large {
-  padding: 0.8em;
-  font-size: 1em;
-}
-
-.table-card.large h3 {
-  font-size: 1.1em;
-}
-
-.table-card.large .table-card-meta {
-  font-size: 0.75em;
-}
-
-.display .data-table {
-  font-size: 0.9em;
-}
-
-.display .competition-state {
-  gap: 1.2em;
-}
-
-.display .groups {
-  grid-template-columns: repeat(auto-fill, minmax(26em, 1fr));
-  gap: 1.2em;
-}
-
-.display .group h3,
-.display .bracket-section h3,
-.display .placements h3 {
-  font-size: 1em;
-}
-
-.display .bracket-round {
-  min-width: 14em;
-}
-
-.display .bracket-round h4 {
-  font-size: 0.75em;
-}
-
-.display .bracket-side {
-  font-size: 0.9em;
-}
-
-.display .bracket-info,
-.display .placement-matches,
-.display .placement-list {
-  font-size: 0.75em;
-}
-
-.display-next {
+.display-list {
   display: grid;
-  gap: 0.5em;
+  gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.display-next li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 0.6em;
+.display-list li {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  padding: 0.5em 0.7em;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  background: var(--surface);
 }
 
-.display-next .swatch {
-  grid-row: span 2;
-  width: 0.5em;
-  height: 100%;
-  min-height: 2.2em;
+.display-list li.active {
+  border-color: var(--accent);
+  background: var(--selected);
 }
 
-.display-next-meta {
-  font-size: 0.75em;
+.display-pick {
+  display: grid;
+  justify-items: start;
+  padding: 0;
+  color: var(--fg);
+  text-align: left;
+}
+
+.plain-fieldset {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.plain-fieldset legend {
+  margin-bottom: 0.4rem;
+  padding: 0;
+  font-size: 0.85rem;
   color: var(--fg-secondary);
 }
 
-.display-next-players {
-  font-weight: 600;
+.display-preview {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
 }
 
-.display-dots {
+.display-preview-frame {
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #000;
+}
+
+.display-preview-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* --- Projector: a fixed 1920 × 1080 stage, scaled as a whole to the window --- */
+
+.stage-frame {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Centred on its midpoint, so the letterboxing works whatever the window's aspect ratio */
+.stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.d-screen {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: 100%;
+  padding: 32px 48px 20px;
+  gap: 16px;
+  font-size: 28px;
+  line-height: 1.3;
+}
+
+.d-screen.hide-cursor {
+  cursor: none;
+}
+
+.d-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.d-head h1 {
+  margin: 0;
+  font-size: 44px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.d-meta {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  font-size: 22px;
+}
+
+.d-profile {
+  color: var(--fg-secondary);
+}
+
+.d-clock {
+  font-size: 44px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.d-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  font-size: 36px;
+}
+
+.d-title .swatch {
+  width: 14px;
+  height: 36px;
+}
+
+.d-sub {
+  font-weight: 400;
+  color: var(--fg-secondary);
+}
+
+.d-body {
+  min-height: 0;
+}
+
+.fit-box {
+  height: 100%;
+  overflow: hidden;
+}
+
+.fit-box-content {
+  width: 100%;
+  transform-origin: top center;
+}
+
+.d-empty,
+.d-note {
+  margin: 0 0 16px;
+  color: var(--fg-secondary);
+}
+
+.d-empty {
+  margin-top: 120px;
+  text-align: center;
+  font-size: 36px;
+}
+
+.d-foot {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-height: 24px;
+}
+
+.d-dots {
   display: flex;
   justify-content: center;
-  gap: 0.5em;
+  align-items: center;
+  gap: 12px;
 }
 
-.display-dots .dot {
-  width: 0.5em;
-  height: 0.5em;
+.d-dots .dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--axis);
 }
 
-.display-dots .dot.active {
+.d-dots .dot.active {
   background: var(--accent);
+}
+
+.d-count {
+  font-size: 20px;
+  color: var(--fg-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.d-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform-origin: left center;
+  animation-name: d-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  opacity: 0.6;
+}
+
+.d-progress.paused {
+  animation-play-state: paused;
+}
+
+@keyframes d-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.d-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.45);
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.d-controls.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.d-controls button {
+  min-width: 64px;
+  height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 26px;
+  color: var(--fg);
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.d-controls button:hover {
+  border-color: var(--accent);
+}
+
+.d-controls button.wide {
+  font-size: 20px;
+}
+
+.d-keys {
+  font-size: 16px;
+  color: var(--fg-secondary);
+  white-space: nowrap;
+}
+
+.d-paused {
+  position: absolute;
+  top: 110px;
+  right: 48px;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 20px;
+  color: var(--accent);
+  background: var(--selected);
+}
+
+/* Tables and next matches */
+
+.d-tables {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.table-card.large {
+  padding: 18px 20px;
+  font-size: 26px;
+}
+
+.table-card.large h3 {
+  font-size: 30px;
+}
+
+.table-card.large .table-card-meta {
+  font-size: 20px;
+}
+
+.d-next {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.d-next li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 16px;
+  align-items: center;
+  padding: 12px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.d-next .swatch {
+  grid-row: span 2;
+  width: 10px;
+  height: 100%;
+  min-height: 60px;
+}
+
+.d-next-meta {
+  font-size: 20px;
+  color: var(--fg-secondary);
+}
+
+.d-next-players {
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Groups */
+
+.d-groups {
+  display: grid;
+  gap: 24px 28px;
+  align-items: start;
+}
+
+.d-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.d-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 24px;
+}
+
+.d-table th,
+.d-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.d-table thead th {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+}
+
+.d-table .num {
+  width: 3.4em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.d-table thead th:first-child,
+.d-table tbody td:first-child {
+  width: 2em;
+}
+
+.d-table .name {
+  font-weight: 500;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.d-table tr.latest .name {
+  color: var(--accent);
+}
+
+/* Bracket */
+
+.d-bracket {
+  display: flex;
+  gap: 28px;
+  align-items: stretch;
+}
+
+.d-round {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.d-round h4 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--fg-secondary);
+}
+
+.d-round ol {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.d-match {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.d-match.called {
+  border-color: var(--accent);
+}
+
+.d-side {
+  padding: 6px 12px;
+  font-size: 22px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.d-side + .d-side {
+  border-top: 1px solid var(--border);
+}
+
+.d-side.winner {
+  font-weight: 700;
+}
+
+.d-side.open {
+  color: var(--fg-secondary);
+  font-style: italic;
+}
+
+.d-match-info {
+  padding: 2px 12px 4px;
+  font-size: 16px;
+  color: var(--fg-secondary);
+}
+
+.d-match-info:empty {
+  display: none;
+}
+
+/* Placements and entry lists */
+
+.d-placements {
+  columns: 3;
+  column-gap: 48px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.d-placements li {
+  break-inside: avoid;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.d-placements .place {
+  display: inline-block;
+  min-width: 3.4em;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-secondary);
+}
+
+.d-placements li.podium {
+  font-weight: 700;
+}
+
+.d-entries {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: row;
+  gap: 8px 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.d-entries li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.d-entries .name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.d-entries .club {
+  margin-left: auto;
+  flex: none;
+  font-size: 20px;
+  color: var(--fg-secondary);
+}
+
+.d-entries.pairs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.d-entries.pairs li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 12px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.d-entries .plus {
+  color: var(--fg-secondary);
+}
+
+/* Live draw */
+
+.placeholder {
+  display: inline-block;
+  width: 70%;
+  height: 0.9em;
+  border-radius: 6px;
+  vertical-align: middle;
+  background: var(--border);
+  opacity: 0.5;
+}
+
+.reveal-in {
+  display: inline-block;
+  animation: reveal-in 0.6s ease-out;
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.6em) scale(1.15);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-in {
+    animation: none;
+  }
 }
 
 /* --- QR sheet --- */

@@ -28,6 +28,7 @@ export const router = createRouter({
         { path: 'competitions', name: 'admin-competitions', component: () => import('./views/admin/EventCompetitions.vue') },
         { path: 'competitions/:competitionId', name: 'admin-competition', component: () => import('./views/admin/CompetitionAdmin.vue') },
         { path: 'desk', name: 'admin-desk', component: () => import('./views/admin/MatchDesk.vue') },
+        { path: 'displays', name: 'admin-displays', component: () => import('./views/admin/EventDisplays.vue') },
       ],
     },
     { path: '/admin/events/:eventId/qr', name: 'admin-qr', component: () => import('./views/admin/QrSheetView.vue'), meta: { admin: true, bare: true } },
@@ -40,7 +41,7 @@ export const router = createRouter({
       ],
     },
     { path: '/e/:slug/table/:table', name: 'table-entry', component: () => import('./views/public/TableEntryView.vue'), meta: { bare: true } },
-    { path: '/e/:slug/display', name: 'display', component: () => import('./views/public/DisplayView.vue'), meta: { bare: true } },
+    { path: '/e/:slug/display/:profileId?', name: 'display', component: () => import('./views/public/DisplayView.vue'), meta: { bare: true } },
   ],
 });
 

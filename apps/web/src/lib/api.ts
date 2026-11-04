@@ -50,6 +50,7 @@ export interface CompetitionInfo {
   eventId: string;
   name: string;
   kind: 'singles' | 'doubles';
+  day: string | null;
   color: number;
   sortOrder: number;
   matchRules: MatchRules;
@@ -154,3 +155,36 @@ export interface Forecast {
   matches: { competitionId: string; matchKey: string; tableId: string; start: number; end: number }[];
   skipped: { id: string; reason: string }[];
 }
+
+export interface DisplaySettings {
+  slideSeconds: number;
+  tables: boolean;
+  next: boolean;
+  /** Entry lists of competitions that are not drawn yet */
+  entries: boolean;
+  /** null = all competitions */
+  competitionIds: string[] | null;
+  todayOnly: boolean;
+  /** Show draws live, step by step */
+  liveDraw: boolean;
+}
+
+export interface DisplayProfile {
+  id: string;
+  eventId: string;
+  name: string;
+  settings: DisplaySettings;
+  version: number;
+  /** Username of whoever created it (admin list only) */
+  createdBy?: string | null;
+}
+
+export const defaultDisplaySettings: DisplaySettings = {
+  slideSeconds: 20,
+  tables: true,
+  next: true,
+  entries: true,
+  competitionIds: null,
+  todayOnly: false,
+  liveDraw: true,
+};

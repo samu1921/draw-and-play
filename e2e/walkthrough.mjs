@@ -133,12 +133,14 @@ await shot(admin, '08-desk-after-phone');
 step('projector');
 const beamer = await (await browser.newContext({ locale: 'de-DE', viewport: { width: 1920, height: 1080 } })).newPage();
 watch(beamer, 'display');
-await beamer.goto(`${BASE}/e/${slug}/display?interval=6`);
+await beamer.goto(`${BASE}/e/${slug}/display`);
 await beamer.locator('.table-card').first().waitFor();
 await shot(beamer, '09-display-tables', false);
-await beamer.waitForTimeout(6200);
+await beamer.keyboard.press('ArrowRight');
+await beamer.waitForTimeout(800);
 await shot(beamer, '10-display-next', false);
-await beamer.waitForTimeout(6200);
+await beamer.keyboard.press('ArrowRight');
+await beamer.waitForTimeout(800);
 await shot(beamer, '11-display-competition', false);
 
 // --- Public view ---

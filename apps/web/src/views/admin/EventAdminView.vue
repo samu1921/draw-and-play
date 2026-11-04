@@ -16,6 +16,7 @@ const tabs = computed(() => [
   { to: `/admin/events/${eventId.value}/persons`, label: t('admin.tabs.persons') },
   { to: `/admin/events/${eventId.value}/competitions`, label: t('admin.tabs.competitions') },
   { to: `/admin/events/${eventId.value}/desk`, label: t('admin.tabs.desk') },
+  { to: `/admin/events/${eventId.value}/displays`, label: t('admin.tabs.displays') },
 ]);
 </script>
 

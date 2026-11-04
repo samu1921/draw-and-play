@@ -31,7 +31,7 @@ It runs next to the normal stack and never touches its data.
 
 1. Sign in at `/login` (first admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`).
 2. **Tournament desk → create event**, then add players, create competitions (format chosen like in the planner), enter players and draw.
-3. **Setup:** generate a PIN and print the QR codes for the tables. Open the projector display at `/e/<slug>/display` (rotating; `?view=tables` or `?view=next` pins a view, `?interval=30` changes the pace).
+3. **Setup:** generate a PIN and print the QR codes for the tables. Under **Displays**, build a profile for each screen (projector, TV) and open its link there. The display is a 16:9 stage that never scrolls; arrow keys or a presenter remote switch slides, space pauses, F toggles full screen.
 4. **Match desk:** call ready matches to free tables. Players scan the QR code at their table, enter the PIN once and type the result; the desk can always enter or correct results itself.
 5. Everybody else follows along at `/e/<slug>`.
 

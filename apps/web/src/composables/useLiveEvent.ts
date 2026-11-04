@@ -1,6 +1,6 @@
 import { inject, onBeforeUnmount, provide, ref, watch, type InjectionKey, type Ref } from 'vue';
 import { api, type EventOverview, type Operations } from '../lib/api.js';
-import { useEventStream } from './useEventStream.js';
+import { useEventStream, type ChangeMessage } from './useEventStream.js';
 
 export interface LiveEvent {
   overview: Ref<EventOverview | null>;
@@ -8,8 +8,8 @@ export interface LiveEvent {
   error: Ref<unknown>;
   status: ReturnType<typeof useEventStream>['status'];
   reload: () => Promise<void>;
-  /** Runs `callback` after every change pushed by the server, until the calling component unmounts */
-  onChange: (callback: () => void) => void;
+  /** Runs `callback` after every burst of changes pushed by the server, until the calling component unmounts */
+  onChange: (callback: (messages: ChangeMessage[]) => void) => void;
 }
 
 const LIVE_EVENT: InjectionKey<LiveEvent> = Symbol('liveEvent');
@@ -22,7 +22,7 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
   const overview = ref<EventOverview | null>(null);
   const operations = ref<Operations | null>(null);
   const error = ref<unknown>(null);
-  const listeners = new Set<() => void>();
+  const listeners = new Set<(messages: ChangeMessage[]) => void>();
 
   async function reload() {
     const value = eventRef.value;
@@ -40,9 +40,9 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
     await Promise.all([load(overview, path), options.operations ? load(operations, `${path}/operations`) : null]);
   }
 
-  const { status } = useEventStream(eventRef, () => {
+  const { status } = useEventStream(eventRef, (messages) => {
     void reload();
-    for (const listener of listeners) listener();
+    for (const listener of listeners) listener(messages);
   });
   watch(eventRef, () => void reload(), { immediate: true });
 

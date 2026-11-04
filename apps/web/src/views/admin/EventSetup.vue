@@ -82,7 +82,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
       <h2 id="links-title">{{ t('admin.setup.links') }}</h2>
       <ul class="link-list">
         <li><RouterLink :to="`/e/${event.slug}`" target="_blank">{{ t('admin.setup.publicView') }}</RouterLink></li>
-        <li><RouterLink :to="`/e/${event.slug}/display`" target="_blank">{{ t('admin.setup.display') }}</RouterLink></li>
+        <li><RouterLink :to="`/admin/events/${event.id}/displays`">{{ t('admin.setup.display') }}</RouterLink></li>
       </ul>
       <label class="check">
         <input type="checkbox" :checked="event.settings.shortNames ?? false" @change="setSetting('shortNames', ($event.target as HTMLInputElement).checked)" />

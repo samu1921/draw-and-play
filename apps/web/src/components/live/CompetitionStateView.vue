@@ -2,59 +2,26 @@
 import { groupLetter } from '@draw-and-play/domain';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { CompetitionStateInfo, MatchInfo } from '../../lib/api.js';
+import { useCompetitionText } from '../../composables/useCompetitionText.js';
+import type { CompetitionStateInfo } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
+import { mainBracketRounds } from '../../lib/displaySlides.js';
 
 const props = defineProps<{
   state: CompetitionStateInfo;
-  /** Projector: larger type, no point columns */
-  display?: boolean;
   tableName?: (tableId: string) => string | undefined;
 }>();
 const { t } = useI18n();
 
-const nameOf = computed(() => new Map(props.state.entries.map((e) => [e.id, e.members.map((m) => m.name).join(' / ')])));
-const name = (id: string | null) => (id ? (nameOf.value.get(id) ?? '?') : '—');
-
-/** "Semifinal 2" when a round has several matches, so "winner semifinal 2" is unambiguous */
-function numberedLabel(key: string): string {
-  const m = props.state.matches.find((x) => x.key === key);
-  if (!m) return '';
-  const siblings = props.state.matches.filter((x) => x.phase === m.phase && x.round === m.round && x.places?.[0] === m.places?.[0] && x.group === m.group);
-  const label = matchLabel(t, m);
-  return siblings.length > 1 && m.phase === 'knockout' ? `${label} ${siblings.indexOf(m) + 1}` : label;
-}
-
-/** Entry name, or where the side will come from while it is still open */
-function sideText(m: MatchInfo, side: 0 | 1): string {
-  const id = m.sides[side];
-  if (id) return name(id);
-  const source = m.sources?.[side];
-  if (source?.type === 'qualifier') return t('public.qualifier', { rank: source.rank, group: groupLetter(source.group) });
-  if (source?.type === 'winner') return t('public.winnerOf', { match: numberedLabel(source.matchKey) });
-  if (source?.type === 'loser') return t('public.loserOf', { match: numberedLabel(source.matchKey) });
-  return '—';
-}
+const { name, sideText, score, gameScores } = useCompetitionText(() => props.state);
 
 /** Main bracket rounds as columns; placement matches listed separately */
-const bracketRounds = computed(() => {
-  const main = props.state.matches.filter((m) => m.phase === 'knockout' && m.places?.[0] === 1);
-  const rounds = [...new Set(main.map((m) => m.round))].sort((a, b) => a - b);
-  return rounds.map((round) => main.filter((m) => m.round === round));
-});
+const bracketRounds = computed(() => mainBracketRounds(props.state.matches));
 const placementMatches = computed(() => props.state.matches.filter((m) => m.phase === 'knockout' && (m.places?.[0] ?? 1) > 1));
-
-function score(m: MatchInfo): string {
-  if (!m.result) return '';
-  if (m.result.walkover) return t('public.walkover');
-  const won = m.result.games.filter(([a, b]) => a > b).length;
-  return `${won}:${m.result.games.length - won}`;
-}
-const gameScores = (m: MatchInfo) => m.result?.games.map(([a, b]) => `${a}:${b}`).join(', ') ?? '';
 </script>
 
 <template>
-  <div class="competition-state" :class="{ display }">
+  <div class="competition-state">
     <p v-if="!state.competition.drawn" class="muted">{{ t('public.notDrawn') }}</p>
 
     <div v-if="state.groups.length > 0" class="groups">
@@ -72,7 +39,7 @@ const gameScores = (m: MatchInfo) => m.result?.games.map(([a, b]) => `${a}:${b}`
                 <th scope="col" class="num">{{ t('public.played') }}</th>
                 <th scope="col" class="num">{{ t('public.record') }}</th>
                 <th scope="col" class="num">{{ t('public.games') }}</th>
-                <th v-if="!display" scope="col" class="num">{{ t('public.points') }}</th>
+                <th scope="col" class="num">{{ t('public.points') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -82,7 +49,7 @@ const gameScores = (m: MatchInfo) => m.result?.games.map(([a, b]) => `${a}:${b}`
                 <td class="num">{{ row.played }}</td>
                 <td class="num">{{ row.won }}:{{ row.lost }}</td>
                 <td class="num">{{ row.gamesWon }}:{{ row.gamesLost }}</td>
-                <td v-if="!display" class="num">{{ row.pointsWon }}:{{ row.pointsLost }}</td>
+                <td class="num">{{ row.pointsWon }}:{{ row.pointsLost }}</td>
               </tr>
             </tbody>
           </table>
