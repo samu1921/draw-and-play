@@ -75,7 +75,7 @@ export async function drawCompetition(ctx: CommandContext, competitionId: string
     await audit(tx, ctx, eventId, 'draw', 'competition', competitionId, { seed, options, draw });
     return { draw, seed };
   });
-  ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
+  ctx.broadcaster.publish({ eventId, type: 'draw', id: competitionId });
   return result;
 }
 
@@ -138,7 +138,7 @@ export async function drawDoublesPairs(ctx: CommandContext, competitionId: strin
     await audit(tx, ctx, eventId, 'drawPairs', 'competition', competitionId, { seed, mode: input.mode, pairs: pairPersons });
     return { seed, pairs: pairs.map(([entryId], i) => ({ entryId, personIds: pairPersons[i]! })) };
   });
-  ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
+  ctx.broadcaster.publish({ eventId, type: 'pairs', id: competitionId });
   return result;
 }
 

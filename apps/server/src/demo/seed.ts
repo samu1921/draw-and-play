@@ -2,7 +2,7 @@ import { tableTennis, type CompetitionFormat } from '@draw-and-play/domain';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '../auth/password.js';
 import type { Db } from '../db/client.js';
-import { competitions, entries, entryMembers, eventTables, events, persons } from '../db/schema.js';
+import { competitions, displayProfiles, entries, entryMembers, eventTables, events, persons } from '../db/schema.js';
 
 /**
  * Demo data: the club championship from the concept (chapter 2) with made-up players, ready to be drawn.
@@ -95,6 +95,7 @@ export async function seedDemo(db: Db, today = new Date()): Promise<boolean> {
       .returning();
     const eventId = event!.id;
     await tx.insert(eventTables).values([1, 2, 3, 4].map((n) => ({ eventId, name: String(n), sortOrder: n - 1 })));
+    await tx.insert(displayProfiles).values({ eventId, name: 'Beamer Halle' });
 
     const addPersons = async (seeds: PersonSeed[]) =>
       (

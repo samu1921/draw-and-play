@@ -4,7 +4,8 @@
  */
 export interface ChangeMessage {
   eventId: string;
-  type: 'event' | 'tables' | 'persons' | 'competition' | 'match';
+  /** `draw` and `pairs` follow a competition draw or pair draw, so displays can show it live */
+  type: 'event' | 'tables' | 'persons' | 'competition' | 'match' | 'display' | 'draw' | 'pairs';
   id: string;
 }
 

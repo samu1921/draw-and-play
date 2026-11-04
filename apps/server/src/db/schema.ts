@@ -114,6 +114,42 @@ export const persons = pgTable(
   (t) => [index('persons_event_idx').on(t.eventId)],
 );
 
+/** Settings of a display profile (projector, TV); every field has a default, see `displayDefaults` */
+export interface DisplaySettings {
+  /** Seconds per slide */
+  slideSeconds: number;
+  /** Table overview */
+  tables: boolean;
+  /** Matches that are ready to be called */
+  next: boolean;
+  /** Entry lists of competitions that are not drawn yet */
+  entries: boolean;
+  /** Competitions to show; null = all */
+  competitionIds: string[] | null;
+  /** Only competitions of the current day (competitions without a day always count) */
+  todayOnly: boolean;
+  /** Jump to a competition when it is drawn and reveal the draw step by step */
+  liveDraw: boolean;
+}
+
+/** A named display configuration. Every admin can build their own; each screen opens one profile by its link. */
+export const displayProfiles = pgTable(
+  'display_profiles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** Who created the profile; kept when the user goes */
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    settings: jsonb('settings').$type<Partial<DisplaySettings>>().notNull().default({}),
+    version: integer('version').notNull().default(1),
+    createdAt: createdAt(),
+  },
+  (t) => [index('display_profiles_event_idx').on(t.eventId)],
+);
+
 // --- Competitions ---
 
 export const competitions = pgTable(

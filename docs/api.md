@@ -120,6 +120,21 @@ Devices may only use `POST /api/matches/:id/result` with a notation, and only fo
 
 Returns `day`, `days`, `live`, `now`, `end`/`endLate` (10 % buffer), per competition `start`, `groupStageEnd`, `end`, `endLate`, `matchMinutes`, and the planned `matches` (`competitionId`, `matchKey`, `tableId`, `start`, `end`) – the desk uses them to suggest the next calls.
 
+
+## Display profiles
+
+Every admin can build their own displays: a profile is a named configuration with its own link `/e/<slug>/display/<profileId>`. Without a profile id the display uses the defaults.
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| GET | `/api/events/:id/displays` | admin | `{ displays: [{ id, eventId, name, settings, version, createdBy }] }`, `createdBy` is a username |
+| POST | `/api/events/:id/displays` | admin | `{ name, settings? }` → 201 `{ display }` |
+| GET | `/api/displays/:id` | public | `{ display }`, for the screen showing it |
+| PATCH | `/api/displays/:id` | admin | `{ name?, settings?, version }`; `settings` is merged into the stored ones |
+| DELETE | `/api/displays/:id` | admin | |
+
+`settings` (all optional when writing, always complete when read): `slideSeconds` (5–600, default 20), `tables`, `next`, `entries` (entry lists of competitions not drawn yet), `liveDraw` (reveal draws step by step), `todayOnly` (all booleans, default true except `todayOnly`) and `competitionIds` (`null` = all).
+
 ## Live updates
 
 `GET /api/events/:idOrSlug/stream` is a Server-Sent Events stream:
@@ -132,4 +147,4 @@ event: change
 data: {"eventId":"…","type":"match","id":"…"}
 ```
 
-`type` is one of `event`, `tables`, `persons`, `competition`, `match`. Messages carry no data, so public and admin clients share the stream and refetch what they are allowed to see. A heartbeat comment is sent every 25 seconds.
+`type` is one of `event`, `tables`, `persons`, `competition`, `match`, `display` (a display profile), `draw` and `pairs` (a competition draw or pair draw just happened, `id` is the competition; displays use it to show the draw live). Messages carry no data, so public and admin clients share the stream and refetch what they are allowed to see. A heartbeat comment is sent every 25 seconds.
