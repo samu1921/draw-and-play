@@ -35,8 +35,8 @@ jobs:
     env:
       TEST_DATABASE_URL: postgres://drawandplay:ci-only-password@localhost:5432/drawandplay_test
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -57,8 +57,8 @@ jobs:
       BACKUP_DIR: /tmp/draw-and-play-backups
       BASE: http://localhost:8080
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -70,7 +70,7 @@ jobs:
       - name: Logs
         if: failure()
         run: docker compose logs app proxy
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: e2e-screenshots
