@@ -47,7 +47,7 @@ async function importFile(input: HTMLInputElement) {
       importError.value = t('errors.notJson');
       return;
     }
-    const { event } = await api<{ event: EventInfo }>('POST', '/api/events/import', doc);
+    const { event } = await api<{ event: EventInfo }>('POST', '/api/events/import', doc, { timeoutMs: 120_000 });
     await router.push(`/admin/events/${event.id}`);
   } catch (e) {
     importError.value = errorText(t, te, e);

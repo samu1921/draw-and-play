@@ -11,21 +11,43 @@ export class ApiRequestError extends Error {
   }
 }
 
-export async function api<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
-  let res: Response;
+/** Requests that take longer count as offline, so a hanging connection in a dead spot does not block forever. */
+export const DEFAULT_TIMEOUT_MS = 10_000;
+
+export async function api<T>(
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  path: string,
+  body?: unknown,
+  options: { timeoutMs?: number } = {},
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   try {
-    res = await fetch(path, {
-      method,
-      credentials: 'same-origin',
-      ...(body !== undefined && { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
-    });
-  } catch {
-    throw new ApiRequestError(0, 'offline');
+    let res: Response;
+    try {
+      res = await fetch(path, {
+        method,
+        credentials: 'same-origin',
+        signal: controller.signal,
+        ...(body !== undefined && { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+      });
+    } catch {
+      throw new ApiRequestError(0, 'offline');
+    }
+    if (res.status === 204) return undefined as T;
+    let data: { error?: string; details?: unknown };
+    try {
+      data = (await res.json()) as typeof data;
+    } catch {
+      // A body cut off by the timeout or the network is a connection problem, not an answer.
+      if (controller.signal.aborted) throw new ApiRequestError(0, 'offline');
+      data = {};
+    }
+    if (!res.ok) throw new ApiRequestError(res.status, data.error ?? 'internal', data.details);
+    return data as T;
+  } finally {
+    clearTimeout(timer);
   }
-  if (res.status === 204) return undefined as T;
-  const data = (await res.json().catch(() => ({}))) as { error?: string; details?: unknown };
-  if (!res.ok) throw new ApiRequestError(res.status, data.error ?? 'internal', data.details);
-  return data as T;
 }
 
 // --- Response types (mirroring the server's views) ---
