@@ -3,7 +3,9 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import StreamBadge from '../../components/live/StreamBadge.vue';
+import LegalFooter from '../../components/LegalFooter.vue';
 import ViewerGate from '../../components/live/ViewerGate.vue';
+import { useEventLegal } from '../../composables/useLegal.js';
 import { useLiveEvent } from '../../composables/useLiveEvent.js';
 import { errorText } from '../../lib/messages.js';
 
@@ -11,6 +13,7 @@ const { t, te } = useI18n();
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const live = useLiveEvent(slug, { operations: true });
+const legal = useEventLegal(live);
 </script>
 
 <template>
@@ -36,5 +39,6 @@ const live = useLiveEvent(slug, { operations: true });
       </RouterLink>
     </nav>
     <RouterView v-if="live.overview.value" />
+    <LegalFooter :imprint-url="legal.imprintUrl" :privacy-url="legal.privacyUrl" :note="legal.privacyNote" />
   </div>
 </template>

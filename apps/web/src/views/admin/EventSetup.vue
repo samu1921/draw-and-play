@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useLegalDefaults } from '../../composables/useLegal.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api } from '../../lib/api.js';
 import { errorText } from '../../lib/messages.js';
@@ -64,6 +65,17 @@ const openViews = () => {
   if (confirm(t('admin.setup.viewerOpenConfirm'))) void run(() => api('DELETE', `/api/events/${event.value.id}/viewer-code`));
 };
 
+// --- Legal notice and privacy policy of this event ---
+const legalDefaults = useLegalDefaults();
+const legalForm = ref({ imprintUrl: '', privacyUrl: '', privacyNote: '' });
+watch(
+  () => event.value.settings,
+  (settings) =>
+    (legalForm.value = { imprintUrl: settings.imprintUrl ?? '', privacyUrl: settings.privacyUrl ?? '', privacyNote: settings.privacyNote ?? '' }),
+  { immediate: true },
+);
+const saveLegal = () => run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: legalForm.value }));
+
 const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
   run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: { [key]: value } }));
 </script>
@@ -123,6 +135,26 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
         <button v-if="viewerCode" type="button" class="button secondary" @click="openViews">{{ t('admin.setup.viewerOpen') }}</button>
       </div>
       <RouterLink v-if="viewerCode" :to="`/admin/events/${event.id}/viewer-notice`" target="_blank">{{ t('admin.setup.viewerNotice') }}</RouterLink>
+    </section>
+
+    <section class="card" aria-labelledby="legal-title">
+      <h2 id="legal-title">{{ t('admin.setup.legalTitle') }}</h2>
+      <p class="muted small">{{ t('admin.setup.legalHint') }}</p>
+      <form class="stack" @submit.prevent="saveLegal">
+        <label class="field">
+          <span>{{ t('legal.imprint') }} (URL)</span>
+          <input v-model.trim="legalForm.imprintUrl" type="url" maxlength="500" :placeholder="legalDefaults.imprintUrl ?? 'https://…'" />
+        </label>
+        <label class="field">
+          <span>{{ t('legal.privacy') }} (URL)</span>
+          <input v-model.trim="legalForm.privacyUrl" type="url" maxlength="500" :placeholder="legalDefaults.privacyUrl ?? 'https://…'" />
+        </label>
+        <label class="field">
+          <span>{{ t('admin.setup.privacyNote') }}</span>
+          <textarea v-model="legalForm.privacyNote" rows="3" maxlength="1000" :placeholder="t('admin.setup.privacyNoteExample')"></textarea>
+        </label>
+        <div><button type="submit" class="button">{{ t('admin.setup.saveLegal') }}</button></div>
+      </form>
     </section>
 
     <section class="card" aria-labelledby="backup-title">

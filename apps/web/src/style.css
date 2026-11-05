@@ -1851,6 +1851,41 @@ textarea {
   }
 }
 
+.result-games {
+  margin-left: 0.5rem;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+/* --- Legal footer --- */
+
+.legal-footer {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  margin: 2rem auto 1rem;
+  padding: 0 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.legal-footer p {
+  max-width: 40rem;
+  margin: 0;
+}
+
+.legal-footer nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.legal-footer a {
+  color: var(--muted);
+}
+
 /* --- Viewer code --- */
 
 .viewer-code {

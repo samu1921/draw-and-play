@@ -115,6 +115,14 @@ await admin.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 await admin.getByRole('rowheader', { name: 'Gast', exact: true }).waitFor();
 await shot(admin, '02b-persons');
 
+step('legal links of the event');
+await admin.getByRole('link', { name: 'Einrichtung' }).click();
+await admin.getByLabel('Impressum (URL)').fill('https://ttc.example/impressum');
+await admin.getByLabel('Datenschutz (URL)').fill('https://ttc.example/datenschutz');
+await admin.getByLabel(/Hinweis auf den öffentlichen Seiten/).fill('Namen, Vereine und Ergebnisse werden hier veröffentlicht.');
+await admin.getByRole('button', { name: 'Speichern', exact: true }).click();
+await admin.getByText('Gespeichert.').waitFor();
+
 step('PIN');
 // New events keep their public views behind a viewer code
 const viewerCode = (await (await admin.request.get(`${BASE}/api/events/${eventId}`)).json()).event.viewerCode;
@@ -212,6 +220,17 @@ await shot(visitor, '12-public-overview');
 await visitor.getByRole('link', { name: 'Einzel' }).click();
 await visitor.locator('.standings').first().waitFor();
 await shot(visitor, '13-public-competition');
+const imprint = visitor.locator('.legal-footer a', { hasText: 'Legal notice' });
+if ((await imprint.getAttribute('href')) !== 'https://ttc.example/impressum') errors.push('public footer: legal notice link missing');
+if (!(await visitor.locator('.legal-footer').innerText()).includes('Namen, Vereine und Ergebnisse')) errors.push('public footer: privacy note missing');
+// Served through Caddy, so the security headers are in place
+const headers = (await visitor.request.get(`${BASE}/`)).headers();
+if (!headers['content-security-policy']?.includes("script-src 'self'")) errors.push('Content-Security-Policy header missing');
+
+step('audit log');
+await admin.goto(`${BASE}/admin/events/${eventId}/audit`);
+await admin.getByRole('cell', { name: 'Ergebnis eingetragen' }).first().waitFor();
+await shot(admin, '14c-audit');
 
 step('QR sheet');
 await admin.goto(`${BASE}/admin/events/${eventId}/qr`);

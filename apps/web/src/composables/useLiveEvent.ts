@@ -12,7 +12,7 @@ export interface LiveEvent {
   status: ReturnType<typeof useEventStream>['status'];
   reload: () => Promise<void>;
   /** Set while the public views need the viewer code (and this browser has not entered it) */
-  locked: ComputedRef<{ name: string; pinEnabled: boolean } | null>;
+  locked: ComputedRef<{ name: string; pinEnabled: boolean; imprintUrl: string | null; privacyUrl: string | null } | null>;
   /** Enters the viewer code; throws on a wrong one. Afterwards the page loads and goes live. */
   unlock: (code: string) => Promise<void>;
   /** Loads again and reopens the live stream, e.g. after a sign-in that grants reading */
@@ -83,8 +83,8 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
   const locked = computed(() => {
     const e = error.value;
     if (!(e instanceof ApiRequestError) || e.code !== 'viewerCodeRequired') return null;
-    const details = (e.details ?? {}) as { name?: string; pinEnabled?: boolean };
-    return { name: details.name ?? '', pinEnabled: details.pinEnabled ?? false };
+    const details = (e.details ?? {}) as { name?: string; pinEnabled?: boolean; imprintUrl?: string | null; privacyUrl?: string | null };
+    return { name: details.name ?? '', pinEnabled: details.pinEnabled ?? false, imprintUrl: details.imprintUrl ?? null, privacyUrl: details.privacyUrl ?? null };
   });
   async function reconnect() {
     restart();

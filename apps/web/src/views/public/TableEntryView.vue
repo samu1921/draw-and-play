@@ -2,7 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
+import LegalFooter from '../../components/LegalFooter.vue';
 import OutboxNotice from '../../components/live/OutboxNotice.vue';
+import { useEventLegal } from '../../composables/useLegal.js';
 import ResultKeypad from '../../components/live/ResultKeypad.vue';
 import StreamBadge from '../../components/live/StreamBadge.vue';
 import { useLiveEvent } from '../../composables/useLiveEvent.js';
@@ -22,6 +24,7 @@ const outbox = useResultOutbox(
   { device: true },
 );
 
+const legal = useEventLegal(live);
 const signedIn = ref<boolean | null>(null);
 const pin = ref('');
 const notation = ref('');
@@ -194,5 +197,6 @@ async function submit() {
       </div>
     </template>
     <p v-else class="muted">{{ t('common.loading') }}</p>
+    <LegalFooter :imprint-url="legal.imprintUrl" :privacy-url="legal.privacyUrl" />
   </div>
 </template>

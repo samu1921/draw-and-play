@@ -3,12 +3,15 @@ import { onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import { locales, setLocale, type Locale } from './i18n/index.js';
+import LegalFooter from './components/LegalFooter.vue';
+import { useLegalDefaults } from './composables/useLegal.js';
 import { useSessionStore } from './stores/session.js';
 
 const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
+const legal = useLegalDefaults();
 
 onMounted(() => {
   if (!session.checked) void session.check().catch(() => null);
@@ -44,4 +47,6 @@ async function logout() {
   <main :class="route.meta.bare ? 'bare-main' : 'app-main'">
     <RouterView />
   </main>
+  <!-- Event pages show the event's own links -->
+  <LegalFooter v-if="!route.meta.bare && !route.path.startsWith('/e/')" :imprint-url="legal.imprintUrl" :privacy-url="legal.privacyUrl" />
 </template>

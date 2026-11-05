@@ -60,12 +60,14 @@ export interface EventInfo {
   endsOn: string | null;
   /** Sport profile id, e.g. "table-tennis" */
   sport: string;
-  settings: { publicRatings?: boolean; shortNames?: boolean };
+  settings: { publicRatings?: boolean; shortNames?: boolean; imprintUrl?: string | null; privacyUrl?: string | null; privacyNote?: string | null };
   pinEnabled: boolean;
   /** The public views need the viewer code */
   viewerProtected?: boolean;
   /** Admins only: the viewer code (null = open) */
   viewerCode?: string | null;
+  /** Footer links of the public pages (the event's own, else the installation's) */
+  legal?: { imprintUrl: string | null; privacyUrl: string | null; privacyNote: string | null };
 }
 
 export interface TableInfo {

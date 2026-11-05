@@ -30,6 +30,7 @@ export const router = createRouter({
         { path: 'desk', name: 'admin-desk', component: () => import('./views/admin/MatchDesk.vue') },
         { path: 'displays', name: 'admin-displays', component: () => import('./views/admin/EventDisplays.vue') },
         { path: 'print', name: 'admin-print-menu', component: () => import('./views/admin/EventPrint.vue') },
+        { path: 'audit', name: 'admin-audit', component: () => import('./views/admin/EventAudit.vue') },
       ],
     },
     {

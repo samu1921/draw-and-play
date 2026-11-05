@@ -36,7 +36,7 @@ const competitions = computed(() => new Map((ops.value?.competitions ?? []).map(
               <strong v-if="m.result?.winner === 0">{{ m.sides[0]?.name }}</strong><template v-else>{{ m.sides[0]?.name }}</template>
               –
               <strong v-if="m.result?.winner === 1">{{ m.sides[1]?.name }}</strong><template v-else>{{ m.sides[1]?.name }}</template>
-              <span class="muted">
+              <span class="muted result-games">
                 {{ m.result?.walkover ? t('public.walkover') : m.result?.games.map(([a, b]) => `${a}:${b}`).join(', ') }}
               </span>
             </span>
