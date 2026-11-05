@@ -103,7 +103,8 @@ export const persons = pgTable(
       .notNull()
       .references(() => events.id, { onDelete: 'cascade' }),
     firstName: text('first_name').notNull(),
-    lastName: text('last_name').notNull(),
+    /** Optional: a first name alone is enough (guests, children) */
+    lastName: text('last_name'),
     club: text('club'),
     gender: text('gender').$type<'f' | 'm' | 'd'>(),
     birthYear: integer('birth_year'),

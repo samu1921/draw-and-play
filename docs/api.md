@@ -41,7 +41,7 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 | PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames? } }` |
 | PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
 | GET | `/api/events/:id/persons` | admin | persons with personal data |
-| POST | `/api/events/:id/persons` | admin | `{ firstName, lastName, club?, gender?, birthYear?, licenceNo?, rating? }` |
+| POST | `/api/events/:id/persons` | admin | `{ firstName, lastName?, club?, gender?, birthYear?, licenceNo?, rating? }`; a first name alone is enough, an empty `lastName` is stored as `null`. Admin views also carry `publicName`, the name as public views show it |
 | PATCH / DELETE | `/api/persons/:id` | admin | |
 | GET | `/api/events/:idOrSlug/stream` | public | Server-Sent Events, see below |
 

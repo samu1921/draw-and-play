@@ -61,7 +61,7 @@ export const eventExportSchema = z.object({
       z.object({
         id,
         firstName: z.string().trim().min(1).max(80),
-        lastName: z.string().trim().min(1).max(80),
+        lastName: z.string().trim().min(1).max(80).nullable(),
         club: z.string().max(120).nullable(),
         gender: z.enum(['f', 'm', 'd']).nullable(),
         birthYear: z.int().min(1900).max(2100).nullable(),

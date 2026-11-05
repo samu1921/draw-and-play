@@ -115,7 +115,9 @@ export async function loadCompetitionState(ex: Executor, competitionId: string):
 
 export type Audience = 'admin' | 'public';
 
-export function personName(p: PersonRow, settings: EventSettings, audience: Audience): string {
+/** "Max Muster", or "Max M." in public views with short names; just "Max" without a last name */
+export function personName(p: Pick<PersonRow, 'firstName' | 'lastName'>, settings: EventSettings, audience: Audience): string {
+  if (!p.lastName) return p.firstName;
   if (audience === 'public' && settings.shortNames) return `${p.firstName} ${p.lastName.charAt(0)}.`;
   return `${p.firstName} ${p.lastName}`;
 }
@@ -123,7 +125,17 @@ export function personName(p: PersonRow, settings: EventSettings, audience: Audi
 export function personView(p: PersonRow, settings: EventSettings, audience: Audience) {
   const base = { id: p.id, name: personName(p, settings, audience), club: p.club };
   if (audience === 'admin') {
-    return { ...base, firstName: p.firstName, lastName: p.lastName, gender: p.gender, birthYear: p.birthYear, licenceNo: p.licenceNo, rating: p.rating };
+    return {
+      ...base,
+      // What the public sees, so the admin can spot players who would look the same
+      publicName: personName(p, settings, 'public'),
+      firstName: p.firstName,
+      lastName: p.lastName,
+      gender: p.gender,
+      birthYear: p.birthYear,
+      licenceNo: p.licenceNo,
+      rating: p.rating,
+    };
   }
   return settings.publicRatings ? { ...base, rating: p.rating } : base;
 }

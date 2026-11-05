@@ -29,6 +29,13 @@
       "when": 1793775199096,
       "tag": "0003_display_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793862531332,
+      "tag": "0004_optional_last_name",
+      "breakpoints": true
     }
   ]
 }

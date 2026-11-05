@@ -7,7 +7,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 interface Doc {
   event: { slug: string; name: string };
   tables: { id: string; name: string }[];
-  persons: { id: string; firstName: string; lastName: string }[];
+  persons: { id: string; firstName: string; lastName: string | null }[];
   competitions: { id: string; name: string; startAfterId: string | null; draw: unknown }[];
   entries: { id: string; competitionId: string; members: string[] }[];
   matches: { competitionId: string; matchKey: string; status: string }[];
@@ -100,6 +100,9 @@ describe.skipIf(!databaseAvailable)('event export and import', () => {
     expect((await api('POST', `/api/matches/${ready[0].id}/result`, { notation: '5 -7 9 11', version: ready[0].version })).statusCode).toBe(200);
     expect((await api('POST', `/api/matches/${ready[1].id}/result`, { walkoverWinner: 1, version: ready[1].version })).statusCode).toBe(200);
     expect((await api('POST', `/api/matches/${ready[2].id}/call`, { tableId: tables[2].id, version: ready[2].version })).statusCode).toBe(200);
+
+    // A guest with a first name only
+    expect((await api('POST', `/api/events/${(await overview(DEMO_SLUG)).event.id}/persons`, { firstName: 'Gast' })).statusCode).toBe(201);
 
     const profile = await api('POST', `/api/events/${(await overview(DEMO_SLUG)).event.id}/displays`, { name: 'Only singles', settings: { competitionIds: [singles.id] } });
     expect(profile.statusCode).toBe(201);

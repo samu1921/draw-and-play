@@ -1,5 +1,5 @@
 import { DEFAULT_SPORT, SPORT_IDS } from '@draw-and-play/domain';
-import { and, asc, eq, inArray, notInArray, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, notInArray, or, sql } from 'drizzle-orm';
 import type { ServerResponse } from 'node:http';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -40,7 +40,14 @@ const tablesBody = z.object({ names: z.array(z.string().trim().min(1).max(20)).m
 
 const personBody = z.object({
   firstName: z.string().trim().min(1).max(80),
-  lastName: z.string().trim().min(1).max(80),
+  /** Optional; an empty string clears it */
+  lastName: z
+    .string()
+    .trim()
+    .max(80)
+    .nullable()
+    .optional()
+    .transform((v) => (v === '' ? null : v)),
   club: z.string().trim().max(120).nullable().optional(),
   gender: z.enum(['f', 'm', 'd']).nullable().optional(),
   birthYear: z.int().min(1900).max(2100).nullable().optional(),
@@ -186,7 +193,9 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
 
   app.get('/api/events/:eventId/persons', { preHandler: requireAdmin }, async (request) => {
     const event = await findEvent(db, (request.params as { eventId: string }).eventId);
-    const rows = await db.select().from(persons).where(eq(persons.eventId, event.id)).orderBy(asc(persons.lastName), asc(persons.firstName));
+    const rows = await db.select().from(persons).where(eq(persons.eventId, event.id))
+      // Without a last name, the first name takes its place in the alphabet.
+      .orderBy(asc(sql`coalesce(${persons.lastName}, ${persons.firstName})`), asc(persons.firstName), asc(persons.id));
     return { persons: rows.map((p) => personView(p, event.settings, 'admin')) };
   });
 
