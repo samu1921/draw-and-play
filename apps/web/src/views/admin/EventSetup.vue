@@ -52,6 +52,18 @@ const disablePin = () =>
     await api('DELETE', `/api/events/${event.value.id}/pin`);
   });
 
+// --- Viewer code for the public views ---
+const viewerCode = computed(() => event.value.viewerCode ?? null);
+/** Public link that opens the views right away (also for the projector) */
+const publicLink = computed(() => `/e/${event.value.slug}${viewerCode.value ? `?code=${viewerCode.value}` : ''}`);
+const newViewerCode = () => {
+  if (viewerCode.value && !confirm(t('admin.setup.viewerRotateConfirm'))) return;
+  void run(() => api('POST', `/api/events/${event.value.id}/viewer-code`));
+};
+const openViews = () => {
+  if (confirm(t('admin.setup.viewerOpenConfirm'))) void run(() => api('DELETE', `/api/events/${event.value.id}/viewer-code`));
+};
+
 const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
   run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: { [key]: value } }));
 </script>
@@ -81,7 +93,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
     <section class="card" aria-labelledby="links-title">
       <h2 id="links-title">{{ t('admin.setup.links') }}</h2>
       <ul class="link-list">
-        <li><RouterLink :to="`/e/${event.slug}`" target="_blank">{{ t('admin.setup.publicView') }}</RouterLink></li>
+        <li><RouterLink :to="publicLink" target="_blank">{{ t('admin.setup.publicView') }}</RouterLink></li>
         <li><RouterLink :to="`/admin/events/${event.id}/displays`">{{ t('admin.setup.display') }}</RouterLink></li>
       </ul>
       <label class="check">
@@ -96,6 +108,21 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
         />
         {{ t('admin.setup.publicRatings') }}
       </label>
+    </section>
+
+    <section class="card" aria-labelledby="viewer-title">
+      <h2 id="viewer-title">{{ t('admin.setup.viewerTitle') }}</h2>
+      <template v-if="viewerCode">
+        <p>{{ t('admin.setup.viewerOn') }}</p>
+        <p class="pin-display viewer-code">{{ viewerCode }}</p>
+        <p class="muted small">{{ t('admin.setup.viewerHint') }}</p>
+      </template>
+      <p v-else>{{ t('admin.setup.viewerOff') }}</p>
+      <div class="button-row">
+        <button type="button" class="button" @click="newViewerCode">{{ viewerCode ? t('admin.setup.viewerRotate') : t('admin.setup.viewerProtect') }}</button>
+        <button v-if="viewerCode" type="button" class="button secondary" @click="openViews">{{ t('admin.setup.viewerOpen') }}</button>
+      </div>
+      <RouterLink v-if="viewerCode" :to="`/admin/events/${event.id}/viewer-notice`" target="_blank">{{ t('admin.setup.viewerNotice') }}</RouterLink>
     </section>
 
     <section class="card" aria-labelledby="backup-title">

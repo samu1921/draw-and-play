@@ -9,6 +9,7 @@ import DisplayGroups from '../../components/display/DisplayGroups.vue';
 import DisplayStage from '../../components/display/DisplayStage.vue';
 import FitBox from '../../components/display/FitBox.vue';
 import StreamBadge from '../../components/live/StreamBadge.vue';
+import ViewerGate from '../../components/live/ViewerGate.vue';
 import TableCard from '../../components/live/TableCard.vue';
 import { useCompetitionText } from '../../composables/useCompetitionText.js';
 import { useLiveEvent } from '../../composables/useLiveEvent.js';
@@ -50,6 +51,13 @@ async function loadProfile() {
   }
 }
 watch(profileId, loadProfile, { immediate: true });
+// The profile is refused too while the viewer code is missing
+watch(
+  () => live.locked.value,
+  (locked, before) => {
+    if (before && !locked) void loadProfile();
+  },
+);
 const settings = computed(() => profile.value?.settings ?? defaultDisplaySettings);
 
 // --- Data ---
@@ -303,11 +311,11 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
   <DisplayStage>
     <div class="d-screen" :class="{ 'hide-cursor': !controlsVisible }" @mousemove="showControls">
       <header class="d-head">
-        <h1>{{ live.overview.value?.event.name }}</h1>
+        <h1>{{ live.overview.value?.event.name ?? live.locked.value?.name }}</h1>
         <div class="d-meta">
           <span v-if="profile" class="d-profile">{{ profile.name }}</span>
-          <span v-else-if="profileMissing" class="d-profile warning-text">{{ t('display.profileMissing') }}</span>
-          <StreamBadge :status="live.status.value" />
+          <span v-else-if="profileMissing && !live.locked.value" class="d-profile warning-text">{{ t('display.profileMissing') }}</span>
+          <StreamBadge v-if="!live.locked.value" :status="live.status.value" />
           <span class="d-clock">{{ clock }}</span>
         </div>
       </header>
@@ -321,7 +329,10 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
         <template v-else>{{ heading.sub }}</template>
       </h2>
 
-      <main class="d-body">
+      <main v-if="live.locked.value" class="d-body d-locked">
+        <ViewerGate />
+      </main>
+      <main v-else class="d-body">
         <FitBox v-if="reveal" :key="`reveal-${reveal.competitionId}`">
           <DisplayGroups
             v-if="revealGroups"

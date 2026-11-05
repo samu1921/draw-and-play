@@ -62,6 +62,10 @@ export interface EventInfo {
   sport: string;
   settings: { publicRatings?: boolean; shortNames?: boolean };
   pinEnabled: boolean;
+  /** The public views need the viewer code */
+  viewerProtected?: boolean;
+  /** Admins only: the viewer code (null = open) */
+  viewerCode?: string | null;
 }
 
 export interface TableInfo {

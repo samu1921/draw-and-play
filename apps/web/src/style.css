@@ -1851,6 +1851,67 @@ textarea {
   }
 }
 
+/* --- Viewer code --- */
+
+.viewer-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.6rem;
+  letter-spacing: 0.15em;
+}
+
+.viewer-gate {
+  max-width: 26rem;
+  margin: 1rem auto;
+}
+
+.viewer-gate input {
+  text-transform: uppercase;
+}
+
+.d-locked {
+  display: grid;
+  place-items: center;
+}
+
+.viewer-notice {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem;
+  border: 1px dashed var(--axis);
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.viewer-notice p,
+.viewer-notice h2 {
+  margin: 0;
+}
+
+.viewer-notice h2 {
+  font-size: 2.6rem;
+}
+
+.viewer-notice-event {
+  font-size: 1.3rem;
+  color: var(--fg-secondary);
+}
+
+.viewer-notice-qr {
+  width: min(18rem, 70vw);
+}
+
+.viewer-notice-code {
+  font-size: 1.5rem;
+}
+
+.viewer-notice-code strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.15em;
+}
+
 /* --- QR sheet --- */
 
 .qr-sheet {

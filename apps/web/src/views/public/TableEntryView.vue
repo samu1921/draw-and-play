@@ -38,6 +38,9 @@ const complete = computed(() => {
   const parsed = live.sport.value.parseResult(notation.value, competition.value.matchRules);
   return parsed.ok && parsed.outcome.status === 'finished';
 });
+/** Known from the overview, or from the refusal while the public views need the viewer code */
+const eventName = computed(() => live.overview.value?.event.name ?? live.locked.value?.name ?? '');
+const pinEnabled = computed(() => live.overview.value?.event.pinEnabled ?? live.locked.value?.pinEnabled ?? false);
 /** The saved result of this table still waits on the phone */
 const savedQueued = computed(() => outbox.waiting.value.some((i) => i.matchId === savedMatchId.value));
 /** Waiting results of other matches (e.g. from before a reload) are listed separately */
@@ -104,6 +107,8 @@ async function signIn() {
     signedIn.value = true;
     rememberSignIn(true);
     pin.value = '';
+    // A signed-in device may read the event even when the public views need the viewer code
+    if (live.locked.value) await live.reconnect();
     await outbox.flush();
   } catch (e) {
     error.value = errorText(t, te, e);
@@ -138,17 +143,17 @@ async function submit() {
   <div class="phone">
     <header class="phone-head">
       <div>
-        <p class="muted small">{{ live.overview.value?.event.name }}</p>
+        <p class="muted small">{{ eventName }}</p>
         <h1>{{ t('table.title', { name: tableName }) }}</h1>
       </div>
-      <StreamBadge :status="live.status.value" />
+      <StreamBadge v-if="!live.locked.value" :status="live.status.value" />
     </header>
 
     <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
     <OutboxNotice :waiting="otherWaiting" :refused="outbox.refused.value" @dismiss="outbox.dismiss" />
 
-    <template v-if="live.overview.value && signedIn !== null">
-      <p v-if="!live.overview.value.event.pinEnabled" class="card">{{ t('table.pinOff') }}</p>
+    <template v-if="(live.overview.value || live.locked.value) && signedIn !== null">
+      <p v-if="!pinEnabled" class="card">{{ t('table.pinOff') }}</p>
 
       <form v-else-if="!signedIn" class="card stack" @submit.prevent="signIn">
         <h2>{{ t('table.pinTitle') }}</h2>

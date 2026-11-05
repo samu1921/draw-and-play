@@ -38,6 +38,12 @@ export const router = createRouter({
       component: () => import('./views/admin/PrintView.vue'),
       meta: { admin: true, bare: true },
     },
+    {
+      path: '/admin/events/:eventId/viewer-notice',
+      name: 'admin-viewer-notice',
+      component: () => import('./views/admin/ViewerNoticeView.vue'),
+      meta: { admin: true, bare: true },
+    },
     { path: '/admin/events/:eventId/qr', name: 'admin-qr', component: () => import('./views/admin/QrSheetView.vue'), meta: { admin: true, bare: true } },
     {
       path: '/e/:slug',

@@ -44,7 +44,9 @@ const selectedId = computed(() => (typeof route.query.profile === 'string' ? rou
 const selected = computed(() => profiles.value.find((p) => p.id === selectedId.value) ?? null);
 const select = (id: string) => router.replace({ query: { ...route.query, profile: id } });
 
-const displayPath = (p: DisplayProfile) => `/e/${event.value.slug}/display/${p.id}`;
+/** With the viewer code in the link, the projector opens without typing it */
+const codeQuery = computed(() => (event.value.viewerCode ? `?code=${event.value.viewerCode}` : ''));
+const displayPath = (p: DisplayProfile) => `/e/${event.value.slug}/display/${p.id}${codeQuery.value}`;
 const displayUrl = (p: DisplayProfile) => new URL(displayPath(p), window.location.origin).toString();
 const copied = ref('');
 async function copyLink(p: DisplayProfile) {
@@ -150,7 +152,7 @@ const slideOptions = ['tables', 'next', 'entries', 'liveDraw', 'todayOnly'] as c
       </form>
       <p class="muted small">
         {{ t('admin.displays.defaultHint') }}
-        <a :href="`/e/${event.slug}/display`" target="_blank" rel="noopener">{{ t('admin.displays.defaultLink') }}</a>
+        <a :href="`/e/${event.slug}/display${codeQuery}`" target="_blank" rel="noopener">{{ t('admin.displays.defaultLink') }}</a>
       </p>
     </section>
 

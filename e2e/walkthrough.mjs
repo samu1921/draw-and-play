@@ -13,6 +13,8 @@ const slug = `vm-demo-${Date.now().toString(36).slice(-4)}`;
 const errors = [];
 /** Pages that are offline on purpose */
 const offline = new Set();
+/** Pages that wait for the viewer code or the PIN: their first requests are refused on purpose */
+const locked = new Set();
 
 const browser = await chromium.launch();
 const watch = (page, name) => {
@@ -21,6 +23,7 @@ const watch = (page, name) => {
     if (m.type() !== 'error') return;
     // Failed requests are the point while a page is deliberately offline.
     if (offline.has(name) && /ERR_INTERNET_DISCONNECTED/.test(m.text())) return;
+    if (locked.has(name) && /status of 401/.test(m.text())) return;
     errors.push(`${name}: ${m.text()}`);
   });
 };
@@ -113,9 +116,12 @@ await admin.getByRole('rowheader', { name: 'Gast', exact: true }).waitFor();
 await shot(admin, '02b-persons');
 
 step('PIN');
+// New events keep their public views behind a viewer code
+const viewerCode = (await (await admin.request.get(`${BASE}/api/events/${eventId}`)).json()).event.viewerCode;
+if (!/^[A-Z0-9]{6}$/.test(viewerCode ?? '')) errors.push(`viewer code missing: ${viewerCode}`);
 await admin.getByRole('link', { name: 'Einrichtung' }).click();
 await admin.getByRole('button', { name: 'Neue PIN erzeugen' }).click();
-const pinText = await admin.locator('.pin-display').textContent();
+const pinText = await admin.locator('.pin-display[role=status]').textContent();
 const pin = /(\d{6})/.exec(pinText)[1];
 await shot(admin, '03-setup');
 
@@ -135,11 +141,13 @@ step('phone: PIN and result');
 const phoneContext = await browser.newContext({ locale: 'de-DE', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 const phone = await phoneContext.newPage();
 watch(phone, 'phone');
+locked.add('phone');
 await phone.goto(`${BASE}/e/${slug}/table/1`);
 await phone.getByLabel('PIN').fill(pin);
 await shot(phone, '05-phone-pin');
 await phone.getByRole('button', { name: 'Weiter' }).tap();
 await phone.getByText('Ergebnis', { exact: true }).waitFor();
+locked.delete('phone');
 for (const key of ['4', 'next', 'minus', '5', 'next', '9', 'next', '7']) {
   const name = key === 'next' ? /Nächster Satz/ : key === 'minus' ? 'Rechte Seite gewinnt diesen Satz' : key;
   await phone.getByRole('button', { name, exact: typeof name === 'string' }).tap();
@@ -176,8 +184,11 @@ await shot(admin, '08-desk-after-phone');
 step('projector');
 const beamer = await (await browser.newContext({ locale: 'de-DE', viewport: { width: 1920, height: 1080 } })).newPage();
 watch(beamer, 'display');
-await beamer.goto(`${BASE}/e/${slug}/display`);
+locked.add('display');
+// The projector link carries the code, so nobody has to type it there
+await beamer.goto(`${BASE}/e/${slug}/display?code=${viewerCode}`);
 await beamer.locator('.table-card').first().waitFor();
+locked.delete('display');
 await shot(beamer, '09-display-tables', false);
 await beamer.keyboard.press('ArrowRight');
 await beamer.waitForTimeout(800);
@@ -190,8 +201,13 @@ await shot(beamer, '11-display-competition', false);
 step('public');
 const visitor = await (await browser.newContext({ locale: 'en-US', viewport: { width: 1280, height: 900 } })).newPage();
 watch(visitor, 'public');
+locked.add('public');
 await visitor.goto(`${BASE}/e/${slug}`);
+await visitor.getByLabel('Code', { exact: true }).fill(viewerCode.toLowerCase());
+await shot(visitor, '12a-public-code');
+await visitor.getByRole('button', { name: 'Open', exact: true }).click();
 await visitor.locator('.table-card').first().waitFor();
+locked.delete('public');
 await shot(visitor, '12-public-overview');
 await visitor.getByRole('link', { name: 'Einzel' }).click();
 await visitor.locator('.standings').first().waitFor();
@@ -201,6 +217,9 @@ step('QR sheet');
 await admin.goto(`${BASE}/admin/events/${eventId}/qr`);
 await admin.locator('.qr-code svg').first().waitFor();
 await shot(admin, '14-qr');
+await admin.goto(`${BASE}/admin/events/${eventId}/viewer-notice`);
+await admin.locator('.viewer-notice svg').waitFor();
+await shot(admin, '14a-viewer-notice');
 
 step('withdraw a player after the draw');
 const overviewNow = await (await admin.request.get(`${BASE}/api/events/${eventId}`)).json();

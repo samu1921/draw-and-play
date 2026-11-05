@@ -1,6 +1,6 @@
 import { DEFAULT_SPORT, getSportProfile, type SportProfile } from '@draw-and-play/domain';
 import { computed, inject, onBeforeUnmount, provide, ref, watch, type ComputedRef, type InjectionKey, type Ref } from 'vue';
-import { api, type EventOverview, type Operations } from '../lib/api.js';
+import { api, ApiRequestError, type EventOverview, type Operations } from '../lib/api.js';
 import { useEventStream, type ChangeMessage } from './useEventStream.js';
 
 export interface LiveEvent {
@@ -11,6 +11,12 @@ export interface LiveEvent {
   error: Ref<unknown>;
   status: ReturnType<typeof useEventStream>['status'];
   reload: () => Promise<void>;
+  /** Set while the public views need the viewer code (and this browser has not entered it) */
+  locked: ComputedRef<{ name: string; pinEnabled: boolean } | null>;
+  /** Enters the viewer code; throws on a wrong one. Afterwards the page loads and goes live. */
+  unlock: (code: string) => Promise<void>;
+  /** Loads again and reopens the live stream, e.g. after a sign-in that grants reading */
+  reconnect: () => Promise<void>;
   /** Runs `callback` after every burst of changes pushed by the server, until the calling component unmounts */
   onChange: (callback: (messages: ChangeMessage[]) => void) => void;
 }
@@ -59,19 +65,36 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
         remember(kind, target.value);
       } catch (e) {
         error.value = e;
-        recall(target, kind);
+        // Only without a connection: a refusal must not bring back data this browser may no longer read
+        if (e instanceof ApiRequestError && e.status === 0) recall(target, kind);
       }
     };
     await Promise.all([load(overview, path, 'overview'), options.operations ? load(operations, `${path}/operations`, 'operations') : null]);
   }
 
-  const { status } = useEventStream(eventRef, (messages) => {
+  const { status, restart } = useEventStream(eventRef, (messages) => {
     void reload();
     for (const listener of listeners) listener(messages);
   });
   watch(eventRef, () => void reload(), { immediate: true });
 
   const sport = computed(() => getSportProfile(overview.value?.event.sport ?? DEFAULT_SPORT));
+
+  const locked = computed(() => {
+    const e = error.value;
+    if (!(e instanceof ApiRequestError) || e.code !== 'viewerCodeRequired') return null;
+    const details = (e.details ?? {}) as { name?: string; pinEnabled?: boolean };
+    return { name: details.name ?? '', pinEnabled: details.pinEnabled ?? false };
+  });
+  async function reconnect() {
+    restart();
+    await reload();
+  }
+  async function unlock(code: string) {
+    if (!eventRef.value) return;
+    await api('POST', `/api/events/${encodeURIComponent(eventRef.value)}/viewer`, { code });
+    await reconnect();
+  }
 
   const live: LiveEvent = {
     overview,
@@ -80,6 +103,9 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
     error,
     status,
     reload,
+    locked,
+    unlock,
+    reconnect,
     onChange(callback) {
       listeners.add(callback);
       onBeforeUnmount(() => listeners.delete(callback));

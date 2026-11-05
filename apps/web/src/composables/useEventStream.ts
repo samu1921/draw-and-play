@@ -61,5 +61,9 @@ export function useEventStream(eventRef: Ref<string | undefined>, onChange: (mes
 
   watch(eventRef, (value) => (value ? open(value) : close()), { immediate: true });
   onBeforeUnmount(close);
-  return { status };
+  /** Opens the stream again, e.g. once the browser may read the event (a refused stream is not retried by the browser) */
+  const restart = () => {
+    if (eventRef.value) open(eventRef.value);
+  };
+  return { status, restart };
 }
