@@ -4,6 +4,7 @@ export * from './rng.js';
 export * from './sport/types.js';
 export * from './sport/rules.js';
 export * from './sport/tableTennis.js';
+export * from './sport/profiles.js';
 export * from './roundRobin.js';
 export * from './standings.js';
 export * from './bracket.js';
