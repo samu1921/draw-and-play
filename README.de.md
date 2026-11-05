@@ -71,17 +71,25 @@ Frontend: http://localhost:5173. Der Code ist in npm-Workspaces gegliedert: `pac
 | `npm run build` | Frontend und Server bauen |
 | `npm run e2e` | Einen ganzen Turniertag im echten Browser durchklicken (Playwright in Docker, Stack muss laufen); Screenshots in `e2e/screenshots/` |
 | `npm run db:generate -w @draw-and-play/server` | Migration aus dem Drizzle-Schema erzeugen |
-| `npm run release -- 0.2.0` | Ein Release vorbereiten (siehe unten) |
+| `npm run release -- 0.2.0` | Ein Release als Pull Request vorbereiten (siehe unten) |
+| `npm run release:publish` | Das Release veröffentlichen, nachdem sein Pull Request gemergt ist |
 
 Jeder Push und jeder Pull Request durchläuft die [CI](.github/workflows/ci.yml): Typprüfung, alle Tests gegen PostgreSQL, Build und den End-to-End-Durchlauf gegen den Docker-Stack.
 
 ### Releases
 
-Versionen folgen [Semantic Versioning](https://semver.org/lang/de/). `npm run release -- <version>` führt die Prüfungen aus, setzt die Version in allen Paketen, schreibt das [CHANGELOG](CHANGELOG.md) aus den Commit-Nachrichten, committet `chore(release): v<version>` und legt den Tag an. Nach `git push origin main v<version>` lässt der [Release-Workflow](.github/workflows/release.yml) die CI erneut laufen, veröffentlicht das Docker-Image `ghcr.io/samu1921/draw-and-play` (amd64 und arm64) und erstellt das GitHub-Release. Versionen mit Zusatz wie `0.2.0-rc.1` werden Vorabversionen.
+Versionen folgen [Semantic Versioning](https://semver.org/lang/de/). Wie jede Änderung kommt auch ein Release über einen Pull Request nach `main`:
+
+1. `npm run release -- 0.2.0` auf einem aktuellen `main` führt die Prüfungen aus, setzt die Version in allen Paketen, schreibt das [CHANGELOG](CHANGELOG.md) aus den Commit-Nachrichten, committet `chore(release): v0.2.0` auf den Branch `release/v0.2.0` und pusht ihn.
+2. Den Pull Request über den ausgegebenen Link öffnen, das Changelog prüfen und mergen, sobald die CI grün ist.
+3. `npm run release:publish` taggt den gemergten Release-Commit und pusht den Tag. Der [Release-Workflow](.github/workflows/release.yml) lässt dann die CI erneut laufen, veröffentlicht das Docker-Image `ghcr.io/samu1921/draw-and-play` (amd64 und arm64) und erstellt das GitHub-Release.
+
+Versionen mit Zusatz wie `0.2.0-rc.1` werden Vorabversionen.
 
 ## Mitwirken
 
-- Commit-Nachrichten folgen [Conventional Commits](https://www.conventionalcommits.org/de/v1.0.0/), z. B. `feat(domain): add knockout placements`. Scopes sind die Workspace-Namen `domain`, `server`, `web` sowie `docker`, `docs` und `ci`. Aus ihnen entsteht das Changelog.
+- `main` nimmt nur Pull Requests mit grüner CI an, gemergt per Squash oder Rebase, damit die Historie linear bleibt. Gearbeitet wird auf einem Branch wie `feat/print-layout`.
+- Commit-Nachrichten folgen [Conventional Commits](https://www.conventionalcommits.org/de/v1.0.0/), z. B. `feat(domain): add knockout placements`. Scopes sind die Workspace-Namen `domain`, `server`, `web` sowie `docker`, `docs` und `ci`. Aus ihnen entsteht das Changelog, deshalb folgt beim Squash-Merge auch der Titel des Pull Requests diesem Format.
 - Code, Kommentare und Tests sind auf Englisch. Jeder sichtbare Text kommt in beide Locale-Dateien unter `apps/web/src/i18n/locales/`; Domänenbibliothek und API liefern Codes, nie Text.
 - Turnierlogik gehört testgetrieben nach `packages/domain`. API-Änderungen kommen in [docs/api.md](docs/api.md), sichtbare Änderungen in die [Funktionen](docs/features.de.md), immer in beiden Sprachen.
 
