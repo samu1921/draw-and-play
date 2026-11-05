@@ -11,11 +11,18 @@ if (!password) throw new Error('ADMIN_PASSWORD is not set (see .env.example).');
 mkdirSync(OUT, { recursive: true });
 const slug = `vm-demo-${Date.now().toString(36).slice(-4)}`;
 const errors = [];
+/** Pages that are offline on purpose */
+const offline = new Set();
 
 const browser = await chromium.launch();
 const watch = (page, name) => {
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
-  page.on('console', (m) => m.type() === 'error' && errors.push(`${name}: ${m.text()}`));
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    // Failed requests are the point while a page is deliberately offline.
+    if (offline.has(name) && /ERR_INTERNET_DISCONNECTED/.test(m.text())) return;
+    errors.push(`${name}: ${m.text()}`);
+  });
 };
 const shot = (page, name, fullPage = true) => page.screenshot({ path: `${OUT}${name}.png`, fullPage });
 const step = (text) => console.log(`• ${text}`);
@@ -132,6 +139,26 @@ await shot(phone, '06-phone-entry');
 await phone.getByRole('button', { name: 'Ergebnis speichern' }).tap();
 await phone.getByText('Danke!').waitFor();
 await shot(phone, '07-phone-saved');
+
+step('phone: result in a dead spot');
+// The service worker keeps the app shell, the page its last data: a reload without a connection still works.
+await phone.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+await phone.goto(`${BASE}/e/${slug}/table/2`);
+await phone.getByText('Ergebnis', { exact: true }).waitFor();
+await phoneContext.setOffline(true);
+offline.add('phone');
+await phone.reload();
+await phone.getByText('Ergebnis', { exact: true }).waitFor();
+for (const key of ['3', 'next', '3', 'next', '3']) {
+  const name = key === 'next' ? /Nächster Satz/ : key;
+  await phone.getByRole('button', { name, exact: typeof name === 'string' }).tap();
+}
+await phone.getByRole('button', { name: 'Ergebnis speichern' }).tap();
+await phone.getByText('Auf diesem Handy gespeichert', { exact: true }).waitFor();
+await shot(phone, '07b-phone-queued');
+await phoneContext.setOffline(false);
+await phone.getByText('Danke!').waitFor({ timeout: 30_000 });
+offline.delete('phone');
 
 await admin.waitForTimeout(800);
 await shot(admin, '08-desk-after-phone');

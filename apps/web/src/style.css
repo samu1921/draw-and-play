@@ -752,6 +752,24 @@ textarea {
   font-weight: 600;
 }
 
+/* Results waiting on this device (outbox) */
+.notice {
+  border-left: 4px solid var(--accent);
+}
+
+.notice.warning {
+  border-left-color: var(--warning-text);
+}
+
+.notice p {
+  margin: 0 0 0.4rem;
+}
+
+.outbox-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
 .tabs {
   display: flex;
   gap: 0.25rem;

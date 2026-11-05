@@ -32,7 +32,7 @@ Er läuft neben dem normalen Stack und berührt dessen Daten nie.
 1. Unter `/login` anmelden (erster Admin aus `ADMIN_USERNAME` / `ADMIN_PASSWORD` in der `.env`).
 2. **Turnierleitung → Veranstaltung anlegen**, dann Spieler erfassen, Konkurrenzen anlegen (Modus wie im Planer), Spieler melden und auslosen.
 3. **Einrichtung:** PIN erzeugen und die QR-Codes für die Tische drucken. Unter **Anzeigen** für jeden Bildschirm (Beamer, Fernseher) ein Profil anlegen und dort dessen Link öffnen. Die Anzeige ist eine 16:9-Bühne, die nie scrollt; Pfeiltasten oder ein Presenter blättern, die Leertaste pausiert, F schaltet Vollbild.
-4. **Spielbetrieb:** Spielbereite Spiele auf freie Tische aufrufen. Die Spieler scannen den QR-Code am Tisch, geben einmal die PIN ein und tippen das Ergebnis; die Turnierleitung kann jederzeit selbst eintragen oder korrigieren.
+4. **Spielbetrieb:** Spielbereite Spiele auf freie Tische aufrufen. Die Spieler scannen den QR-Code am Tisch, geben einmal die PIN ein und tippen das Ergebnis; die Turnierleitung kann jederzeit selbst eintragen oder korrigieren. Hat ein Handy gerade kein Netz, bleibt das Ergebnis auf dem Handy und wird gesendet, sobald die Verbindung zurück ist (Seite dafür offen lassen).
 5. Alle anderen verfolgen das Turnier unter `/e/<kurzname>`.
 
 ## Aufbau

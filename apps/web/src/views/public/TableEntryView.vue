@@ -2,9 +2,11 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
+import OutboxNotice from '../../components/live/OutboxNotice.vue';
 import ResultKeypad from '../../components/live/ResultKeypad.vue';
 import StreamBadge from '../../components/live/StreamBadge.vue';
 import { useLiveEvent } from '../../composables/useLiveEvent.js';
+import { useResultOutbox } from '../../composables/useResultOutbox.js';
 import { api, ApiRequestError } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
@@ -13,7 +15,12 @@ const { t, te } = useI18n();
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const tableName = computed(() => route.params.table as string);
-const live = useLiveEvent(slug, { operations: true });
+const live = useLiveEvent(slug, { operations: true, remember: true });
+const outbox = useResultOutbox(
+  computed(() => live.overview.value?.event.id),
+  live.status,
+  { device: true },
+);
 
 const signedIn = ref<boolean | null>(null);
 const pin = ref('');
@@ -31,6 +38,10 @@ const complete = computed(() => {
   const parsed = live.sport.value.parseResult(notation.value, competition.value.matchRules);
   return parsed.ok && parsed.outcome.status === 'finished';
 });
+/** The saved result of this table still waits on the phone */
+const savedQueued = computed(() => outbox.waiting.value.some((i) => i.matchId === savedMatchId.value));
+/** Waiting results of other matches (e.g. from before a reload) are listed separately */
+const otherWaiting = computed(() => outbox.waiting.value.filter((i) => i.matchId !== savedMatchId.value));
 
 // A new match at this table starts with an empty form.
 watch(
@@ -43,12 +54,45 @@ watch(
   },
 );
 
-onMounted(async () => {
+// Remembered per event, so a page reloaded without a connection still knows this phone was signed in.
+const signedInKey = computed(() => `dap-device:${slug.value}`);
+function rememberSignIn(value: boolean) {
+  try {
+    if (value) localStorage.setItem(signedInKey.value, '1');
+    else localStorage.removeItem(signedInKey.value);
+  } catch {
+    // Without storage the phone asks again after an offline reload
+  }
+}
+function rememberedSignIn(): boolean {
+  try {
+    return localStorage.getItem(signedInKey.value) === '1';
+  } catch {
+    return false;
+  }
+}
+
+async function checkDevice() {
   try {
     const { device } = await api<{ device: unknown }>('GET', `/api/events/${encodeURIComponent(slug.value)}/device`);
     signedIn.value = device !== null;
+    rememberSignIn(signedIn.value);
+    error.value = '';
   } catch (e) {
-    error.value = errorText(t, te, e);
+    if (e instanceof ApiRequestError && e.status === 0 && rememberedSignIn()) signedIn.value = true;
+    else error.value = errorText(t, te, e);
+  }
+}
+onMounted(checkDevice);
+// Checked again once the connection is back, in case the first check failed offline.
+watch(live.status, (status) => {
+  if (status === 'live' && (signedIn.value === null || error.value)) void checkDevice();
+});
+// The PIN changed while a result was waiting: ask for the new one, the result goes out afterwards.
+watch(outbox.needsSignIn, (needed) => {
+  if (needed) {
+    signedIn.value = false;
+    rememberSignIn(false);
   }
 });
 
@@ -58,7 +102,9 @@ async function signIn() {
   try {
     await api('POST', `/api/events/${encodeURIComponent(slug.value)}/device`, { pin: pin.value, label: t('table.title', { name: tableName.value }) });
     signedIn.value = true;
+    rememberSignIn(true);
     pin.value = '';
+    await outbox.flush();
   } catch (e) {
     error.value = errorText(t, te, e);
   } finally {
@@ -67,18 +113,23 @@ async function signIn() {
 }
 
 async function submit() {
-  if (!match.value) return;
+  if (!match.value || !competition.value) return;
   busy.value = true;
   error.value = '';
+  const current = match.value;
   try {
-    await api('POST', `/api/matches/${match.value.id}/result`, { notation: notation.value, version: match.value.version });
-    savedMatchId.value = match.value.id;
+    await outbox.submit({
+      matchId: current.id,
+      version: current.version,
+      body: { notation: notation.value },
+      label: `${competition.value.name} · ${matchLabel(t, current)}: ${names.value[0]} – ${names.value[1]}`,
+    });
+    savedMatchId.value = current.id;
   } catch (e) {
     error.value = errorText(t, te, e);
-    if (e instanceof ApiRequestError && e.status === 401) signedIn.value = false;
   } finally {
     busy.value = false;
-    await live.reload();
+    void live.reload();
   }
 }
 </script>
@@ -94,12 +145,14 @@ async function submit() {
     </header>
 
     <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
+    <OutboxNotice :waiting="otherWaiting" :refused="outbox.refused.value" @dismiss="outbox.dismiss" />
 
     <template v-if="live.overview.value && signedIn !== null">
       <p v-if="!live.overview.value.event.pinEnabled" class="card">{{ t('table.pinOff') }}</p>
 
       <form v-else-if="!signedIn" class="card stack" @submit.prevent="signIn">
         <h2>{{ t('table.pinTitle') }}</h2>
+        <p v-if="outbox.waiting.value.length > 0" class="warning-text">{{ t('table.signInAgain') }}</p>
         <p class="muted">{{ t('table.pinHint') }}</p>
         <label class="field">
           <span>{{ t('table.pin') }}</span>
@@ -109,6 +162,11 @@ async function submit() {
       </form>
 
       <p v-else-if="live.operations.value && !table" class="card">{{ t('table.unknownTable') }}</p>
+
+      <div v-else-if="savedMatchId && savedQueued" class="card notice" role="status">
+        <p class="success">{{ t('table.queuedTitle') }}</p>
+        <p>{{ t('table.queued') }}</p>
+      </div>
 
       <div v-else-if="savedMatchId && (!match || match.id === savedMatchId)" class="card success" role="status">
         ✓ {{ t('table.saved') }}

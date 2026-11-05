@@ -294,6 +294,12 @@ const de: typeof en = {
     winnerOf: 'Sieger {match}',
     loserOf: 'Verlierer {match}',
   },
+  outbox: {
+    waiting: 'Ein Ergebnis ist noch nicht gesendet. Es geht von selbst raus, sobald wieder Verbindung besteht. | {n} Ergebnisse sind noch nicht gesendet. Sie gehen von selbst raus, sobald wieder Verbindung besteht.',
+    refused: 'Nicht übernommen:',
+    changed: 'Das Spiel wurde inzwischen an der Turnierleitung geändert, zum Beispiel wurde ein anderes Ergebnis eingetragen. Bitte dort klären.',
+    dismiss: 'Verwerfen',
+  },
   table: {
     title: 'Tisch {name}',
     pinTitle: 'PIN eingeben',
@@ -303,6 +309,9 @@ const de: typeof en = {
     noMatch: 'An diesem Tisch ist kein Spiel aufgerufen.',
     autoUpdate: 'Diese Seite aktualisiert sich von selbst.',
     saved: 'Danke! Das Ergebnis ist gespeichert.',
+    queuedTitle: 'Auf diesem Handy gespeichert',
+    queued: 'Das Ergebnis ist auf diesem Handy gespeichert und wird gesendet, sobald wieder Verbindung besteht. Bitte lass die Seite offen, bis „Danke!“ erscheint. Wird sie geschlossen, geht das Ergebnis erst beim nächsten Öffnen dieser Seite raus.',
+    signInAgain: 'Die PIN wurde geändert. Bitte die neue PIN eingeben, danach wird das Ergebnis gesendet.',
     unknownTable: 'Diesen Tisch gibt es nicht.',
     pinOff: 'Die Eingabe per Handy ist ausgeschaltet. Bitte das Ergebnis an der Turnierleitung melden.',
   },

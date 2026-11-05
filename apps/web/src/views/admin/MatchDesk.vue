@@ -2,11 +2,13 @@
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ForecastPanel from '../../components/live/ForecastPanel.vue';
+import OutboxNotice from '../../components/live/OutboxNotice.vue';
 import ResultDialog from '../../components/live/ResultDialog.vue';
 import TableCard from '../../components/live/TableCard.vue';
 import { useForecast } from '../../composables/useForecast.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { useNow } from '../../composables/useNow.js';
+import { useResultOutbox } from '../../composables/useResultOutbox.js';
 import { api, type OperationsMatch } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
@@ -15,6 +17,10 @@ import { formatClock } from '../../lib/time.js';
 const { t, te } = useI18n();
 const live = injectLiveEvent();
 const now = useNow();
+const outbox = useResultOutbox(
+  computed(() => live.overview.value?.event.id),
+  live.status,
+);
 const ops = computed(() => live.operations.value);
 const competitions = computed(() => new Map((ops.value?.competitions ?? []).map((c) => [c.id, c])));
 const rulesOf = (m: OperationsMatch | null) => live.overview.value?.competitions.find((c) => c.id === m?.competitionId)?.matchRules;
@@ -88,6 +94,7 @@ async function onSaved() {
 <template>
   <div v-if="ops" class="desk">
     <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
+    <OutboxNotice :waiting="outbox.waiting.value" :refused="outbox.refused.value" @dismiss="outbox.dismiss" />
 
     <section aria-labelledby="desk-tables">
       <h2 id="desk-tables">{{ t('admin.desk.tables') }}</h2>
@@ -149,6 +156,12 @@ async function onSaved() {
       </ul>
     </section>
 
-    <ResultDialog :match="editing" :rules="rulesOf(editing)" :sport="live.sport.value" allow-walkover @close="editing = null" @saved="onSaved" />
+    <ResultDialog
+      :match="editing"
+      :rules="rulesOf(editing)"
+      :sport="live.sport.value"
+      :outbox="outbox"
+      :competition-name="editing ? competitions.get(editing.competitionId)?.name : undefined"
+      allow-walkover @close="editing = null" @saved="onSaved" />
   </div>
 </template>

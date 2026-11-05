@@ -293,6 +293,12 @@ export default {
     winnerOf: 'Winner {match}',
     loserOf: 'Loser {match}',
   },
+  outbox: {
+    waiting: 'One result has not been sent yet. It goes out by itself as soon as there is a connection again. | {n} results have not been sent yet. They go out by themselves as soon as there is a connection again.',
+    refused: 'Not accepted:',
+    changed: 'The match was changed at the tournament desk in the meantime, for example a different result was entered. Please sort it out there.',
+    dismiss: 'Dismiss',
+  },
   table: {
     title: 'Table {name}',
     pinTitle: 'Enter PIN',
@@ -302,6 +308,9 @@ export default {
     noMatch: 'No match has been called to this table.',
     autoUpdate: 'This page updates by itself.',
     saved: 'Thank you! The result has been saved.',
+    queuedTitle: 'Saved on this phone',
+    queued: 'The result is kept on this phone and will be sent as soon as there is a connection again. Please keep this page open until it says thank you. If it is closed, the result only goes out the next time this page is opened.',
+    signInAgain: 'The PIN has changed. Please enter the new PIN; the result is sent afterwards.',
     unknownTable: 'This table does not exist.',
     pinOff: 'Result entry by phone is switched off. Please report the result at the tournament desk.',
   },

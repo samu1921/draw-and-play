@@ -2,7 +2,8 @@
 import type { MatchRules, SportProfile } from '@draw-and-play/domain';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { api, type OperationsMatch } from '../../lib/api.js';
+import type { ResultOutbox } from '../../composables/useResultOutbox.js';
+import type { OperationsMatch } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
 import ResultKeypad from './ResultKeypad.vue';
@@ -11,6 +12,10 @@ const props = defineProps<{
   match: OperationsMatch | null;
   rules: MatchRules | undefined;
   sport: SportProfile;
+  /** Sends the result, or keeps it for later while the connection is down */
+  outbox: ResultOutbox;
+  /** Competition name, shown with the result while it waits */
+  competitionName?: string;
   /** The desk may also record walkovers */
   allowWalkover?: boolean;
 }>();
@@ -43,7 +48,12 @@ async function save(body: { notation: string } | { walkoverWinner: 0 | 1 }) {
   busy.value = true;
   error.value = '';
   try {
-    await api('POST', `/api/matches/${props.match.id}/result`, { ...body, version: props.match.version });
+    await props.outbox.submit({
+      matchId: props.match.id,
+      version: props.match.version,
+      body,
+      label: `${props.competitionName ? `${props.competitionName} · ` : ''}${matchLabel(t, props.match)}: ${names.value[0]} – ${names.value[1]}`,
+    });
     emit('saved');
   } catch (e) {
     error.value = errorText(t, te, e);
