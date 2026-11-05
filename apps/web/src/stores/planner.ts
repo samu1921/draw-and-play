@@ -1,4 +1,4 @@
-import { compareVariants, simulatePlan, tableTennis } from '@draw-and-play/domain';
+import { compareVariants, simulatePlan } from '@draw-and-play/domain';
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { i18n } from '../i18n/index.js';
@@ -6,6 +6,7 @@ import {
   createCompetition,
   emptyDraft,
   MAX_COMPETITIONS,
+  plannerSport,
   resolveVariant,
   toPlanInput,
   variantsFor,
@@ -116,7 +117,7 @@ export const usePlannerStore = defineStore('planner', () => {
   /** Changing the scoring also updates the estimated match duration. */
   function setGamesToWin(c: CompetitionDraft, gamesToWin: number) {
     c.gamesToWin = gamesToWin;
-    c.matchMinutes = tableTennis.estimateMatchMinutes({ ...tableTennis.defaultMatchRules, gamesToWin });
+    c.matchMinutes = plannerSport.estimateMatchMinutes({ ...plannerSport.defaultMatchRules, gamesToWin });
   }
 
   function applyVariant(competitionId: string, variantId: string) {

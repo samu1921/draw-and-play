@@ -257,7 +257,7 @@ const removeCompetition = async () => {
           </table>
         </div>
 
-        <p class="muted small">{{ t('admin.competition.seedingHint') }}</p>
+        <p class="muted small">{{ t('admin.competition.seedingHint', { rating: live.sport.value.ratingName }) }}</p>
         <div class="stack">
           <h4 v-if="isDoubles">{{ t('admin.competition.addPlayers') }}</h4>
           <p v-if="isDoubles" class="muted small">{{ t('admin.competition.addPlayersHint') }}</p>

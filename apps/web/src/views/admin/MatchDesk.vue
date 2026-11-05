@@ -149,6 +149,6 @@ async function onSaved() {
       </ul>
     </section>
 
-    <ResultDialog :match="editing" :rules="rulesOf(editing)" allow-walkover @close="editing = null" @saved="onSaved" />
+    <ResultDialog :match="editing" :rules="rulesOf(editing)" :sport="live.sport.value" allow-walkover @close="editing = null" @saved="onSaved" />
   </div>
 </template>

@@ -1,10 +1,13 @@
-import { inject, onBeforeUnmount, provide, ref, watch, type InjectionKey, type Ref } from 'vue';
+import { DEFAULT_SPORT, getSportProfile, type SportProfile } from '@draw-and-play/domain';
+import { computed, inject, onBeforeUnmount, provide, ref, watch, type ComputedRef, type InjectionKey, type Ref } from 'vue';
 import { api, type EventOverview, type Operations } from '../lib/api.js';
 import { useEventStream, type ChangeMessage } from './useEventStream.js';
 
 export interface LiveEvent {
   overview: Ref<EventOverview | null>;
   operations: Ref<Operations | null>;
+  /** Scoring, result notation and rating name of the event's sport (the default sport until the event is loaded) */
+  sport: ComputedRef<SportProfile>;
   error: Ref<unknown>;
   status: ReturnType<typeof useEventStream>['status'];
   reload: () => Promise<void>;
@@ -46,9 +49,12 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
   });
   watch(eventRef, () => void reload(), { immediate: true });
 
+  const sport = computed(() => getSportProfile(overview.value?.event.sport ?? DEFAULT_SPORT));
+
   const live: LiveEvent = {
     overview,
     operations,
+    sport,
     error,
     status,
     reload,

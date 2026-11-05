@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { generateVariants, tableTennis, type PlacementMode } from '@draw-and-play/domain';
+import { generateVariants, type PlacementMode } from '@draw-and-play/domain';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -34,7 +34,6 @@ async function create() {
       name: form.value.name,
       kind: form.value.kind,
       gamesToWin: form.value.gamesToWin,
-      matchMinutes: tableTennis.estimateMatchMinutes({ ...tableTennis.defaultMatchRules, gamesToWin: form.value.gamesToWin }),
       format: variant.format,
     });
     await live.reload();

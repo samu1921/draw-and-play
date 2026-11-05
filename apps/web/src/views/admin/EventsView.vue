@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { SPORT_IDS } from '@draw-and-play/domain';
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -8,7 +9,7 @@ import { errorText } from '../../lib/messages.js';
 const { t, te, d } = useI18n();
 const router = useRouter();
 const events = ref<EventInfo[] | null>(null);
-const form = ref({ name: '', slug: '', startsOn: '', tableCount: 4 });
+const form = ref({ name: '', slug: '', startsOn: '', tableCount: 4, sport: SPORT_IDS[0] as string });
 const error = ref('');
 const importError = ref('');
 const importing = ref(false);
@@ -23,6 +24,7 @@ async function create() {
     const { event } = await api<{ event: EventInfo }>('POST', '/api/events', {
       name: form.value.name,
       tableCount: form.value.tableCount,
+      sport: form.value.sport,
       ...(form.value.slug && { slug: form.value.slug }),
       ...(form.value.startsOn && { startsOn: form.value.startsOn }),
     });
@@ -64,6 +66,7 @@ async function importFile(input: HTMLInputElement) {
       <ul v-else class="link-list">
         <li v-for="e in events ?? []" :key="e.id">
           <RouterLink :to="`/admin/events/${e.id}`">{{ e.name }}</RouterLink>
+          <span class="muted"> · {{ t(`sports.${e.sport}`) }}</span>
           <span v-if="e.startsOn" class="muted"> · {{ d(new Date(e.startsOn)) }}</span>
         </li>
       </ul>
@@ -83,6 +86,13 @@ async function importFile(input: HTMLInputElement) {
         <label class="field">
           <span>{{ t('admin.events.startsOn') }}</span>
           <input v-model="form.startsOn" type="date" />
+        </label>
+        <!-- Only worth asking once there is more than one sport -->
+        <label v-if="SPORT_IDS.length > 1" class="field">
+          <span>{{ t('admin.events.sport') }}</span>
+          <select v-model="form.sport">
+            <option v-for="id in SPORT_IDS" :key="id" :value="id">{{ t(`sports.${id}`) }}</option>
+          </select>
         </label>
         <label class="field">
           <span>{{ t('admin.events.tableCount') }}</span>

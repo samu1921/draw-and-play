@@ -1,12 +1,16 @@
 import {
+  DEFAULT_SPORT,
   generateVariants,
-  tableTennis,
+  sportProfiles,
   type CompetitionPlan,
   type FormatVariant,
   type PlacementMode,
   type PlanInput,
 } from '@draw-and-play/domain';
 import { parseClock } from './time.js';
+
+/** The planner works without an event, so it plans with the default sport. */
+export const plannerSport = sportProfiles[DEFAULT_SPORT];
 
 /** Number of fixed color slots; also the maximum number of competitions per day */
 export const MAX_COMPETITIONS = 8;
@@ -112,10 +116,10 @@ export function createCompetition(
   existing: readonly CompetitionDraft[],
   values: Partial<Omit<CompetitionDraft, 'id' | 'color'>> & { name: string },
 ): CompetitionDraft {
-  const gamesToWin = values.gamesToWin ?? tableTennis.defaultMatchRules.gamesToWin;
+  const gamesToWin = values.gamesToWin ?? plannerSport.defaultMatchRules.gamesToWin;
   const draft: CompetitionDraft = {
     entryCount: 8,
-    matchMinutes: tableTennis.estimateMatchMinutes({ ...tableTennis.defaultMatchRules, gamesToWin }),
+    matchMinutes: plannerSport.estimateMatchMinutes({ ...plannerSport.defaultMatchRules, gamesToWin }),
     variantId: '',
     placements: 'none',
     earliestStart: '',

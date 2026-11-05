@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { tableTennis, type MatchRules } from '@draw-and-play/domain';
+import type { MatchRules, SportProfile } from '@draw-and-play/domain';
 import { computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { applyKey, type KeypadKey } from '../../lib/keypad.js';
@@ -8,6 +8,7 @@ import { resultErrorText } from '../../lib/messages.js';
 const props = defineProps<{
   modelValue: string;
   rules: MatchRules;
+  sport: SportProfile;
   /** Names of the left and right side */
   sides: [string, string];
   /** Show the on-screen keypad and suppress the phone keyboard */
@@ -17,7 +18,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 const { t } = useI18n();
 const hintId = useId();
 
-const parsed = computed(() => (props.modelValue.trim() ? tableTennis.parseResult(props.modelValue, props.rules) : null));
+const parsed = computed(() => (props.modelValue.trim() ? props.sport.parseResult(props.modelValue, props.rules) : null));
 
 function set(value: string) {
   emit('update:modelValue', value);

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { tableTennis } from '@draw-and-play/domain';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -29,7 +28,7 @@ const competition = computed(() => live.overview.value?.competitions.find((c) =>
 const names = computed<[string, string]>(() => [match.value?.sides[0]?.name ?? '', match.value?.sides[1]?.name ?? '']);
 const complete = computed(() => {
   if (!competition.value || !notation.value.trim()) return false;
-  const parsed = tableTennis.parseResult(notation.value, competition.value.matchRules);
+  const parsed = live.sport.value.parseResult(notation.value, competition.value.matchRules);
   return parsed.ok && parsed.outcome.status === 'finished';
 });
 
@@ -122,7 +121,7 @@ async function submit() {
           <span class="muted">{{ t('public.vs') }}</span>
           <span>{{ names[1] }}</span>
         </div>
-        <ResultKeypad v-model="notation" :rules="competition.matchRules" :sides="names" keypad />
+        <ResultKeypad v-model="notation" :rules="competition.matchRules" :sport="live.sport.value" :sides="names" keypad />
         <button type="submit" class="button big" :disabled="!complete || busy">{{ t('result.submit') }}</button>
       </form>
 
