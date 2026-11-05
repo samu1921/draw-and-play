@@ -62,6 +62,13 @@ export const events = pgTable('events', {
   pinHash: text('pin_hash'),
   /** Bumped on every new PIN, which signs out all devices */
   pinVersion: integer('pin_version').notNull().default(0),
+  /**
+   * Code that opens the public views (plain text, so the notice with its QR code can be printed again at any time;
+   * it only grants reading). null = the public views are open to everybody.
+   */
+  viewerCode: text('viewer_code'),
+  /** Bumped on every new viewer code, which signs out all viewers */
+  viewerCodeVersion: integer('viewer_code_version').notNull().default(0),
   createdAt: createdAt(),
 });
 
@@ -80,6 +87,22 @@ export const deviceSessions = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('device_sessions_event_idx').on(t.eventId)],
+);
+
+/** A browser that entered the viewer code of an event and may read its public views */
+export const viewerSessions = pgTable(
+  'viewer_sessions',
+  {
+    /** SHA-256 of the viewer token */
+    id: text('id').primaryKey(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    codeVersion: integer('code_version').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('viewer_sessions_event_idx').on(t.eventId)],
 );
 
 export const eventTables = pgTable(

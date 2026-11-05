@@ -22,6 +22,8 @@ import { competitionSummary, competitionView, eventSettings, loadCompetition, lo
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
 import { deviceOf } from './devices.js';
+import { findEvent } from './events.js';
+import { requireViewer } from './viewers.js';
 
 const uuid = z.uuid();
 
@@ -180,8 +182,9 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
   /** Live state; signed-in admins additionally see seeds and the draw seed. */
   app.get('/api/competitions/:competitionId/state', async (request) => {
     const loaded = await loadCompetitionState(db, idParam(request.params, 'competitionId'));
-    const settings = await eventSettings(db, loaded.competition.eventId);
-    return competitionView(loaded, settings, request.user ? 'admin' : 'public');
+    const event = await findEvent(db, loaded.competition.eventId);
+    await requireViewer(request, db, event);
+    return competitionView(loaded, event.settings, request.user ? 'admin' : 'public');
   });
 
   // --- Entries ---

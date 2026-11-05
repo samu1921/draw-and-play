@@ -27,6 +27,8 @@ describe.skipIf(!databaseAvailable)('persons with a first name only', () => {
     ctx = await setupTestApp();
     api = await adminClient(ctx.app);
     eventId = (await api('POST', '/api/events', { name: 'Vornamen', slug: 'vornamen' })).json().event.id;
+    // Public views open to everybody; the viewer code has its own tests
+    await api('DELETE', `/api/events/${eventId}/viewer-code`);
   });
   afterAll(async () => {
     await ctx.app.close();

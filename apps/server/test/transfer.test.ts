@@ -75,7 +75,7 @@ describe.skipIf(!databaseAvailable)('event export and import', () => {
     await closeTestDatabase();
   });
 
-  const overview = async (ref: string) => (await ctx.app.inject({ method: 'GET', url: `/api/events/${ref}` })).json();
+  const overview = async (ref: string) => (await api('GET', `/api/events/${ref}`)).json();
   const competitionState = async (id: string) => {
     const res = await api('GET', `/api/competitions/${id}/state`);
     expect(res.statusCode).toBe(200);

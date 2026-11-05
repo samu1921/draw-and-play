@@ -31,6 +31,8 @@ describe.skipIf(!databaseAvailable)('result entry by PIN and the operations view
     ({ app } = await setupTestApp());
     api = await adminClient(app);
     eventId = (await api('POST', '/api/events', { name: 'PIN test', slug: 'pin-test', tableCount: 2 })).json().event.id;
+    // Public views open to everybody; the viewer code has its own tests
+    await api('DELETE', `/api/events/${eventId}/viewer-code`);
     tableIds = (await app.inject({ method: 'GET', url: '/api/events/pin-test' })).json().tables.map((t: { id: string }) => t.id);
     const competitionId = (await api('POST', `/api/events/${eventId}/competitions`, { name: 'Hobby', format: { groups: { groupCount: 1 } } }))
       .json().competition.id;

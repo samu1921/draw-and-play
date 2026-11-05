@@ -44,6 +44,8 @@ describe.skipIf(!databaseAvailable)('tournament flow via the API', () => {
     const created = await api('POST', '/api/events', { name: 'Vereinsmeisterschaft 2026', slug: 'vm-2026', tableCount: 4 });
     expect(created.statusCode).toBe(201);
     eventId = created.json().event.id;
+    // Public views open to everybody; the viewer code has its own tests
+    await api('DELETE', `/api/events/${eventId}/viewer-code`);
 
     const overview = await app.inject({ method: 'GET', url: '/api/events/vm-2026' });
     expect(overview.statusCode).toBe(200);
@@ -214,6 +216,6 @@ describe.skipIf(!databaseAvailable)('tournament flow via the API', () => {
 
   it('writes every command to the audit log', async () => {
     const actions = new Set((await db.select({ action: auditLog.action }).from(auditLog)).map((r) => r.action));
-    expect([...actions].sort()).toEqual(['call', 'correctResult', 'create', 'draw', 'result', 'undoDraw']);
+    expect([...actions].sort()).toEqual(['call', 'correctResult', 'create', 'draw', 'openPublicViews', 'result', 'undoDraw']);
   });
 });

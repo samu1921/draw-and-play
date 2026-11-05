@@ -9,8 +9,10 @@ import { conflict, notFound, parse } from '../errors.js';
 import { eventSettingsSchema } from '../schemas.js';
 import { competitionSummary, personView } from '../services/competitions.js';
 import { importPersons } from '../services/personImport.js';
+import { generateViewerCode } from '../auth/viewers.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
+import { requireViewer } from './viewers.js';
 
 const uuid = z.uuid();
 const isoDate = z.iso.date();
@@ -78,7 +80,7 @@ function slugify(name: string): string {
 
 /** Event as returned by the API: the PIN hash never leaves the server */
 export function eventView(event: typeof events.$inferSelect) {
-  const { pinHash, pinVersion: _pinVersion, ...rest } = event;
+  const { pinHash, pinVersion: _pinVersion, viewerCodeVersion: _viewerCodeVersion, ...rest } = event;
   return { ...rest, pinEnabled: pinHash !== null };
 }
 
@@ -111,7 +113,15 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
       if (taken) throw conflict('slugTaken');
       const [event] = await tx
         .insert(events)
-        .values({ name: body.name, slug, sport: body.sport ?? DEFAULT_SPORT, startsOn: body.startsOn ?? null, endsOn: body.endsOn ?? null })
+        .values({
+          name: body.name,
+          slug,
+          sport: body.sport ?? DEFAULT_SPORT,
+          startsOn: body.startsOn ?? null,
+          endsOn: body.endsOn ?? null,
+          // New events start with their public views behind a viewer code (names of players, often minors)
+          viewerCode: generateViewerCode(),
+        })
         .returning();
       await tx
         .insert(eventTables)
@@ -126,6 +136,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
   app.get('/api/events/:eventRef', async (request) => {
     const { eventRef } = request.params as { eventRef: string };
     const event = await findEvent(db, eventRef);
+    await requireViewer(request, db, event);
     const [tables, comps] = await Promise.all([
       db.select().from(eventTables).where(eq(eventTables.eventId, event.id)).orderBy(asc(eventTables.sortOrder)),
       db.select().from(competitions).where(eq(competitions.eventId, event.id)).orderBy(asc(competitions.sortOrder), asc(competitions.createdAt)),
@@ -141,6 +152,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
         sport: event.sport,
         settings: event.settings,
         pinEnabled: event.pinHash !== null,
+        viewerProtected: event.viewerCode !== null,
       },
       tables: tables.map((t) => ({ id: t.id, name: t.name, sortOrder: t.sortOrder })),
       competitions: comps.map(competitionSummary),
@@ -267,6 +279,8 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
   /** Server-Sent Events: one "change" message per modification, plus a heartbeat against idle proxies. */
   app.get('/api/events/:eventRef/stream', async (request, reply) => {
     const event = await findEvent(db, (request.params as { eventRef: string }).eventRef);
+    // Refused before the stream starts; the client opens it again once it may read
+    await requireViewer(request, db, event);
     reply.hijack();
     const res = reply.raw;
     res.writeHead(200, {

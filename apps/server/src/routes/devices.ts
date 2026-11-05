@@ -10,6 +10,7 @@ import { eventOperations } from '../services/operations.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
 import { findEvent } from './events.js';
+import { requireViewer } from './viewers.js';
 
 const deviceBody = z.object({
   pin: z.string().trim().regex(/^\d{6}$/),
@@ -73,12 +74,14 @@ export async function deviceRoutes(app: FastifyInstance, { db, broadcaster }: Ro
   /** Tables, queue and recent results for the match desk, phones and the projector */
   app.get('/api/events/:eventRef/operations', async (request) => {
     const event = await findEvent(db, (request.params as { eventRef: string }).eventRef);
+    await requireViewer(request, db, event);
     return eventOperations(db, event.id, event.settings, request.user ? 'admin' : 'public');
   });
 
   /** Live forecast of a tournament day (default: today, or the next day with competitions) */
   app.get('/api/events/:eventRef/forecast', async (request) => {
     const event = await findEvent(db, (request.params as { eventRef: string }).eventRef);
+    await requireViewer(request, db, event);
     const { day } = parse(z.object({ day: z.iso.date().optional() }), request.query);
     return eventForecast(db, event, day);
   });

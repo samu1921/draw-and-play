@@ -13,6 +13,8 @@ describe.skipIf(!databaseAvailable)('display profiles via the API', () => {
     ctx = await setupTestApp();
     api = await adminClient(ctx.app);
     eventId = (await api('POST', '/api/events', { name: 'Anzeige', slug: 'anzeige' })).json().event.id;
+    // Public views open to everybody; the viewer code has its own tests
+    await api('DELETE', `/api/events/${eventId}/viewer-code`);
     ctx.broadcaster.subscribe(eventId, (m) => messages.push(m));
   });
   afterAll(async () => {

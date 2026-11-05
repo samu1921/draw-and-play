@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { buildStructure, DOMAIN_VERSION, SPORT_IDS, validateDraw, type Draw } from '@draw-and-play/domain';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { generateViewerCode } from '../auth/viewers.js';
 import type { Executor } from '../db/client.js';
 import { competitions, displayProfiles, entries, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
 import { badRequest, parse } from '../errors.js';
@@ -343,6 +344,8 @@ export async function importEvent(tx: Executor, doc: EventExport, slug: string):
       timezone: doc.event.timezone,
       sport: doc.event.sport,
       settings: doc.event.settings,
+      // The code is not part of the file; an imported event gets a new one, so it is never open by accident
+      viewerCode: generateViewerCode(),
     })
     .returning();
   const eventId = event!.id;

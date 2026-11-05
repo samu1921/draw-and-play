@@ -28,6 +28,8 @@ describe.skipIf(!databaseAvailable)('live forecast', () => {
     ctx = await setupTestApp();
     api = await adminClient(ctx.app);
     eventId = (await api('POST', '/api/events', { name: 'Forecast', slug: 'forecast', tableCount: 2 })).json().event.id;
+    // Public views open to everybody; the viewer code has its own tests
+    await api('DELETE', `/api/events/${eventId}/viewer-code`);
     tableIds = (await ctx.app.inject({ method: 'GET', url: '/api/events/forecast' })).json().tables.map((t: { id: string }) => t.id);
     competitionId = (
       await api('POST', `/api/events/${eventId}/competitions`, { name: 'Hobby', day: '2026-11-07', earliestStart: 600, format: { groups: { groupCount: 1 } } })

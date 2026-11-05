@@ -7,6 +7,7 @@ import { displaySettingsSchema as settingsSchema } from '../schemas.js';
 import { requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
 import { findEvent } from './events.js';
+import { requireViewer } from './viewers.js';
 
 const uuid = z.uuid();
 
@@ -69,8 +70,12 @@ export async function displayRoutes(app: FastifyInstance, { db, broadcaster }: R
     return reply.code(201).send({ display: profileView(row!, request.user!.username) });
   });
 
-  /** Public: the screen showing the profile has no login */
-  app.get('/api/displays/:profileId', async (request) => ({ display: profileView(await load(idParam(request.params))) }));
+  /** Public (with viewer access): the screen showing the profile has no login */
+  app.get('/api/displays/:profileId', async (request) => {
+    const profile = await load(idParam(request.params));
+    await requireViewer(request, db, await findEvent(db, profile.eventId));
+    return { display: profileView(profile) };
+  });
 
   app.patch('/api/displays/:profileId', { preHandler: requireAdmin }, async (request) => {
     const id = idParam(request.params);

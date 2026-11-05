@@ -13,6 +13,7 @@ import { deviceRoutes } from './routes/devices.js';
 import { displayRoutes } from './routes/displays.js';
 import { eventRoutes } from './routes/events.js';
 import { transferRoutes } from './routes/transfer.js';
+import { viewerRoutes } from './routes/viewers.js';
 
 export interface AppOptions {
   logLevel?: string;
@@ -76,6 +77,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await deviceRoutes(app, deps);
     await displayRoutes(app, deps);
     await transferRoutes(app, deps);
+    await viewerRoutes(app, deps);
   }
 
   if (options.webDist && existsSync(options.webDist)) {

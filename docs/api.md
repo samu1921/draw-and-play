@@ -13,7 +13,7 @@ Errors carry a stable, language-neutral code that the UI translates:
 | Status | Codes |
 |---|---|
 | 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unpairedPlayers` (details: `count`), `oddPlayerCount` (details: `count`), `notDoubles`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf`, `unsupportedFormat`, `invalidImport` (details: `reason`, `at`) |
-| 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin` |
+| 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin`, `viewerCodeRequired` (details: `name`, `pinEnabled`), `invalidViewerCode` |
 | 403 | `correctionsAdminOnly`, `walkoverAdminOnly` |
 | 404 | `notFound` (details: `entity`) |
 | 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `matchCalled`, `alreadyWithdrawn`, `notWithdrawn`, `slugTaken`, `duplicateTableName`, `pinDisabled` |
@@ -108,6 +108,16 @@ Every command names the match `version` it saw (optimistic locking) and runs und
 | POST | `/api/matches/:id/result` | `{ notation: "4 -5 9 7", version }` or `{ walkoverWinner: 0 \| 1, version }` ; repeating a request is safe: if the match already holds exactly this result, the answer is `200` with the unchanged match, whatever `version` says |
 
 A result for a finished match is a correction; it is refused with `dependentMatchStarted` once a later match that builds on it has been called or played. Every command is written to the audit log.
+
+## Viewer code
+
+New (and imported) events start with their public views behind a six character viewer code; existing events from before stay open. While a code is set, every public read (`GET /api/events/:ref`, `/operations`, `/forecast`, `/stream`, `/api/competitions/:id/state`, `/api/displays/:id`) needs an admin session, a result-entry device (PIN) or a viewer session, else `401 viewerCodeRequired`. The overview says `viewerProtected`; admin views of the event carry `viewerCode` in plain text (it only grants reading, and the notice with its QR code can be printed again).
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| POST | `/api/events/:id/viewer-code` | admin | → `{ code }`; a new code signs out every viewer |
+| DELETE | `/api/events/:id/viewer-code` | admin | opens the public views to everybody |
+| POST | `/api/events/:idOrSlug/viewer` | public | `{ code }` (case, spaces and dashes do not matter) → sets the `dap_viewer` cookie, valid until the end of the day after the event; 10 attempts per 15 minutes |
 
 ## Result entry by PIN
 

@@ -27,6 +27,8 @@ describe.skipIf(!databaseAvailable)('withdrawal after the draw', () => {
     ctx = await setupTestApp();
     api = await adminClient(ctx.app);
     const eventId = (await api('POST', '/api/events', { name: 'Rückzug', slug: 'rueckzug', tableCount: 2 })).json().event.id;
+    // Public views open to everybody; the viewer code has its own tests
+    await api('DELETE', `/api/events/${eventId}/viewer-code`);
     tableId = (await ctx.app.inject({ method: 'GET', url: '/api/events/rueckzug' })).json().tables[0].id;
     competitionId = (await api('POST', `/api/events/${eventId}/competitions`, { name: 'KO', format: { knockout: { placements: 'thirdPlace' } } })).json()
       .competition.id;

@@ -12,6 +12,8 @@ describe.skipIf(!databaseAvailable)('concurrency and live updates', () => {
     ({ app } = await setupTestApp());
     api = await adminClient(app);
     eventId = (await api('POST', '/api/events', { name: 'Live', slug: 'live', tableCount: 2 })).json().event.id;
+    // Public views open to everybody; the viewer code has its own tests
+    await api('DELETE', `/api/events/${eventId}/viewer-code`);
     tableIds = (await app.inject({ method: 'GET', url: '/api/events/live' })).json().tables.map((t: { id: string }) => t.id);
     competitionId = (await api('POST', `/api/events/${eventId}/competitions`, { name: 'Hobby', format: { groups: { groupCount: 1 } } })).json()
       .competition.id;
