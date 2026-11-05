@@ -159,6 +159,8 @@ export interface SideInfo {
   name: string;
   clubs: string[];
   personIds: string[];
+  /** Queue only: when this side last finished a match (ISO); null = not played yet */
+  restingSince?: string | null;
 }
 
 export interface OperationsMatch extends Omit<MatchInfo, 'sides' | 'id'> {

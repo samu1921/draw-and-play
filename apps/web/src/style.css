@@ -1046,6 +1046,33 @@ textarea {
   font-weight: 600;
 }
 
+.queue-side {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.4rem;
+}
+
+.queue-vs {
+  color: var(--muted);
+}
+
+/* Rest since the last match; a short one is marked with an icon and the warning colour */
+.rest {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--fg-secondary);
+  white-space: nowrap;
+}
+
+.rest.short {
+  color: var(--warning-text);
+  font-weight: 600;
+}
+
 .queue-item.blocked .queue-players {
   color: var(--fg-secondary);
 }

@@ -12,6 +12,11 @@ export interface SideView {
   name: string;
   clubs: string[];
   personIds: string[];
+  /**
+   * Queue only: when this side last finished a match (ISO time); for a pair the partner who played last.
+   * null = no match played yet today. Lets the desk see who has had a rest.
+   */
+  restingSince?: string | null;
 }
 
 export interface OperationsMatch extends Omit<MatchView, 'sides'> {
@@ -19,6 +24,31 @@ export interface OperationsMatch extends Omit<MatchView, 'sides'> {
   sides: [SideView | null, SideView | null];
   /** Queue only: a player of this match is currently playing at another table */
   busy?: boolean;
+}
+
+interface FinishedLike {
+  status: string;
+  finishedAt: Date | string | null;
+  sides: readonly (Pick<SideView, 'personIds'> | null)[];
+}
+
+/** The end of each person's latest finished match, across all competitions of the event */
+export function lastFinishedByPerson(matches: readonly FinishedLike[]): Map<string, number> {
+  const last = new Map<string, number>();
+  for (const m of matches) {
+    if (m.status !== 'finished' || !m.finishedAt) continue;
+    const at = new Date(m.finishedAt).getTime();
+    for (const personId of m.sides.flatMap((s) => s?.personIds ?? [])) {
+      if (at > (last.get(personId) ?? -Infinity)) last.set(personId, at);
+    }
+  }
+  return last;
+}
+
+/** When a side became free: the latest end among its players, or null if none of them has played */
+export function restingSince(personIds: readonly string[], last: ReadonlyMap<string, number>): string | null {
+  const times = personIds.flatMap((p) => (last.has(p) ? [last.get(p)!] : []));
+  return times.length > 0 ? new Date(Math.max(...times)).toISOString() : null;
 }
 
 /**
@@ -57,9 +87,14 @@ export async function eventOperations(ex: Executor, eventId: string, settings: E
 
   const called = all.filter((m) => m.status === 'called');
   const playing = new Set(called.flatMap((m) => m.sides.flatMap((s) => s?.personIds ?? [])));
+  const lastFinished = lastFinishedByPerson(all);
   const queue = all
     .filter((m) => m.status === 'ready')
-    .map((m) => ({ ...m, busy: m.sides.some((s) => s?.personIds.some((p) => playing.has(p))) }));
+    .map((m) => ({
+      ...m,
+      busy: m.sides.some((s) => s?.personIds.some((p) => playing.has(p))),
+      sides: m.sides.map((side) => side && { ...side, restingSince: restingSince(side.personIds, lastFinished) }) as OperationsMatch['sides'],
+    }));
   const recent = all
     .filter((m) => m.status === 'finished' && m.finishedAt)
     .sort((a, b) => new Date(b.finishedAt!).getTime() - new Date(a.finishedAt!).getTime())

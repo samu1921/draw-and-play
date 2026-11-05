@@ -379,6 +379,13 @@ const de: typeof en = {
       uncall: 'Aufruf zurücknehmen',
       recent: 'Letzte Ergebnisse',
       correct: 'Korrigieren',
+      restTitle: 'Pause seit dem letzten Spiel',
+      restMinutes: '{n} min Pause',
+      restHours: '{time} h Pause',
+      notPlayed: 'noch kein Spiel',
+      order: 'Reihenfolge',
+      orderForecast: 'Prognose',
+      orderRest: 'Längste Pause',
     },
   },
   public: {

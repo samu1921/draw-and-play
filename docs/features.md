@@ -86,6 +86,7 @@ The match desk is the admin's main screen during play.
 
 - **Tables:** every table with its current match and running time, or "free".
 - **Ready to call:** all matches whose players are known, each with its planned start and table from the forecast as a suggestion. A match whose player is currently on another table (in any competition) is marked and cannot be called.
+- **Rest:** next to each player is how long ago their last match ended (across all competitions; in doubles the partner who played last counts), or "no match yet". Rests under 10 minutes are marked. The order can switch from **Forecast** to **Longest rest**, which puts the matches whose two sides have been free the longest at the top. This helps when some matches took much longer than planned.
 - **Call** a match to a free table (only tables allowed for its competition), **undo** a call, enter a **result** or a **walkover**, **correct** a result. A correction is refused once a later match that depends on it has been called or played.
 - **Latest results** at a glance.
 - **Forecast:** for the current day the planner runs again on the real state. Finished matches drop out, running matches keep their table until their expected end, the rest is planned from now on. After three played matches of a competition their real average duration replaces the estimate. The desk shows the expected end per competition and of the day (with a 10 % buffer).

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCheck, ListOrdered, Table2 } from '@lucide/vue';
+import { CheckCheck, Coffee, ListOrdered, Table2, Timer } from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ForecastPanel from '../../components/live/ForecastPanel.vue';
@@ -13,7 +13,8 @@ import { useResultOutbox } from '../../composables/useResultOutbox.js';
 import { api, type OperationsMatch } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
-import { formatClock } from '../../lib/time.js';
+import { matchRest, restMinutes, SHORT_REST_MINUTES } from '../../lib/rest.js';
+import { formatClock, formatDuration } from '../../lib/time.js';
 
 const { t, te } = useI18n();
 const live = injectLiveEvent();
@@ -59,13 +60,25 @@ async function run(action: () => Promise<unknown>) {
  * In the order of the forecast (the suggested next calls); matches with a busy player stay in place, greyed out.
  * Without a forecast, callable matches come first.
  */
+/** "forecast": the suggested order; "rest": the longest-rested matches first (the shorter rest of both sides counts) */
+const order = ref<'forecast' | 'rest'>('forecast');
+const plannedStart = (m: OperationsMatch) => plannedOf(m)?.start ?? Number.MAX_SAFE_INTEGER;
+/** Longer rest first; equal rests (e.g. nobody has played) keep the forecast order */
+const byRest = (a: OperationsMatch, b: OperationsMatch) => {
+  const ra = matchRest(a.sides, now.value);
+  const rb = matchRest(b.sides, now.value);
+  return ra === rb ? 0 : rb > ra ? 1 : -1;
+};
 const queue = computed(() =>
-  [...(ops.value?.queue ?? [])].sort(
-    (a, b) =>
-      (plannedOf(a)?.start ?? Number.MAX_SAFE_INTEGER) - (plannedOf(b)?.start ?? Number.MAX_SAFE_INTEGER) ||
-      Number(a.busy ?? false) - Number(b.busy ?? false),
+  [...(ops.value?.queue ?? [])].sort((a, b) =>
+    order.value === 'rest'
+      ? Number(a.busy ?? false) - Number(b.busy ?? false) || byRest(a, b) || plannedStart(a) - plannedStart(b)
+      : plannedStart(a) - plannedStart(b) || Number(a.busy ?? false) - Number(b.busy ?? false),
   ),
 );
+const restOf = (since: string | null | undefined) => restMinutes(since, now.value);
+const restText = (minutes: number | null) =>
+  minutes === null ? t('admin.desk.notPlayed') : minutes < 60 ? t('admin.desk.restMinutes', { n: minutes }) : t('admin.desk.restHours', { time: formatDuration(minutes) });
 /** The table picked by hand, else the one the forecast suggests, else the first free one */
 const selectedTable = (m: OperationsMatch) => {
   const options = tablesFor(m);
@@ -110,7 +123,13 @@ async function onSaved() {
     </section>
 
     <section class="card" aria-labelledby="desk-queue">
-      <h2 id="desk-queue"><ListOrdered aria-hidden="true" />{{ t('admin.desk.queue') }} ({{ ops.queue.length }})</h2>
+      <div class="card-header">
+        <h2 id="desk-queue"><ListOrdered aria-hidden="true" />{{ t('admin.desk.queue') }} ({{ ops.queue.length }})</h2>
+        <div v-if="ops.queue.length > 1" class="segmented" role="group" :aria-label="t('admin.desk.order')">
+          <button type="button" :aria-pressed="order === 'forecast'" @click="order = 'forecast'">{{ t('admin.desk.orderForecast') }}</button>
+          <button type="button" :aria-pressed="order === 'rest'" @click="order = 'rest'">{{ t('admin.desk.orderRest') }}</button>
+        </div>
+      </div>
       <p v-if="ops.queue.length === 0" class="muted">{{ t('admin.desk.queueEmpty') }}</p>
       <ul v-else class="queue">
         <li v-for="m in queue" :key="m.id" class="queue-item" :class="{ blocked: m.busy }">
@@ -119,7 +138,25 @@ async function onSaved() {
               <span class="swatch" :style="{ background: `var(--series-${(competitions.get(m.competitionId)?.color ?? 0) + 1})` }" aria-hidden="true"></span>
               {{ competitions.get(m.competitionId)?.name }} · {{ matchLabel(t, m) }}
             </span>
-            <span class="queue-players">{{ sideNames(m) }}</span>
+            <span class="queue-players">
+              <template v-for="(side, i) in m.sides" :key="i">
+                <span v-if="i === 1" class="queue-vs"> – </span>
+                <span class="queue-side">
+                  {{ side?.name ?? '—' }}
+                  <span
+                    v-if="side"
+                    class="rest"
+                    :class="{ short: (restOf(side.restingSince) ?? Infinity) < SHORT_REST_MINUTES }"
+                    :title="t('admin.desk.restTitle')"
+                  >
+                    <Timer v-if="(restOf(side.restingSince) ?? Infinity) < SHORT_REST_MINUTES" aria-hidden="true" />
+                    <Coffee v-else aria-hidden="true" />
+                    <span class="visually-hidden">{{ t('admin.desk.restTitle') }}:</span>
+                    {{ restText(restOf(side.restingSince)) }}
+                  </span>
+                </span>
+              </template>
+            </span>
             <span v-if="plannedOf(m)" class="muted small">
               {{ t('forecast.suggested', { time: formatClock(plannedOf(m)!.start), table: tableName(plannedOf(m)!.tableId) }) }}
             </span>

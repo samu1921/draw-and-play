@@ -378,6 +378,13 @@ export default {
       uncall: 'Undo call',
       recent: 'Latest results',
       correct: 'Correct',
+      restTitle: 'Rest since the last match',
+      restMinutes: '{n} min rest',
+      restHours: '{time} h rest',
+      notPlayed: 'no match yet',
+      order: 'Order',
+      orderForecast: 'Forecast',
+      orderRest: 'Longest rest',
     },
   },
   public: {
