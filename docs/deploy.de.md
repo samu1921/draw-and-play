@@ -33,7 +33,7 @@ Empfohlen: einen eigenen Benutzer anlegen, ihn der Gruppe `docker` hinzufügen u
 ## 4. Installieren
 
 ```bash
-git clone <repository-url> draw-and-play   # oder den Ordner per scp/rsync kopieren
+git clone --branch v0.1.0 https://github.com/samu1921/draw-and-play.git draw-and-play   # das neueste Release, siehe https://github.com/samu1921/draw-and-play/releases
 cd draw-and-play
 cp .env.example .env
 chmod 600 .env
@@ -51,11 +51,13 @@ In der `.env` mindestens setzen:
 | `HTTP_PORT` / `HTTPS_PORT` | `80` / `443` |
 | `IMPRINT_URL`, `PRIVACY_URL` | Impressum und Datenschutz, z. B. auf der Vereinswebsite (jede Veranstaltung kann eigene Links setzen) |
 | `BACKUP_INTERVAL_MINUTES` | `60`, am Turniertag `15` |
+| `APP_IMAGE` | `ghcr.io/samu1921/draw-and-play:0.1.0`, das veröffentlichte Image zur ausgecheckten Version (weglassen, um das Image auf dem Server zu bauen) |
 
 Starten:
 
 ```bash
-docker compose up -d --build
+docker compose pull                        # mit APP_IMAGE; ohne stattdessen `docker compose up -d --build`
+docker compose up -d
 docker compose ps                          # alle Dienste "running", app "healthy"
 curl https://turnier.ttc-musterstadt.de/api/health
 ```
@@ -67,9 +69,12 @@ Dann unter `https://<domain>/login` mit dem Admin aus der `.env` anmelden.
 ```bash
 cd draw-and-play
 docker compose exec backup sh /usr/local/bin/backup.sh once   # vorher sichern
-git pull
-docker compose up -d --build                                  # Migrationen laufen beim Start
+git fetch --tags && git checkout v<version>                   # das neue Release
+nano .env                                                     # APP_IMAGE=…:<version>
+docker compose pull && docker compose up -d                   # Migrationen laufen beim Start
 ```
+
+Ohne `APP_IMAGE` statt des Pulls `docker compose up -d --build` ausführen. Was sich geändert hat, steht im [CHANGELOG](../CHANGELOG.md) und auf der [Releases-Seite](https://github.com/samu1921/draw-and-play/releases).
 
 Hat sich `docker/Caddyfile` geändert, den Proxy neu erstellen: `docker compose up -d --force-recreate proxy`.
 

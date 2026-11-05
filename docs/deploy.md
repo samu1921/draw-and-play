@@ -33,7 +33,7 @@ Recommended: create your own user, add it to the `docker` group and switch off p
 ## 4. Install
 
 ```bash
-git clone <repository-url> draw-and-play   # or copy the folder with scp/rsync
+git clone --branch v0.1.0 https://github.com/samu1921/draw-and-play.git draw-and-play   # the latest release, see https://github.com/samu1921/draw-and-play/releases
 cd draw-and-play
 cp .env.example .env
 chmod 600 .env
@@ -51,11 +51,13 @@ Set at least these in `.env`:
 | `HTTP_PORT` / `HTTPS_PORT` | `80` / `443` |
 | `IMPRINT_URL`, `PRIVACY_URL` | legal notice and privacy policy, e.g. on the club website (every event can set its own links) |
 | `BACKUP_INTERVAL_MINUTES` | `60`, on the tournament day `15` |
+| `APP_IMAGE` | `ghcr.io/samu1921/draw-and-play:0.1.0`, the released image matching the checked-out version (leave it out to build the image on the server) |
 
 Start:
 
 ```bash
-docker compose up -d --build
+docker compose pull                        # with APP_IMAGE; without it use `docker compose up -d --build`
+docker compose up -d
 docker compose ps                          # every service running, app healthy
 curl https://tournament.example-club.org/api/health
 ```
@@ -67,9 +69,12 @@ Then sign in at `https://<domain>/login` with the admin from `.env`.
 ```bash
 cd draw-and-play
 docker compose exec backup sh /usr/local/bin/backup.sh once   # back up first
-git pull
-docker compose up -d --build                                  # migrations run on startup
+git fetch --tags && git checkout v<version>                   # the new release
+nano .env                                                     # APP_IMAGE=…:<version>
+docker compose pull && docker compose up -d                   # migrations run on startup
 ```
+
+Without `APP_IMAGE`, run `docker compose up -d --build` instead of pulling. What changed is listed in the [CHANGELOG](../CHANGELOG.md) and on the [releases page](https://github.com/samu1921/draw-and-play/releases).
 
 If `docker/Caddyfile` changed, recreate the proxy: `docker compose up -d --force-recreate proxy`.
 
