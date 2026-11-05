@@ -11,6 +11,10 @@ updates:
       # Patch and minor updates come as one pull request; major updates one by one.
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # The Node types follow the Node version in the Dockerfile and CI, which is upgraded on purpose.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
@@ -28,3 +32,7 @@ updates:
       interval: monthly
     commit-message:
       prefix: chore(deps)
+    ignore:
+      # A new Node major goes together with CI, engines and @types/node, so it is upgraded on purpose.
+      - dependency-name: node
+        update-types: [version-update:semver-major]
