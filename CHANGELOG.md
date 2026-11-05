@@ -2,6 +2,23 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.1.1] – 2026-11-05
+
+### Bug fixes
+
+- **docker:** Let the app frame itself for the display preview
+- **web:** Keep checkboxes full size when their label wraps
+
+### Documentation
+
+- Run the server install as a dedicated drawandplay user
+
+### Build and CI
+
+- Release through a pull request, since main only accepts merged pull requests
+- Leave node major upgrades out of dependabot
+- Leave typescript major upgrades out of dependabot
+
 ## [0.1.0] – 2026-11-05
 
 ### Features
