@@ -10,6 +10,8 @@ const router = useRouter();
 const events = ref<EventInfo[] | null>(null);
 const form = ref({ name: '', slug: '', startsOn: '', tableCount: 4 });
 const error = ref('');
+const importError = ref('');
+const importing = ref(false);
 
 onMounted(async () => {
   events.value = (await api<{ events: EventInfo[] }>('GET', '/api/events')).events;
@@ -27,6 +29,29 @@ async function create() {
     await router.push(`/admin/events/${event.id}`);
   } catch (e) {
     error.value = errorText(t, te, e);
+  }
+}
+
+async function importFile(input: HTMLInputElement) {
+  const file = input.files?.[0];
+  if (!file) return;
+  importError.value = '';
+  importing.value = true;
+  try {
+    let doc: unknown;
+    try {
+      doc = JSON.parse(await file.text());
+    } catch {
+      importError.value = t('errors.notJson');
+      return;
+    }
+    const { event } = await api<{ event: EventInfo }>('POST', '/api/events/import', doc);
+    await router.push(`/admin/events/${event.id}`);
+  } catch (e) {
+    importError.value = errorText(t, te, e);
+  } finally {
+    importing.value = false;
+    input.value = '';
   }
 }
 </script>
@@ -68,6 +93,16 @@ async function create() {
         </div>
         <p v-if="error" class="warning-text wide" role="alert">{{ error }}</p>
       </form>
+    </section>
+
+    <section class="card" aria-labelledby="import-event">
+      <h2 id="import-event">{{ t('admin.events.import') }}</h2>
+      <p class="muted">{{ t('admin.events.importHint') }}</p>
+      <label class="field">
+        <span>{{ t('admin.events.importFile') }}</span>
+        <input type="file" accept=".json,application/json" :disabled="importing" @change="importFile($event.target as HTMLInputElement)" />
+      </label>
+      <p v-if="importError" class="warning-text" role="alert">{{ importError }}</p>
     </section>
   </div>
 </template>

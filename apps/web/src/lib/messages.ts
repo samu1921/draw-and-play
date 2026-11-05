@@ -23,6 +23,10 @@ export function errorText(t: Translate, has: Has, error: unknown): string {
   if (error.code === 'invalidResult' && error.details && typeof error.details === 'object' && 'code' in error.details) {
     return resultErrorText(t, error.details as ResultError);
   }
+  if (error.code === 'invalidImport' && error.details && typeof error.details === 'object') {
+    const { reason, at } = error.details as { reason?: string; at?: string };
+    return t('errors.invalidImport', { reason: reason ?? '?', at: at ?? '?' });
+  }
   const key = `errors.${error.code}`;
   return has(key) ? t(key) : t('errors.generic', { code: error.code });
 }

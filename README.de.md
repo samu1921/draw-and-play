@@ -75,6 +75,8 @@ docker compose start app
 
 Die Dumps liegen auf demselben Server wie die Datenbank. Kopiere sie ab und zu woandershin, zum Beispiel mit `scp` oder `rclone`.
 
+Eine einzelne Veranstaltung lässt sich außerdem als JSON-Datei sichern und wieder importieren (**Einrichtung → Exportieren**, **Turnierleitung → Veranstaltung importieren**), etwa um sie vom Server auf einen Laptop und zurück umzuziehen.
+
 ## Entwicklung mit Hot Reload
 
 ```bash

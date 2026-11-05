@@ -159,6 +159,24 @@ await admin.goto(`${BASE}/admin/events/${eventId}/qr`);
 await admin.locator('.qr-code svg').first().waitFor();
 await shot(admin, '14-qr');
 
+step('export and import');
+await admin.goto(`${BASE}/admin/events/${eventId}`);
+const [download] = await Promise.all([admin.waitForEvent('download'), admin.getByRole('link', { name: 'Export herunterladen' }).click()]);
+const exportFile = `${OUT}export.json`;
+await download.saveAs(exportFile);
+await admin.goto(`${BASE}/admin`);
+await admin.getByLabel('Exportdatei (.json)').setInputFiles(exportFile);
+await admin.waitForURL((url) => /\/admin\/events\/[0-9a-f-]+$/.test(url.pathname) && !url.pathname.endsWith(eventId));
+const importedId = admin.url().split('/').pop();
+const importedEvent = await (await admin.request.get(`${BASE}/api/events/${importedId}`)).json();
+const importedSingles = importedEvent.competitions.find((c) => c.name === 'Einzel');
+const importedState = await (await admin.request.get(`${BASE}/api/competitions/${importedSingles.id}/state`)).json();
+const finishedCount = importedState.matches.filter((m) => m.status === 'finished').length;
+if (finishedCount < 1) errors.push(`import: expected a finished match, got ${finishedCount}`);
+await admin.getByRole('link', { name: 'Spielbetrieb' }).click();
+await admin.locator('.queue-item').first().waitFor();
+await shot(admin, '15-imported-desk');
+
 console.log(JSON.stringify({ slug, eventId, errors }, null, 2));
 await browser.close();
 if (errors.length > 0) process.exit(1);

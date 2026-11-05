@@ -75,6 +75,8 @@ docker compose start app
 
 The dumps lie on the same server as the database. Copy them somewhere else from time to time, for example with `scp` or `rclone`.
 
+A single event can also be saved as a JSON file and imported again (**Setup → Export**, **Tournament desk → Import event**), for example to move it from the server to a laptop and back.
+
 ## Development with hot reload
 
 ```bash

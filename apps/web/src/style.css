@@ -286,6 +286,11 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+a.button {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .button.secondary {
   color: var(--accent);
   background: transparent;

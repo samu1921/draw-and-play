@@ -98,6 +98,12 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
       </label>
     </section>
 
+    <section class="card" aria-labelledby="backup-title">
+      <h2 id="backup-title">{{ t('admin.setup.backupTitle') }}</h2>
+      <p class="muted">{{ t('admin.setup.backupHint') }}</p>
+      <div><a class="button secondary" :href="`/api/events/${event.id}/export`" download>{{ t('admin.setup.export') }}</a></div>
+    </section>
+
     <p v-if="message" class="muted" role="status">{{ message }}</p>
     <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
   </div>
