@@ -1,16 +1,21 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { api } from '../lib/api.js';
+
+/** admin: everything; desk (registration desk): players, entries and attendance */
+export type UserRole = 'admin' | 'desk';
 
 export interface User {
   id: string;
   username: string;
+  role: UserRole;
 }
 
 export const useSessionStore = defineStore('session', () => {
   const user = ref<User | null>(null);
   /** Whether the session has been checked once since page load */
   const checked = ref(false);
+  const isAdmin = computed(() => user.value?.role === 'admin');
 
   async function check() {
     try {
@@ -31,5 +36,5 @@ export const useSessionStore = defineStore('session', () => {
     user.value = null;
   }
 
-  return { user, checked, check, login, logout };
+  return { user, checked, isAdmin, check, login, logout };
 });

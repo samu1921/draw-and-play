@@ -5,9 +5,11 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { api, type EventInfo } from '../../lib/api.js';
 import { errorText } from '../../lib/messages.js';
+import { useSessionStore } from '../../stores/session.js';
 
 const { t, te, d } = useI18n();
 const router = useRouter();
+const session = useSessionStore();
 const events = ref<EventInfo[] | null>(null);
 const form = ref({ name: '', slug: '', startsOn: '', tableCount: 4, sport: SPORT_IDS[0] as string });
 const error = ref('');
@@ -72,7 +74,7 @@ async function importFile(input: HTMLInputElement) {
       </ul>
     </section>
 
-    <section class="card" aria-labelledby="create-event">
+    <section v-if="session.isAdmin" class="card" aria-labelledby="create-event">
       <h2 id="create-event">{{ t('admin.events.create') }}</h2>
       <form class="fields" @submit.prevent="create">
         <label class="field wide">
@@ -105,7 +107,7 @@ async function importFile(input: HTMLInputElement) {
       </form>
     </section>
 
-    <section class="card" aria-labelledby="import-event">
+    <section v-if="session.isAdmin" class="card" aria-labelledby="import-event">
       <h2 id="import-event">{{ t('admin.events.import') }}</h2>
       <p class="muted">{{ t('admin.events.importHint') }}</p>
       <label class="field">

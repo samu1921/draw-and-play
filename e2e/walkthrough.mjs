@@ -256,6 +256,41 @@ const walkovers = afterWithdraw.matches.filter((m) => m.sides.includes(leaving.i
 if (walkovers < 1) errors.push(`withdrawal: expected walkovers for ${leavingName}, got ${walkovers}`);
 await shot(admin, '14b-withdrawn');
 
+step('registration desk account');
+const deskUser = `meldestelle-${slug.slice(-4)}`;
+await admin.goto(`${BASE}/admin/users`);
+await admin.getByLabel('Benutzername').fill(deskUser);
+await admin.getByLabel(/^Passwort/).fill('meldestelle-passwort');
+await admin.locator('form.fields select').selectOption('desk');
+await admin.getByRole('button', { name: 'Benutzer anlegen' }).click();
+await admin.getByText('Benutzer angelegt.').waitFor();
+await shot(admin, '14d-users');
+
+const deskContext = await browser.newContext({ locale: 'de-DE', viewport: { width: 1360, height: 900 } });
+const deskPage = await deskContext.newPage();
+watch(deskPage, 'desk');
+await deskPage.goto(`${BASE}/login`);
+await deskPage.getByLabel('Benutzername').fill(deskUser);
+await deskPage.getByLabel('Passwort').fill('meldestelle-passwort');
+await deskPage.locator('form button[type=submit]').click();
+await deskPage.waitForURL(`${BASE}/admin`);
+// The event opens on the players; setup and match desk are not offered and redirect
+await deskPage.goto(`${BASE}/admin/events/${eventId}/desk`);
+await deskPage.waitForURL(/\/persons$/);
+const deskTabs = await deskPage.locator('.tabs a').allInnerTexts();
+if (deskTabs.join('|') !== 'Spieler|Konkurrenzen|Drucken') errors.push(`desk tabs: ${deskTabs.join('|')}`);
+await deskPage.getByLabel('Vorname').fill('Nachmeldung');
+await deskPage.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+await deskPage.getByRole('rowheader', { name: 'Nachmeldung', exact: true }).waitFor();
+await shot(deskPage, '14e-desk-players');
+await deskPage.goto(`${BASE}/account`);
+await deskPage.getByLabel('Aktuelles Passwort').fill('meldestelle-passwort');
+await deskPage.getByLabel(/^Neues Passwort \(/).fill('neues-meldestelle-passwort');
+await deskPage.getByLabel('Neues Passwort wiederholen').fill('neues-meldestelle-passwort');
+await deskPage.getByRole('button', { name: 'Passwort ändern' }).click();
+await deskPage.getByText('Passwort geändert.', { exact: false }).waitFor();
+await deskContext.close();
+
 step('print pages');
 await admin.goto(`${BASE}/admin/events/${eventId}/print`);
 await admin.getByRole('heading', { name: 'Schiedsrichterzettel' }).waitFor();

@@ -29,7 +29,7 @@ Er läuft neben dem normalen Stack und berührt dessen Daten nie.
 
 ## Turniertag in Kürze
 
-1. Unter `/login` anmelden (erster Admin aus `ADMIN_USERNAME` / `ADMIN_PASSWORD` in der `.env`).
+1. Unter `/login` anmelden (erster Admin aus `ADMIN_USERNAME` / `ADMIN_PASSWORD` in der `.env`). Unter **Benutzer** weitere Admins oder Konten für die Meldestelle anlegen, die nur Spieler, Meldungen und Anwesenheit pflegen darf; das eigene Passwort ändert jede Person unter **Mein Konto**.
 2. **Turnierleitung → Veranstaltung anlegen**, dann Spieler erfassen, Konkurrenzen anlegen (Modus wie im Planer), Spieler melden und auslosen.
 3. **Einrichtung:** PIN erzeugen und die QR-Codes für die Tische drucken. Neue Veranstaltungen zeigen ihre öffentlichen Seiten nur mit Zugangscode; den Aushang mit QR-Code drucken und in der Halle aufhängen (oder die Seiten für alle öffnen). Unter **Anzeigen** für jeden Bildschirm (Beamer, Fernseher) ein Profil anlegen und dort dessen Link öffnen. Die Anzeige ist eine 16:9-Bühne, die nie scrollt; Pfeiltasten oder ein Presenter blättern, die Leertaste pausiert, F schaltet Vollbild.
 4. **Spielbetrieb:** Spielbereite Spiele auf freie Tische aufrufen. Die Spieler scannen den QR-Code am Tisch, geben einmal die PIN ein und tippen das Ergebnis; die Turnierleitung kann jederzeit selbst eintragen oder korrigieren. Hat ein Handy gerade kein Netz, bleibt das Ergebnis auf dem Handy und wird gesendet, sobald die Verbindung zurück ist (Seite dafür offen lassen).

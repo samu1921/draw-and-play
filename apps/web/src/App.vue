@@ -33,6 +33,8 @@ async function logout() {
     <nav class="app-nav">
       <RouterLink to="/">{{ t('nav.planner') }}</RouterLink>
       <RouterLink v-if="session.user" to="/admin">{{ t('nav.admin') }}</RouterLink>
+      <RouterLink v-if="session.isAdmin" to="/admin/users">{{ t('nav.users') }}</RouterLink>
+      <RouterLink v-if="session.user" to="/account">{{ t('nav.account') }}</RouterLink>
       <RouterLink to="/status">{{ t('nav.status') }}</RouterLink>
     </nav>
     <button v-if="session.user" type="button" class="link-button" @click="logout">{{ t('nav.logout') }}</button>

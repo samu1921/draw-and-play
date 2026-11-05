@@ -5,21 +5,26 @@ import { useRoute } from 'vue-router';
 import StreamBadge from '../../components/live/StreamBadge.vue';
 import { useLiveEvent } from '../../composables/useLiveEvent.js';
 import { errorText } from '../../lib/messages.js';
+import { useSessionStore } from '../../stores/session.js';
 
 const { t, te } = useI18n();
 const route = useRoute();
 const eventId = computed(() => route.params.eventId as string);
 const live = useLiveEvent(eventId, { operations: true });
 
-const tabs = computed(() => [
-  { to: `/admin/events/${eventId.value}`, label: t('admin.tabs.setup'), exact: true },
-  { to: `/admin/events/${eventId.value}/persons`, label: t('admin.tabs.persons') },
-  { to: `/admin/events/${eventId.value}/competitions`, label: t('admin.tabs.competitions') },
-  { to: `/admin/events/${eventId.value}/desk`, label: t('admin.tabs.desk') },
-  { to: `/admin/events/${eventId.value}/displays`, label: t('admin.tabs.displays') },
-  { to: `/admin/events/${eventId.value}/print`, label: t('admin.tabs.print') },
-  { to: `/admin/events/${eventId.value}/audit`, label: t('admin.tabs.audit') },
-]);
+const session = useSessionStore();
+/** The registration desk sees players, competitions (entries) and print pages only */
+const tabs = computed(() =>
+  [
+    { to: `/admin/events/${eventId.value}`, label: t('admin.tabs.setup'), exact: true, adminOnly: true },
+    { to: `/admin/events/${eventId.value}/persons`, label: t('admin.tabs.persons') },
+    { to: `/admin/events/${eventId.value}/competitions`, label: t('admin.tabs.competitions') },
+    { to: `/admin/events/${eventId.value}/desk`, label: t('admin.tabs.desk'), adminOnly: true },
+    { to: `/admin/events/${eventId.value}/displays`, label: t('admin.tabs.displays'), adminOnly: true },
+    { to: `/admin/events/${eventId.value}/print`, label: t('admin.tabs.print') },
+    { to: `/admin/events/${eventId.value}/audit`, label: t('admin.tabs.audit'), adminOnly: true },
+  ].filter((tab) => session.isAdmin || !tab.adminOnly),
+);
 </script>
 
 <template>

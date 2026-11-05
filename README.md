@@ -29,7 +29,7 @@ It runs next to the normal stack and never touches its data.
 
 ## Tournament day in short
 
-1. Sign in at `/login` (first admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`).
+1. Sign in at `/login` (first admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`). Under **Users**, create further admins or accounts for the registration desk, which may only handle players, entries and attendance; everybody changes their own password under **My account**.
 2. **Tournament desk → create event**, then add players, create competitions (format chosen like in the planner), enter players and draw.
 3. **Setup:** generate a PIN and print the QR codes for the tables. New events keep their public views behind an access code; print the notice with its QR code and hang it up at the venue (or open the views to everybody). Under **Displays**, build a profile for each screen (projector, TV) and open its link there. The display is a 16:9 stage that never scrolls; arrow keys or a presenter remote switch slides, space pauses, F toggles full screen.
 4. **Match desk:** call ready matches to free tables. Players scan the QR code at their table, enter the PIN once and type the result; the desk can always enter or correct results itself. If a phone has no connection at that moment, the result waits on the phone and is sent once the connection is back (keep the page open).

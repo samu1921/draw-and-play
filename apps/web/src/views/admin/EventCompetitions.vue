@@ -7,10 +7,12 @@ import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionInfo } from '../../lib/api.js';
 import { describeFormat, describePlacements } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
+import { useSessionStore } from '../../stores/session.js';
 
 const { t, te } = useI18n();
 const router = useRouter();
 const live = injectLiveEvent();
+const session = useSessionStore();
 const overview = computed(() => live.overview.value!);
 
 const form = ref({ name: '', kind: 'singles' as 'singles' | 'doubles', gamesToWin: 3, expected: 8, variantId: '', placements: 'none' as PlacementMode });
@@ -57,7 +59,7 @@ async function create() {
       </ul>
     </section>
 
-    <section class="card" aria-labelledby="create-competition">
+    <section v-if="session.isAdmin" class="card" aria-labelledby="create-competition">
       <h2 id="create-competition">{{ t('admin.competitions.create') }}</h2>
       <form class="fields" @submit.prevent="create">
         <label class="field">

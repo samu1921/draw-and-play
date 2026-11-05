@@ -16,11 +16,13 @@ import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionStateInfo, type EntryInfo, type PersonInfo } from '../../lib/api.js';
 import { describeFormat, describePlacements, sameFormat } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
+import { useSessionStore } from '../../stores/session.js';
 
 const { t, te } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const live = injectLiveEvent();
+const session = useSessionStore();
 const eventId = computed(() => live.overview.value!.event.id);
 const competitionId = computed(() => route.params.competitionId as string);
 
@@ -203,7 +205,7 @@ const removeCompetition = async () => {
         {{ competition.name }}
         <span class="muted">· {{ t(`admin.competitions.kinds.${competition.kind}`) }}</span>
       </h2>
-      <button v-if="!competition.drawn" type="button" class="button secondary small" @click="removeCompetition">{{ t('common.delete') }}</button>
+      <button v-if="!competition.drawn && session.isAdmin" type="button" class="button secondary small" @click="removeCompetition">{{ t('common.delete') }}</button>
     </header>
     <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
 
@@ -300,7 +302,8 @@ const removeCompetition = async () => {
         </div>
       </section>
 
-      <section v-if="isDoubles" class="card" aria-labelledby="pairs-title">
+      <!-- Pair draw, format and draw belong to the tournament management, not to the registration desk -->
+      <section v-if="isDoubles && session.isAdmin" class="card" aria-labelledby="pairs-title">
         <h3 id="pairs-title">{{ t('admin.competition.pairDraw') }}</h3>
         <p v-if="unpaired.length === 0" class="muted">{{ t('admin.competition.noUnpaired') }}</p>
         <template v-else>
@@ -330,7 +333,7 @@ const removeCompetition = async () => {
         </div>
       </section>
 
-      <section class="card" aria-labelledby="format-title">
+      <section v-if="session.isAdmin" class="card" aria-labelledby="format-title">
         <h3 id="format-title">{{ t('admin.competition.format') }}</h3>
         <p>{{ describeFormat(t, competition.format, drawCount) }}</p>
         <p v-if="formatError" class="warning-text">{{ t('admin.competition.formatInvalid', { n: drawCount }) }}</p>
@@ -353,7 +356,7 @@ const removeCompetition = async () => {
         </div>
       </section>
 
-      <section class="card" aria-labelledby="draw-title">
+      <section v-if="session.isAdmin" class="card" aria-labelledby="draw-title">
         <h3 id="draw-title">{{ t('admin.competition.draw') }}</h3>
         <p v-if="unpaired.length > 0" class="warning-text">{{ t('admin.competition.drawNeedsPairs') }}</p>
         <div class="fields">
@@ -397,12 +400,12 @@ const removeCompetition = async () => {
     <template v-else>
       <div class="button-row">
         <span class="muted">{{ t('admin.competition.drawnWithSeed', { seed: state.drawSeed }) }}</span>
-        <button type="button" class="button secondary small" @click="undoDraw">{{ t('admin.competition.undoDraw') }}</button>
+        <button v-if="session.isAdmin" type="button" class="button secondary small" @click="undoDraw">{{ t('admin.competition.undoDraw') }}</button>
       </div>
       <section class="card">
         <CompetitionStateView :state="state" :table-name="tableName" />
       </section>
-      <section class="card" aria-labelledby="withdrawals">
+      <section v-if="session.isAdmin" class="card" aria-labelledby="withdrawals">
         <h2 id="withdrawals">{{ t('admin.competition.withdrawals') }}</h2>
         <p class="muted small">{{ t('admin.competition.withdrawHint') }}</p>
         <ul class="withdraw-list">

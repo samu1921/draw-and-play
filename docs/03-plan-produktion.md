@@ -1,6 +1,6 @@
 # draw-and-play – Plan bis zum Produktivbetrieb
 
-Stand: 2026-11-04 (nach Commit `329f8b2`). Fortschritt 2026-11-05: Schritte 1–9 sind umgesetzt; offen sind 10–11. Ziel: Die Vereinsmeisterschaften laufen direkt auf einem Cloud-Server (VPS mit eigener Domain). Der Plan ist so geschrieben, dass ein neuer Chat ihn Schritt für Schritt abarbeiten kann.
+Stand: 2026-11-04 (nach Commit `329f8b2`). Fortschritt 2026-11-05: Schritte 1–10 sind umgesetzt; offen ist 11. Ziel: Die Vereinsmeisterschaften laufen direkt auf einem Cloud-Server (VPS mit eigener Domain). Der Plan ist so geschrieben, dass ein neuer Chat ihn Schritt für Schritt abarbeiten kann.
 
 ## Startprompt für den neuen Chat
 
