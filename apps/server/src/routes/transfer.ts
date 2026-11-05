@@ -7,7 +7,8 @@ import type { RouteDeps } from './deps.js';
 import { eventView, findEvent } from './events.js';
 
 /** Large events with every match result fit easily; the default limit of 1 MB might not. */
-const IMPORT_BODY_LIMIT = 20 * 1024 * 1024;
+// Room for the event's images (base64) on top of the data
+const IMPORT_BODY_LIMIT = 48 * 1024 * 1024;
 
 export async function transferRoutes(app: FastifyInstance, { db }: RouteDeps) {
   /** The whole event as a JSON file (without PIN, devices, users and audit log) */

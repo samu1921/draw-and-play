@@ -29,6 +29,18 @@ export const displaySettingsSchema = z
   })
   .partial();
 
+/** Look of the installation or an event (see `Branding`); empty strings clear a field */
+const blankToNull = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? null : v);
+export const brandingSchema = z
+  .object({
+    name: z.preprocess(blankToNull, z.string().trim().max(60).nullable()),
+    accent: z.preprocess(blankToNull, z.string().regex(/^#[0-9a-fA-F]{6}$/).transform((v) => v.toLowerCase()).nullable()),
+    logoId: z.uuid().nullable(),
+    displayBackgroundId: z.uuid().nullable(),
+    displayDim: z.int().min(0).max(90).nullable(),
+  })
+  .partial();
+
 /** Event-wide settings (see `EventSettings`) */
 const httpUrl = z
   .url({ protocol: /^https?$/ })
@@ -43,4 +55,5 @@ export const eventSettingsSchema = z.object({
   imprintUrl: z.preprocess((v) => (v === '' ? null : v), httpUrl),
   privacyUrl: z.preprocess((v) => (v === '' ? null : v), httpUrl),
   privacyNote: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? null : v), z.string().trim().max(1000).nullable().optional()),
+  branding: brandingSchema.optional(),
 });

@@ -4,8 +4,9 @@ import { asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { generateViewerCode } from '../auth/viewers.js';
 import type { Executor } from '../db/client.js';
-import { competitions, displayProfiles, entries, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
+import { assets, competitions, displayProfiles, entries, entryMembers, eventTables, events, matches, persons, type EventSettings } from '../db/schema.js';
 import { badRequest, parse } from '../errors.js';
+import { ASSET_KINDS, MAX_ASSET_BYTES, sniffImage } from './assets.js';
 import { displaySettingsSchema, eventSettingsSchema, formatSchema } from '../schemas.js';
 
 /**
@@ -123,6 +124,11 @@ export const eventExportSchema = z.object({
     )
     .max(50000),
   displayProfiles: z.array(z.object({ name: z.string().trim().min(1).max(60), settings: displaySettingsSchema })).max(100),
+  /** The event's own images (logo, backgrounds), base64; missing in files from before they existed */
+  assets: z
+    .array(z.object({ id, kind: z.enum(ASSET_KINDS), data: z.base64().max(Math.ceil(MAX_ASSET_BYTES / 3) * 4) }))
+    .max(10)
+    .optional(),
 });
 
 export type EventExport = z.infer<typeof eventExportSchema>;
@@ -133,11 +139,12 @@ const iso = (value: Date | null) => (value === null ? null : value.toISOString()
 export async function exportEvent(ex: Executor, eventId: string): Promise<EventExport> {
   const [event] = await ex.select().from(events).where(eq(events.id, eventId)).limit(1);
   if (!event) throw new Error(`event ${eventId} not found`);
-  const [tableRows, personRows, competitionRows, profileRows] = await Promise.all([
+  const [tableRows, personRows, competitionRows, profileRows, assetRows] = await Promise.all([
     ex.select().from(eventTables).where(eq(eventTables.eventId, eventId)).orderBy(asc(eventTables.sortOrder)),
     ex.select().from(persons).where(eq(persons.eventId, eventId)).orderBy(asc(persons.createdAt), asc(persons.id)),
     ex.select().from(competitions).where(eq(competitions.eventId, eventId)).orderBy(asc(competitions.sortOrder), asc(competitions.createdAt)),
     ex.select().from(displayProfiles).where(eq(displayProfiles.eventId, eventId)).orderBy(asc(displayProfiles.createdAt)),
+    ex.select().from(assets).where(eq(assets.eventId, eventId)).orderBy(asc(assets.createdAt)),
   ]);
   const competitionIds = competitionRows.map((c) => c.id);
   const [entryRows, memberRows, matchRows] =
@@ -221,6 +228,7 @@ export async function exportEvent(ex: Executor, eventId: string): Promise<EventE
       updatedAt: m.updatedAt.toISOString(),
     })),
     displayProfiles: profileRows.map((p) => ({ name: p.name, settings: p.settings })),
+    assets: assetRows.map((a) => ({ id: a.id, kind: a.kind, data: a.data.toString('base64') })),
   };
 }
 
@@ -349,6 +357,8 @@ export async function importEvent(tx: Executor, doc: EventExport, slug: string):
     })
     .returning();
   const eventId = event!.id;
+  const settings = await importAssets(tx, doc, eventId);
+  if (settings) event!.settings = settings;
 
   await tx.insert(eventTables).values(doc.tables.map((t) => ({ id: map(t.id), eventId, name: t.name, sortOrder: t.sortOrder })));
 
@@ -436,4 +446,28 @@ export async function importEvent(tx: Executor, doc: EventExport, slug: string):
 function remapDraw(draw: EventExport['competitions'][number]['draw'], map: (old: string) => string): Draw | null {
   if (draw === null) return null;
   return draw.type === 'groups' ? { type: 'groups', groups: draw.groups.map((g) => g.map(map)) } : { type: 'knockout', seats: draw.seats.map((s) => (s === null ? null : map(s))) };
+}
+
+/**
+ * Stores the event's images under new ids and points the branding at them; a reference to an image that is not in
+ * the file (or not a valid image) is dropped, so the event falls back to the installation's look.
+ */
+async function importAssets(tx: Executor, doc: EventExport, eventId: string): Promise<EventSettings | null> {
+  const newIds = new Map<string, string>();
+  for (const asset of doc.assets ?? []) {
+    const data = Buffer.from(asset.data, 'base64');
+    const mime = sniffImage(data);
+    if (!mime || data.length > MAX_ASSET_BYTES) continue;
+    const [row] = await tx.insert(assets).values({ eventId, kind: asset.kind, mime, data, size: data.length }).returning({ id: assets.id });
+    newIds.set(asset.id, row!.id);
+  }
+  const branding = doc.event.settings.branding;
+  if (!branding) return null;
+  const remap = (old: string | null | undefined) => (old ? (newIds.get(old) ?? null) : (old ?? null));
+  const settings: EventSettings = {
+    ...doc.event.settings,
+    branding: { ...branding, logoId: remap(branding.logoId), displayBackgroundId: remap(branding.displayBackgroundId) },
+  };
+  await tx.update(events).set({ settings }).where(eq(events.id, eventId));
+  return settings;
 }

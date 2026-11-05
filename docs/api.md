@@ -49,10 +49,10 @@ Two roles: `admin` manages everything; `desk` (registration desk) may list event
 | GET | `/api/events` | staff | all events |
 | POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount?, sport? }` → creates tables "1" … "n"; `sport` (default `table-tennis`) cannot be changed later and decides scoring, result notation and standings order |
 | GET | `/api/events/:idOrSlug` | public | event, tables, competitions; `event.legal` holds the footer links (`imprintUrl`, `privacyUrl`: the event's own, else the installation's `IMPRINT_URL` / `PRIVACY_URL`) and `privacyNote` |
-| GET | `/api/config` | public | `{ legal: { imprintUrl, privacyUrl } }`, the installation's defaults |
+| GET | `/api/config` | public | `{ legal: { imprintUrl, privacyUrl }, branding }`, the installation's defaults and look (see [Branding and images](#branding-and-images)) |
 | GET | `/api/events/:id/audit?before=&limit=` | admin | audit log, newest first: `{ entries: [{ id, createdAt, actor: { type, name }, action, entityType, entityId, data }], next }`; pass `next` as `before` for the next page (`limit` up to 200, default 50) |
 | DELETE | `/api/events/:id` | admin | deletes the event with all its data |
-| PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames?, imprintUrl?, privacyUrl?, privacyNote? } }`; the links are http(s) URLs, an empty string clears a link or the note |
+| PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames?, imprintUrl?, privacyUrl?, privacyNote?, branding? } }`; the links are http(s) URLs, an empty string clears a link or the note; a last day before the first → 400 `endsBeforeStart`. `branding` replaces the event's own look as a whole; its images must be uploaded for this event |
 | PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
 | GET | `/api/events/:id/persons` | staff | persons with personal data |
 | POST | `/api/events/:id/persons` | staff | `{ firstName, lastName?, club?, gender?, birthYear?, licenceNo?, rating? }`; a first name alone is enough, an empty `lastName` is stored as `null`. Admin views also carry `publicName`, the name as public views show it |
@@ -64,10 +64,30 @@ Two roles: `admin` manages everything; `desk` (registration desk) may list event
 
 | Method | Path | Access | Body / result |
 |---|---|---|---|
-| GET | `/api/events/:idOrSlug/export` | admin | the whole event as a JSON file (`Content-Disposition: attachment`): tables, persons, competitions with draws, entries, matches with results, display profiles. The PIN, device sessions, users and the audit log are not included |
-| POST | `/api/events/import` | admin | body: an export file (up to 20 MB) → `201 { event }`. Always creates a new event with new ids; a taken slug gets a random suffix. Result entry by PIN starts switched off |
+| GET | `/api/events/:idOrSlug/export` | admin | the whole event as a JSON file (`Content-Disposition: attachment`): tables, persons, competitions with draws, entries, matches with results, display profiles and the event's own images (`assets`, base64). The PIN, device sessions, users and the audit log are not included |
+| POST | `/api/events/import` | admin | body: an export file (up to 48 MB) → `201 { event }`. Always creates a new event with new ids; a taken slug gets a random suffix. Result entry by PIN starts switched off |
 
 The file has `format: "draw-and-play-event"` and `formatVersion: 1`; anything else is rejected with `unsupportedFormat`. Files whose parts do not fit together (unknown references, duplicate ids, a draw that does not match the format, matches that do not exist in the structure) are rejected with `invalidImport`, and nothing is written.
+
+## Branding and images
+
+The look of the installation, which each event can override field by field (`settings.branding` of the event; a field left out or `null` falls back to the installation):
+
+```ts
+{ name?: string | null;              // shown top left and in the browser tab instead of "Draw & Play"
+  accent?: string | null;            // #rrggbb; the app derives readable variants for light and dark
+  logoId?: string | null;            // image of kind "logo"
+  displayBackgroundId?: string | null; // 16:9 image of kind "displayBackground" behind the projector displays
+  displayDim?: number | null }       // 0–90: how much the display background is darkened, in percent
+```
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| PUT | `/api/branding` | admin | the installation's branding as above → `{ branding }`; an unknown image or one of the wrong kind → 400 `unknownImage` |
+| POST | `/api/assets?kind=&eventId=` | admin | raw image body with `Content-Type: image/png`, `image/jpeg` or `image/webp` (up to 8 MB) → `201 { id }`. `kind`: `logo`, `displayBackground` or `certificateBackground`; `eventId` makes it the event's own. The type is checked from the bytes (`notAnImage`); SVG is not accepted |
+| GET | `/api/assets/:id` | public | the image, cached for a year (an id never changes its content) |
+
+Images nothing refers to any more are deleted when a branding is saved (after half an hour, so a form that has just uploaded one can still be saved).
 
 ## Competitions and entries
 

@@ -22,7 +22,7 @@ describe.skipIf(!databaseAvailable)('legal links and the audit log', () => {
 
   it('offers the installation defaults to every page', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/api/config' });
-    expect(res.json()).toEqual({ legal: defaults });
+    expect(res.json()).toEqual({ legal: defaults, branding: {} });
     expect((await overview()).legal).toEqual({ ...defaults, privacyNote: null });
   });
 

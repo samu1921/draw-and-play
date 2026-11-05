@@ -7,6 +7,7 @@ import type { Executor } from '../db/client.js';
 import { auditLog, competitions, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
 import { badRequest, conflict, notFound, parse } from '../errors.js';
 import { eventSettingsSchema } from '../schemas.js';
+import { BRANDING_IMAGE_KINDS, brandingImageIds, checkBrandingImages, pruneAssets } from '../services/assets.js';
 import { competitionSummary, personView } from '../services/competitions.js';
 import { importPersons } from '../services/personImport.js';
 import { generateViewerCode } from '../auth/viewers.js';
@@ -173,6 +174,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
     const event = await findEvent(db, (request.params as { eventId: string }).eventId);
     const body = parse(updateEventBody, request.body);
     checkDays(body.startsOn !== undefined ? body.startsOn : event.startsOn, body.endsOn !== undefined ? body.endsOn : event.endsOn);
+    if (body.settings?.branding) await checkBrandingImages(db, body.settings.branding, event.id);
     const [updated] = await db
       .update(events)
       .set({
@@ -183,6 +185,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
       })
       .where(eq(events.id, event.id))
       .returning();
+    if (body.settings?.branding) await pruneAssets(db, event.id, BRANDING_IMAGE_KINDS, brandingImageIds(body.settings.branding));
     publish(event.id, 'event');
     return { event: eventView(updated!) };
   });

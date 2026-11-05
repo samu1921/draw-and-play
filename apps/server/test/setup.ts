@@ -55,7 +55,7 @@ export async function setupTestApp(options: Partial<Parameters<typeof buildApp>[
   database ??= createDatabase(url!);
   await runMigrations(database, migrationsFolder);
   await database.db.execute(sql`
-    truncate table audit_log, device_sessions, matches, entry_members, entries, competitions, persons, event_tables, events, sessions, users restart identity cascade
+    truncate table assets, app_settings, audit_log, device_sessions, matches, entry_members, entries, competitions, persons, event_tables, events, sessions, users restart identity cascade
   `);
   await ensureAdmin(database.db, ADMIN.username, ADMIN.password);
   const broadcaster = new Broadcaster();

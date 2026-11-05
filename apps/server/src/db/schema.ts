@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
   bigserial,
+  customType,
   date,
   index,
   integer,
@@ -14,6 +15,9 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+
+/** Binary data (images); node-postgres returns a Buffer */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
 
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 
@@ -46,6 +50,22 @@ export const sessions = pgTable(
 
 // --- Event ---
 
+/**
+ * Look of the installation, or of one event on top of it (fields left out or null fall back to the installation).
+ * Image ids point to `assets`.
+ */
+export interface Branding {
+  /** Shown top left and in the browser tab instead of "Draw & Play", e.g. the club */
+  name?: string | null;
+  /** Accent colour as #rrggbb; the app derives readable variants for light and dark */
+  accent?: string | null;
+  logoId?: string | null;
+  /** 16:9 picture behind the projector displays */
+  displayBackgroundId?: string | null;
+  /** How much the display background is darkened, in percent, so text stays readable */
+  displayDim?: number | null;
+}
+
 export interface EventSettings {
   /** Show ratings (QTTR) in public views */
   publicRatings?: boolean;
@@ -57,6 +77,8 @@ export interface EventSettings {
   privacyUrl?: string | null;
   /** Short note on the public pages, e.g. that names and results are published */
   privacyNote?: string | null;
+  /** The event's own look on top of the installation's */
+  branding?: Branding;
 }
 
 export const events = pgTable('events', {
@@ -292,4 +314,30 @@ export const auditLog = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index('audit_log_event_idx').on(t.eventId, t.createdAt)],
+);
+
+// --- Installation ---
+
+/** Settings of the whole installation, one row per key (e.g. "branding") */
+export const appSettings = pgTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type AssetKind = 'logo' | 'displayBackground' | 'certificateBackground';
+
+/** Uploaded images (logos, backgrounds). event_id null = belongs to the installation. Kept in the database so backups include them. */
+export const assets = pgTable(
+  'assets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
+    kind: text('kind').$type<AssetKind>().notNull(),
+    mime: text('mime').notNull(),
+    data: bytea('data').notNull(),
+    size: integer('size').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('assets_event_idx').on(t.eventId)],
 );

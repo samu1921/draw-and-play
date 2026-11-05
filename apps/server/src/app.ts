@@ -8,6 +8,7 @@ import type { Db } from './db/client.js';
 import { ApiError } from './errors.js';
 import type { LegalLinks } from './legal.js';
 import { Broadcaster } from './realtime/broadcaster.js';
+import { brandingRoutes } from './routes/branding.js';
 import { auditRoutes } from './routes/audit.js';
 import { authRoutes } from './routes/auth.js';
 import { competitionRoutes } from './routes/competitions.js';
@@ -32,6 +33,7 @@ export interface AppOptions {
 }
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const IMAGE_UPLOAD_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
@@ -44,10 +46,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   // CSRF protection on top of SameSite cookies: cross-site forms cannot send JSON,
   // so state-changing API requests with any other body type are rejected.
+  // Image uploads are the one exception: forms cannot send image types either.
   app.addHook('onRequest', async (request) => {
     if (!MUTATING.has(request.method) || !request.url.startsWith('/api/')) return;
-    const type = request.headers['content-type'];
-    if (type !== undefined && !type.toLowerCase().startsWith('application/json')) {
+    const type = request.headers['content-type']?.toLowerCase();
+    if (request.method === 'POST' && request.url.split('?')[0] === '/api/assets' && type && IMAGE_UPLOAD_TYPES.includes(type)) return;
+    if (type !== undefined && !type.startsWith('application/json')) {
       throw new ApiError(415, 'jsonRequired');
     }
   });
@@ -90,10 +94,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await viewerRoutes(app, deps);
     await auditRoutes(app, deps);
     await userRoutes(app, deps);
+    await brandingRoutes(app, deps);
+  } else {
+    /** Installation-wide settings the frontend needs before it knows an event */
+    app.get('/api/config', async () => ({ legal: options.legal ?? { imprintUrl: null, privacyUrl: null }, branding: {} }));
   }
-
-  /** Installation-wide settings the frontend needs before it knows an event */
-  app.get('/api/config', async () => ({ legal: options.legal ?? { imprintUrl: null, privacyUrl: null } }));
 
   if (options.webDist && existsSync(options.webDist)) {
     await app.register(fastifyStatic, { root: options.webDist, wildcard: false });
