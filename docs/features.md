@@ -125,7 +125,7 @@ All print pages are formatted for A4 and can be saved as PDF from the browser's 
 | Schedule | expected start times per day and competition, from the forecast |
 | Competitions | group sheets with standings and cross tables, brackets |
 | Results | placements and all results per competition |
-| Certificates | A4 landscape, choice of places (for example 1–3) |
+| Certificates | A4 landscape, choice of places (for example 1–3), following the certificate template (see [Appearance](#13-appearance)) |
 | QR codes | one code per table for result entry |
 | Access notice | the access code with its QR code |
 
@@ -155,6 +155,8 @@ Under **Appearance** an admin sets the look of the whole installation:
 - **Accent colour** from suggestions or picked freely. The app derives readable variants for light and dark (contrast at least 4.5:1) and picks white or dark text on buttons; the preview shows both.
 - **Logo** (PNG, JPEG or WebP up to 8 MB) top left, on displays, printouts and as the browser tab icon.
 - **Display background:** a 16:9 picture behind projectors and screens, darkened by an adjustable amount so the text stays readable; the cards on top are slightly translucent.
+
+**Certificate template** (also under **Appearance**): text lines with placeholders (`{name}`, `{club}`, `{place}`, `{competition}`, `{event}`, `{date}`, also in German), up to two signature lines, the logo on or off and your own background image (A4 landscape, for example a designed club certificate). The **Text only** mode prints without frame, logo and background onto pre-printed certificates. A preview with sample data shows the result; in multi-day events the date is the competition's day. An event can have a template of its own under **Settings → Certificate template**.
 
 Each event can override single values under **Settings → Appearance**, for example for a district championship with another host; empty fields use the default. Images are kept in the database, so backups include them, and they travel with an event's export.
 

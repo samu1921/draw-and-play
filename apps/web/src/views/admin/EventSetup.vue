@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { CalendarDays, DatabaseBackup, Palette, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
+import { Award, CalendarDays, DatabaseBackup, Palette, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLegalDefaults } from '../../composables/useLegal.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api } from '../../lib/api.js';
 import BrandingEditor from '../../components/admin/BrandingEditor.vue';
-import { installationBranding, loadConfig, type Branding } from '../../lib/branding.js';
+import CertificateEditor from '../../components/admin/CertificateEditor.vue';
+import { branding, installationBranding, installationCertificate, loadConfig, type Branding } from '../../lib/branding.js';
+import type { CertificateTemplate } from '../../lib/certificate.js';
 import { eventDays } from '../../lib/days.js';
 import { errorText } from '../../lib/messages.js';
 
@@ -49,6 +51,22 @@ watch(
 );
 const hasOwnBranding = computed(() => Object.values(event.value.settings.branding ?? {}).some((v) => v !== null && v !== undefined && v !== ''));
 const saveBranding = (value: Branding) => run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: { branding: value } }));
+
+// --- The event's own certificate template instead of the installation's ---
+const certificateOpen = ref(false);
+const certificateDraft = ref<CertificateTemplate>({});
+const hasOwnCertificate = computed(() => !!event.value.settings.certificate);
+watch(
+  () => JSON.stringify(event.value.settings.certificate ?? null),
+  (saved) => (certificateDraft.value = (JSON.parse(saved) as CertificateTemplate | null) ?? { ...installationCertificate.value }),
+  { immediate: true },
+);
+// Without an own template the editor starts from the installation's, once that is loaded
+watch(installationCertificate, (value) => {
+  if (!hasOwnCertificate.value) certificateDraft.value = { ...value };
+});
+const saveCertificate = (value: CertificateTemplate | null) =>
+  run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: { certificate: value } }));
 
 const tableNames = ref('');
 // Watched by value: live reloads bring new objects with the same content and must not wipe what is being typed
@@ -237,6 +255,23 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
         <div class="button-row">
           <button type="button" class="button" @click="saveBranding(brandingDraft)">{{ t('common.save') }}</button>
           <button v-if="hasOwnBranding" type="button" class="button secondary" @click="saveBranding({})">{{ t('branding.resetEvent') }}</button>
+        </div>
+      </template>
+    </section>
+
+    <section class="card wide-card" aria-labelledby="certificate-title">
+      <div class="card-header">
+        <h2 id="certificate-title"><Award aria-hidden="true" />{{ t('certificate.title') }}</h2>
+        <button type="button" class="button secondary small" :aria-expanded="certificateOpen" @click="certificateOpen = !certificateOpen">
+          {{ certificateOpen ? t('common.close') : t('branding.customize') }}
+        </button>
+      </div>
+      <p class="muted small">{{ hasOwnCertificate ? t('certificate.eventOwn') : t('certificate.eventInherits') }}</p>
+      <template v-if="certificateOpen">
+        <CertificateEditor v-model="certificateDraft" :event-id="event.id" :logo-id="branding.logoId" :event-name="event.name" />
+        <div class="button-row">
+          <button type="button" class="button" @click="saveCertificate(certificateDraft)">{{ t('certificate.save') }}</button>
+          <button v-if="hasOwnCertificate" type="button" class="button secondary" @click="saveCertificate(null)">{{ t('branding.resetEvent') }}</button>
         </div>
       </template>
     </section>

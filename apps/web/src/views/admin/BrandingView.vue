@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { Palette } from '@lucide/vue';
+import { Award, Palette } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BrandingEditor from '../../components/admin/BrandingEditor.vue';
+import CertificateEditor from '../../components/admin/CertificateEditor.vue';
 import { api } from '../../lib/api.js';
-import { installationBranding, loadConfig, type Branding } from '../../lib/branding.js';
+import { installationBranding, installationCertificate, loadConfig, type Branding } from '../../lib/branding.js';
+import type { CertificateTemplate } from '../../lib/certificate.js';
 import { errorText } from '../../lib/messages.js';
 
 const { t, te } = useI18n();
@@ -14,7 +16,27 @@ const savedState = ref<string | null>(null);
 const saved = computed(() => savedState.value === JSON.stringify(draft.value));
 const error = ref('');
 
-void loadConfig().then(() => (draft.value = { ...installationBranding.value }));
+// Certificate template, saved on its own
+const certificate = ref<CertificateTemplate>({});
+const certificateSavedState = ref<string | null>(null);
+const certificateSaved = computed(() => certificateSavedState.value === JSON.stringify(certificate.value));
+const certificateError = ref('');
+async function saveCertificate() {
+  certificateError.value = '';
+  try {
+    await api('PUT', '/api/certificate', certificate.value);
+    await loadConfig(true);
+    certificate.value = { ...installationCertificate.value };
+    certificateSavedState.value = JSON.stringify(certificate.value);
+  } catch (e) {
+    certificateError.value = errorText(t, te, e);
+  }
+}
+
+void loadConfig().then(() => {
+  draft.value = { ...installationBranding.value };
+  certificate.value = { ...installationCertificate.value };
+});
 
 async function save() {
   error.value = '';
@@ -42,5 +64,16 @@ async function save() {
       <span v-if="saved" class="muted" role="status">{{ t('admin.setup.saved') }}</span>
       <span v-if="error" class="warning-text" role="alert">{{ error }}</span>
     </div>
+
+    <section class="card" aria-labelledby="certificate-title">
+      <h2 id="certificate-title"><Award aria-hidden="true" />{{ t('certificate.title') }}</h2>
+      <p class="muted small">{{ t('certificate.intro') }}</p>
+      <CertificateEditor v-model="certificate" :logo-id="draft.logoId" />
+      <div class="button-row">
+        <button type="button" class="button" @click="saveCertificate">{{ t('certificate.save') }}</button>
+        <span v-if="certificateSaved" class="muted" role="status">{{ t('admin.setup.saved') }}</span>
+        <span v-if="certificateError" class="warning-text" role="alert">{{ certificateError }}</span>
+      </div>
+    </section>
   </div>
 </template>

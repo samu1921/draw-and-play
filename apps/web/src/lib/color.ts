@@ -86,7 +86,7 @@ export function accentStyleSheet(hex: string): string {
   if (!scheme) return '';
   const vars = (s: AccentScheme) => `--accent: ${s.accent}; --accent-contrast: ${s.contrast}; --selected: ${s.selected};`;
   return [
-    `:root { ${vars(scheme.light)} }`,
+    `:root { ${vars(scheme.light)} --accent-print: ${scheme.light.accent}; }`,
     `@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) { ${vars(scheme.dark)} } }`,
     `:root[data-theme='dark'] { ${vars(scheme.dark)} }`,
   ].join('\n');

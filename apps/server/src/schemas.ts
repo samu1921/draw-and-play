@@ -41,6 +41,19 @@ export const brandingSchema = z
   })
   .partial();
 
+/** Certificate template (see `CertificateTemplate`) */
+const certificateLine = z.string().max(200);
+export const certificateTemplateSchema = z.object({
+  mode: z.enum(['designed', 'textOnly']).optional(),
+  showLogo: z.boolean().optional(),
+  backgroundId: z.uuid().nullable().optional(),
+  lines: z
+    .object({ top: certificateLine, title: certificateLine, name: certificateLine, sub: certificateLine, place: certificateLine, text: certificateLine, bottom: certificateLine })
+    .partial()
+    .optional(),
+  signatures: z.array(z.string().trim().max(60)).max(2).optional(),
+});
+
 /** Event-wide settings (see `EventSettings`) */
 const httpUrl = z
   .url({ protocol: /^https?$/ })
@@ -56,4 +69,5 @@ export const eventSettingsSchema = z.object({
   privacyUrl: z.preprocess((v) => (v === '' ? null : v), httpUrl),
   privacyNote: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? null : v), z.string().trim().max(1000).nullable().optional()),
   branding: brandingSchema.optional(),
+  certificate: certificateTemplateSchema.nullable().optional(),
 });

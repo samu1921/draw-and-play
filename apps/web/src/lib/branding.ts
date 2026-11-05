@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, ref, watchEffect, type Ref } from 'vue';
 import { api } from './api.js';
+import type { CertificateTemplate } from './certificate.js';
 import { APP_NAME } from './pageTitle.js';
 
 /** Look of the installation, or an event's own on top of it (see the server's `Branding`) */
@@ -25,14 +26,16 @@ export const assetUrl = (id: string) => `/api/assets/${id}`;
 
 export const installationLegal = ref<LegalLinks>({ imprintUrl: null, privacyUrl: null });
 export const installationBranding = ref<Branding>({});
+export const installationCertificate = ref<CertificateTemplate>({});
 let loading: Promise<void> | null = null;
 
 export function loadConfig(force = false): Promise<void> {
   if (force) loading = null;
-  loading ??= api<{ legal: LegalLinks; branding?: Branding }>('GET', '/api/config')
+  loading ??= api<{ legal: LegalLinks; branding?: Branding; certificate?: CertificateTemplate }>('GET', '/api/config')
     .then((config) => {
       installationLegal.value = config.legal;
       installationBranding.value = config.branding ?? {};
+      installationCertificate.value = config.certificate ?? {};
     })
     .catch(() => {
       loading = null;

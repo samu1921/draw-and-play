@@ -3,6 +3,7 @@ import { Award, ClipboardList, Clock, ListOrdered, Network } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
+import { useSessionStore } from '../../stores/session.js';
 import { api, type CompetitionStateInfo } from '../../lib/api.js';
 import type { Translate } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
@@ -11,6 +12,7 @@ import { placementsCsv, resultsCsv, type ScoresheetScope } from '../../lib/print
 const { t: rawT, te, d, locale } = useI18n();
 const t = rawT as Translate;
 const live = injectLiveEvent();
+const session = useSessionStore();
 const event = computed(() => live.overview.value!.event);
 const competitions = computed(() => live.overview.value!.competitions);
 const days = computed(() => [...new Set(competitions.value.map((c) => c.day).filter((x): x is string => x !== null))].sort());
@@ -112,7 +114,12 @@ async function download(kind: 'placements' | 'results') {
           <span>{{ t('print.maxPlace') }}</span>
           <input v-model.number="maxPlace" type="number" min="1" max="16" />
         </label>
-        <div><a class="button" :href="link('certificates', { places: maxPlace })" target="_blank">{{ t('print.open') }}</a></div>
+        <div class="button-row">
+          <a class="button" :href="link('certificates', { places: maxPlace })" target="_blank">{{ t('print.open') }}</a>
+          <RouterLink v-if="session.isAdmin" :to="`/admin/events/${live.overview.value!.event.id}/settings#certificate-title`" class="small">
+            {{ t('certificate.editTemplate') }}
+          </RouterLink>
+        </div>
       </section>
     </div>
 

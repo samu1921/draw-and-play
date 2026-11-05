@@ -125,7 +125,7 @@ Alle Druckseiten sind für A4 gesetzt und lassen sich über den Druckdialog des 
 | Zeitplan | voraussichtliche Startzeiten je Tag und Konkurrenz aus der Prognose |
 | Gruppen und KO-Baum | Gruppenblätter mit Tabellen und Kreuztabelle, KO-Bäume |
 | Ergebnisse | Platzierungen und alle Ergebnisse je Konkurrenz |
-| Urkunden | A4 quer, Auswahl der Plätze (z. B. 1–3) |
+| Urkunden | A4 quer, Auswahl der Plätze (z. B. 1–3), nach der Urkundenvorlage (siehe [Erscheinungsbild](#13-erscheinungsbild)) |
 | QR-Codes | ein Code pro Tisch für die Ergebniseingabe |
 | Zugangsaushang | der Zugangscode mit QR-Code |
 
@@ -155,6 +155,8 @@ Unter **Erscheinungsbild** legt ein Admin das Aussehen der ganzen Installation f
 - **Akzentfarbe** aus Vorschlägen oder frei gewählt. Die App leitet daraus lesbare Varianten für hell und dunkel ab (Kontrast mindestens 4,5:1) und wählt weiße oder dunkle Schrift auf Buttons; die Vorschau zeigt beide.
 - **Logo** (PNG, JPEG oder WebP bis 8 MB) oben links, auf Anzeigen, Ausdrucken und als Symbol im Browser-Tab.
 - **Hintergrund der Anzeigen:** ein Bild im Format 16:9 hinter Beamer und Bildschirmen, einstellbar abgedunkelt, damit die Schrift lesbar bleibt; die Karten darüber sind leicht durchscheinend.
+
+**Urkundenvorlage** (ebenfalls unter **Erscheinungsbild**): Textzeilen mit Platzhaltern (`{name}`, `{verein}`, `{platz}`, `{konkurrenz}`, `{veranstaltung}`, `{datum}`, auch auf Englisch), bis zu zwei Unterschriftszeilen, Logo ein oder aus und ein eigenes Hintergrundbild (A4 quer, z. B. eine gestaltete Vereinsurkunde). Der Modus **Nur Text** druckt ohne Rahmen, Logo und Hintergrund auf vorgedruckte Urkunden. Eine Vorschau mit Beispieldaten zeigt das Ergebnis; als Datum steht bei mehrtägigen Veranstaltungen der Tag der Konkurrenz. Eine Veranstaltung kann unter **Einstellungen → Urkundenvorlage** eine eigene Vorlage haben.
 
 Jede Veranstaltung kann unter **Einstellungen → Erscheinungsbild** einzelne Werte überschreiben, z. B. für eine Kreismeisterschaft mit anderem Ausrichter; leere Felder nutzen die Vorgabe. Bilder liegen in der Datenbank, sind also in Backups enthalten, und wandern beim Export einer Veranstaltung mit.
 

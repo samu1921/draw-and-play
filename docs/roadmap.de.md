@@ -26,12 +26,10 @@ Bereit für eine erste Vereinsmeisterschaft. Alles, was das [Referenzszenario](r
 | Zugang | Zugangscode für die öffentlichen Ansichten mit druckbarem QR-Aushang (N3) |
 | Go-live-Härtung | Sicherheits-Header, Impressum/Datenschutz, Protokoll-Ansicht, Deployment-Anleitung mit Checkliste (N2–N4) |
 | Benutzer | Benutzerverwaltung, Rollen Admin und Meldestelle, eigenes Passwort |
+| Gestaltung | Veranstaltungen als Startseite, Seitenleiste mit Übersichtsseite, Icons, Hell/Dunkel, Name „Draw & Play“ mit Icon und Tab-Titeln, Erscheinungsbild (Name, Akzentfarbe, Logo, Anzeige-Hintergrund) je Installation und Veranstaltung, Urkundenvorlage, Handy-Ansicht überarbeitet |
+| Turniertag | Tage der Veranstaltung und Zeitplan je Konkurrenz in der Oberfläche, Pausenzeiten im Spielbetrieb |
 
-## In Arbeit: Gestaltung
-
-Erledigt: Veranstaltungen als Startseite, Seitenleiste in der Veranstaltung mit Übersichtsseite (Checkliste zur Vorbereitung, aktueller Stand), Icons durchgehend, Hell/Dunkel-Schalter, der der Systemeinstellung folgt. Ebenfalls erledigt: Tage der Veranstaltung und Zeitplan je Konkurrenz in der Oberfläche, Pausenzeiten beider Spieler im Spielbetrieb. Ebenfalls erledigt: Name „Draw & Play“ mit neuem Icon und sprechenden Tab-Titeln, Erscheinungsbild (Name, Akzentfarbe, Logo, Hintergrund der Anzeigen) je Installation und je Veranstaltung. Noch offen: Urkundenvorlage mit Platzhaltern und Hintergrundbild.
-
-## Danach: Modusänderung im laufenden Turnier
+## Als Nächstes: Modusänderung im laufenden Turnier
 
 Der fehlende Teil von Ziel G3 und Anforderung F30. Heute lehnt die API Modusänderungen nach der Auslosung ab (`alreadyDrawn`).
 

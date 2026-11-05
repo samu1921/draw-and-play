@@ -9,6 +9,8 @@
   --gridline: #e1e0d9;
   --axis: #c3c2b7;
   --accent: #1c5cab;
+  /* Accent on paper (certificates): always the light-mode colour */
+  --accent-print: #1c5cab;
   --accent-contrast: #ffffff;
   --selected: rgba(42, 120, 214, 0.08);
   --warning-text: #8a5a00;
@@ -2439,64 +2441,163 @@ textarea {
   padding-top: 0.75rem;
 }
 
+/* Certificates stay paper-white in dark mode too. Sizes follow the certificate's width (cqi), so the editor's
+   small preview and the A4 print look the same. */
 .certificates {
   display: grid;
   gap: 1rem;
 }
 
 .certificate {
+  position: relative;
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 297 / 210;
+  overflow: hidden;
+  color: #111111;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  break-after: page;
+}
+
+.certificate.textOnly {
+  outline: 1px dashed #b0b0b0;
+  outline-offset: -1px;
+}
+
+/* Frame in the accent colour, unless a background brings its own design */
+.certificate.designed:not(.has-bg)::before {
+  content: '';
+  position: absolute;
+  inset: 3cqi;
+  border: 0.9cqi double var(--accent-print);
+  pointer-events: none;
+}
+
+.certificate-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.certificate-content {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  aspect-ratio: 297 / 210;
-  padding: 2rem;
-  border: 6px double var(--axis);
+  gap: 0.8cqi;
+  height: 100%;
+  padding: 7cqi 10cqi;
   text-align: center;
-  break-after: page;
 }
 
 .certificate p,
 .certificate h2 {
+  display: block;
   margin: 0;
 }
 
+.certificate-logo {
+  height: 9cqi;
+  width: auto;
+  max-width: 30cqi;
+  margin-bottom: 1cqi;
+  object-fit: contain;
+}
+
 .certificate-event {
-  font-size: 1.1rem;
-  color: var(--fg-secondary);
+  font-size: 2.1cqi;
+  color: #444444;
 }
 
 .certificate-title {
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  letter-spacing: 0.2em;
+  font-size: 6.2cqi;
+  font-weight: 700;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
+.certificate.designed .certificate-title {
+  color: var(--accent-print);
+}
+
 .certificate-name {
-  margin-top: 1rem !important;
-  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  margin-top: 1.5cqi !important;
+  font-size: 4.4cqi;
   font-weight: 700;
 }
 
 .certificate-club {
-  font-size: 1.2rem;
-  color: var(--fg-secondary);
+  font-size: 2.2cqi;
+  color: #444444;
 }
 
 .certificate-place {
-  margin-top: 1rem !important;
-  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  margin-top: 1.5cqi !important;
+  font-size: 3.8cqi;
   font-weight: 700;
 }
 
 .certificate-competition {
-  font-size: 1.3rem;
+  font-size: 2.4cqi;
 }
 
 .certificate-date {
-  margin-top: 1.5rem !important;
-  color: var(--fg-secondary);
+  margin-top: 1.5cqi !important;
+  font-size: 1.8cqi;
+  color: #444444;
+}
+
+.certificate-signatures {
+  display: flex;
+  justify-content: center;
+  gap: 12cqi;
+  margin-top: 4cqi;
+}
+
+.certificate-signature {
+  display: grid;
+  gap: 0.6cqi;
+  width: 24cqi;
+  font-size: 1.6cqi;
+  color: #444444;
+}
+
+.certificate-signature-line {
+  border-top: 0.15cqi solid #333333;
+}
+
+/* Editor: settings beside a live preview */
+.certificate-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.certificate-preview {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.certificate-preview figcaption {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.placeholder-chip {
+  margin: 0 0.15rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  background: var(--buffer);
 }
 
 @media print {
@@ -2505,9 +2606,10 @@ textarea {
     margin: 12mm;
   }
 
+  /* Certificates fill the whole sheet, so a background design reaches the edges */
   @page certificate {
     size: A4 landscape;
-    margin: 12mm;
+    margin: 0;
   }
 
   :root {
@@ -2552,26 +2654,14 @@ textarea {
 
   .certificate {
     page: certificate;
+    width: 297mm;
+    height: 209.5mm;
     aspect-ratio: auto;
-    height: 180mm;
+    box-shadow: none;
   }
 
-  .certificate-title {
-    font-size: 3.6rem;
-  }
-
-  .certificate-name {
-    font-size: 3rem;
-  }
-
-  .certificate-place {
-    font-size: 2.6rem;
-  }
-
-  .certificate-event,
-  .certificate-club,
-  .certificate-competition {
-    font-size: 1.4rem;
+  .certificate.textOnly {
+    outline: none;
   }
 }
 

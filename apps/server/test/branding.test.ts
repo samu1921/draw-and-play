@@ -85,4 +85,27 @@ describe.skipIf(!databaseAvailable)('branding and images', () => {
     const imported = (await api('POST', '/api/events/import', { ...doc, assets: [] })).json().event;
     expect(imported.settings.branding.displayBackgroundId).toBeNull();
   });
+
+  it('saves a certificate template for the installation and lets an event bring its own with a background', async () => {
+    const lines = { title: 'Ehrenurkunde', place: '{platz}. Platz', text: 'im Wettbewerb {konkurrenz}' };
+    const res = await api('PUT', '/api/certificate', { mode: 'designed', showLogo: true, lines, signatures: ['Turnierleitung'] });
+    expect(res.statusCode).toBe(200);
+    expect((await ctx.app.inject({ method: 'GET', url: '/api/config' })).json().certificate).toMatchObject({ lines, signatures: ['Turnierleitung'] });
+
+    // A logo is not a certificate background
+    const logoId = (await upload(PNG, `kind=logo&eventId=${eventId}`)).json().id;
+    expect((await api('PATCH', `/api/events/${eventId}`, { settings: { certificate: { backgroundId: logoId } } })).json().error).toBe('unknownImage');
+
+    const backgroundId = (await upload(PNG, `kind=certificateBackground&eventId=${eventId}`)).json().id;
+    const patch = await api('PATCH', `/api/events/${eventId}`, { settings: { certificate: { mode: 'textOnly', backgroundId } } });
+    expect(patch.statusCode).toBe(200);
+    const doc = (await api('GET', `/api/events/${eventId}/export`)).json();
+    const imported = (await api('POST', '/api/events/import', doc)).json().event;
+    expect(imported.settings.certificate.mode).toBe('textOnly');
+    expect(imported.settings.certificate.backgroundId).not.toBe(backgroundId);
+    expect((await ctx.app.inject({ method: 'GET', url: `/api/assets/${imported.settings.certificate.backgroundId}` })).statusCode).toBe(200);
+
+    // Back to the installation's template
+    expect((await api('PATCH', `/api/events/${eventId}`, { settings: { certificate: null } })).json().event.settings.certificate).toBeNull();
+  });
 });

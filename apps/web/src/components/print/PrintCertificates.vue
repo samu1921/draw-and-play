@@ -1,21 +1,38 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
+import { fillPlaceholders, LINE_KEYS, type CertificateLines, type ResolvedTemplate } from '../../lib/certificate.js';
 import type { PlacementRow } from '../../lib/printData.js';
+import CertificateSheet from './CertificateSheet.vue';
 
-defineProps<{ rows: PlacementRow[]; eventName: string; date: string }>();
-const { t } = useI18n();
+const props = defineProps<{
+  rows: PlacementRow[];
+  eventName: string;
+  /** The date printed on a row's certificate (its competition's day, else the event's first day) */
+  dateOf: (row: PlacementRow) => string;
+  template: ResolvedTemplate;
+  logoUrl?: string | null;
+  backgroundUrl?: string | null;
+}>();
+
+const sheets = computed(() =>
+  props.rows.map((row) => {
+    const values = { name: row.name, club: row.clubs, place: String(row.placeNumber), competition: row.competition, event: props.eventName, date: props.dateOf(row) };
+    const lines = Object.fromEntries(LINE_KEYS.map((key) => [key, fillPlaceholders(props.template.lines[key], values).trim()])) as Required<CertificateLines>;
+    return { lines, signatures: props.template.signatures.map((s) => fillPlaceholders(s, values)) };
+  }),
+);
 </script>
 
 <template>
   <div class="certificates">
-    <article v-for="(row, i) in rows" :key="i" class="certificate">
-      <p class="certificate-event">{{ eventName }}</p>
-      <h2 class="certificate-title">{{ t('print.certificate.title') }}</h2>
-      <p class="certificate-name">{{ row.name }}</p>
-      <p v-if="row.clubs" class="certificate-club">{{ row.clubs }}</p>
-      <p class="certificate-place">{{ t('print.certificate.place', { n: row.placeNumber }) }}</p>
-      <p class="certificate-competition">{{ t('print.certificate.in') }} {{ row.competition }}</p>
-      <p class="certificate-date">{{ date }}</p>
-    </article>
+    <CertificateSheet
+      v-for="(sheet, i) in sheets"
+      :key="i"
+      :lines="sheet.lines"
+      :signatures="sheet.signatures"
+      :mode="template.mode"
+      :logo-url="template.showLogo ? logoUrl : null"
+      :background-url="backgroundUrl"
+    />
   </div>
 </template>

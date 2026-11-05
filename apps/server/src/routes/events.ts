@@ -7,7 +7,14 @@ import type { Executor } from '../db/client.js';
 import { auditLog, competitions, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
 import { badRequest, conflict, notFound, parse } from '../errors.js';
 import { eventSettingsSchema } from '../schemas.js';
-import { BRANDING_IMAGE_KINDS, brandingImageIds, checkBrandingImages, pruneAssets } from '../services/assets.js';
+import {
+  BRANDING_IMAGE_KINDS,
+  brandingImageIds,
+  CERTIFICATE_IMAGE_KINDS,
+  checkBrandingImages,
+  checkCertificateImages,
+  pruneAssets,
+} from '../services/assets.js';
 import { competitionSummary, personView } from '../services/competitions.js';
 import { importPersons } from '../services/personImport.js';
 import { generateViewerCode } from '../auth/viewers.js';
@@ -175,6 +182,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
     const body = parse(updateEventBody, request.body);
     checkDays(body.startsOn !== undefined ? body.startsOn : event.startsOn, body.endsOn !== undefined ? body.endsOn : event.endsOn);
     if (body.settings?.branding) await checkBrandingImages(db, body.settings.branding, event.id);
+    if (body.settings?.certificate) await checkCertificateImages(db, body.settings.certificate, event.id);
     const [updated] = await db
       .update(events)
       .set({
@@ -186,6 +194,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
       .where(eq(events.id, event.id))
       .returning();
     if (body.settings?.branding) await pruneAssets(db, event.id, BRANDING_IMAGE_KINDS, brandingImageIds(body.settings.branding));
+    if (body.settings?.certificate !== undefined) await pruneAssets(db, event.id, CERTIFICATE_IMAGE_KINDS, [body.settings.certificate?.backgroundId]);
     publish(event.id, 'event');
     return { event: eventView(updated!) };
   });

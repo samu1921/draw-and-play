@@ -49,10 +49,10 @@ Two roles: `admin` manages everything; `desk` (registration desk) may list event
 | GET | `/api/events` | staff | all events |
 | POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount?, sport? }` → creates tables "1" … "n"; `sport` (default `table-tennis`) cannot be changed later and decides scoring, result notation and standings order |
 | GET | `/api/events/:idOrSlug` | public | event, tables, competitions; `event.legal` holds the footer links (`imprintUrl`, `privacyUrl`: the event's own, else the installation's `IMPRINT_URL` / `PRIVACY_URL`) and `privacyNote` |
-| GET | `/api/config` | public | `{ legal: { imprintUrl, privacyUrl }, branding }`, the installation's defaults and look (see [Branding and images](#branding-and-images)) |
+| GET | `/api/config` | public | `{ legal: { imprintUrl, privacyUrl }, branding, certificate }`, the installation's defaults, look and certificate template (see [Branding and images](#branding-and-images)) |
 | GET | `/api/events/:id/audit?before=&limit=` | admin | audit log, newest first: `{ entries: [{ id, createdAt, actor: { type, name }, action, entityType, entityId, data }], next }`; pass `next` as `before` for the next page (`limit` up to 200, default 50) |
 | DELETE | `/api/events/:id` | admin | deletes the event with all its data |
-| PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames?, imprintUrl?, privacyUrl?, privacyNote?, branding? } }`; the links are http(s) URLs, an empty string clears a link or the note; a last day before the first → 400 `endsBeforeStart`. `branding` replaces the event's own look as a whole; its images must be uploaded for this event |
+| PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames?, imprintUrl?, privacyUrl?, privacyNote?, branding? } }`; the links are http(s) URLs, an empty string clears a link or the note; a last day before the first → 400 `endsBeforeStart`. `branding` replaces the event's own look as a whole, `certificate` the event's own certificate template (`null` = the installation's); their images must be uploaded for this event |
 | PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
 | GET | `/api/events/:id/persons` | staff | persons with personal data |
 | POST | `/api/events/:id/persons` | staff | `{ firstName, lastName?, club?, gender?, birthYear?, licenceNo?, rating? }`; a first name alone is enough, an empty `lastName` is stored as `null`. Admin views also carry `publicName`, the name as public views show it |
@@ -85,7 +85,10 @@ The look of the installation, which each event can override field by field (`set
 |---|---|---|---|
 | PUT | `/api/branding` | admin | the installation's branding as above → `{ branding }`; an unknown image or one of the wrong kind → 400 `unknownImage` |
 | POST | `/api/assets?kind=&eventId=` | admin | raw image body with `Content-Type: image/png`, `image/jpeg` or `image/webp` (up to 8 MB) → `201 { id }`. `kind`: `logo`, `displayBackground` or `certificateBackground`; `eventId` makes it the event's own. The type is checked from the bytes (`notAnImage`); SVG is not accepted |
+| PUT | `/api/certificate` | admin | the installation's certificate template (below) → `{ certificate }` |
 | GET | `/api/assets/:id` | public | the image, cached for a year (an id never changes its content) |
+
+A certificate template: `{ mode?: 'designed' | 'textOnly', showLogo?, backgroundId? (kind "certificateBackground"), lines?: { top?, title?, name?, sub?, place?, text?, bottom? }, signatures?: string[] (up to 2) }`. Lines left out use the built-in texts; an empty line is not printed. Placeholders such as `{name}` or `{platz}` are filled in when printing.
 
 Images nothing refers to any more are deleted when a branding is saved (after half an hour, so a form that has just uploaded one can still be saved).
 

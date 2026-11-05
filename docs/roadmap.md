@@ -26,12 +26,10 @@ Ready for a first club championship. Everything the [reference scenario](require
 | Access | viewer code for the public views with a printable QR notice (N3) |
 | Go-live hardening | security headers, legal links, audit log view, deployment guide with checklist (N2–N4) |
 | Users | user management, roles admin and registration desk, own password |
+| Look and feel | events as the start page, sidebar with an overview page, icons, light/dark, the name “Draw & Play” with icon and tab titles, appearance (name, accent colour, logo, display background) per installation and event, certificate template, reworked phone layout |
+| Tournament day | event days and a schedule per competition in the interface, rest times at the match desk |
 
-## In progress: look and feel
-
-Done: events as the start page, sidebar inside an event with an overview page (preparation checklist, current state), icons throughout, light/dark switch that follows the system. Also done: event days and a schedule per competition in the interface, rest times of both players at the match desk. Also done: the name “Draw & Play” with a new icon and telling tab titles, appearance (name, accent colour, logo, display background) per installation and per event. Still to come: certificate template with placeholders and background image.
-
-## Then: format changes during the event
+## Next: format changes during the event
 
 The remaining part of goal G3 and requirement F30. The API currently refuses format changes after the draw (`alreadyDrawn`).
 

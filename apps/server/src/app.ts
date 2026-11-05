@@ -97,7 +97,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await brandingRoutes(app, deps);
   } else {
     /** Installation-wide settings the frontend needs before it knows an event */
-    app.get('/api/config', async () => ({ legal: options.legal ?? { imprintUrl: null, privacyUrl: null }, branding: {} }));
+    app.get('/api/config', async () => ({ legal: options.legal ?? { imprintUrl: null, privacyUrl: null }, branding: {}, certificate: {} }));
   }
 
   if (options.webDist && existsSync(options.webDist)) {

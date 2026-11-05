@@ -66,6 +66,29 @@ export interface Branding {
   displayDim?: number | null;
 }
 
+/** Texts of a certificate; placeholders such as {name} or {platz} are filled in when printing */
+export interface CertificateLines {
+  top?: string;
+  title?: string;
+  name?: string;
+  sub?: string;
+  place?: string;
+  text?: string;
+  bottom?: string;
+}
+
+/** Certificate template of the installation, or an event's own instead of it */
+export interface CertificateTemplate {
+  /** "textOnly": only the texts, for pre-printed paper (no frame, logo or background) */
+  mode?: 'designed' | 'textOnly';
+  showLogo?: boolean;
+  /** Image of kind certificateBackground, A4 landscape */
+  backgroundId?: string | null;
+  lines?: CertificateLines;
+  /** Captions under signature lines; empty = no line */
+  signatures?: string[];
+}
+
 export interface EventSettings {
   /** Show ratings (QTTR) in public views */
   publicRatings?: boolean;
@@ -79,6 +102,8 @@ export interface EventSettings {
   privacyNote?: string | null;
   /** The event's own look on top of the installation's */
   branding?: Branding;
+  /** The event's own certificate template instead of the installation's; null/absent = the installation's */
+  certificate?: CertificateTemplate | null;
 }
 
 export const events = pgTable('events', {

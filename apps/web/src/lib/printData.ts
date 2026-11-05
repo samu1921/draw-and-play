@@ -100,6 +100,8 @@ export interface PlacementRow {
   placeNumber: number;
   name: string;
   clubs: string;
+  /** Day of the competition (multi-day events), for the date on certificates */
+  day: string | null;
 }
 
 export function placementRows(t: Translate, states: readonly CompetitionStateInfo[]): PlacementRow[] {
@@ -111,6 +113,7 @@ export function placementRows(t: Translate, states: readonly CompetitionStateInf
       placeNumber: p.place,
       name: text.name(p.entryId),
       clubs: text.clubs(p.entryId),
+      day: state.competition.day,
     }));
   });
 }

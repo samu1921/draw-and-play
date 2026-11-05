@@ -449,7 +449,7 @@ function remapDraw(draw: EventExport['competitions'][number]['draw'], map: (old:
 }
 
 /**
- * Stores the event's images under new ids and points the branding at them; a reference to an image that is not in
+ * Stores the event's images under new ids and points the branding and the certificate template at them; a reference to an image that is not in
  * the file (or not a valid image) is dropped, so the event falls back to the installation's look.
  */
 async function importAssets(tx: Executor, doc: EventExport, eventId: string): Promise<EventSettings | null> {
@@ -461,12 +461,13 @@ async function importAssets(tx: Executor, doc: EventExport, eventId: string): Pr
     const [row] = await tx.insert(assets).values({ eventId, kind: asset.kind, mime, data, size: data.length }).returning({ id: assets.id });
     newIds.set(asset.id, row!.id);
   }
-  const branding = doc.event.settings.branding;
-  if (!branding) return null;
+  const { branding, certificate } = doc.event.settings;
+  if (!branding && !certificate) return null;
   const remap = (old: string | null | undefined) => (old ? (newIds.get(old) ?? null) : (old ?? null));
   const settings: EventSettings = {
     ...doc.event.settings,
-    branding: { ...branding, logoId: remap(branding.logoId), displayBackgroundId: remap(branding.displayBackgroundId) },
+    ...(branding && { branding: { ...branding, logoId: remap(branding.logoId), displayBackgroundId: remap(branding.displayBackgroundId) } }),
+    ...(certificate && { certificate: { ...certificate, backgroundId: remap(certificate.backgroundId) } }),
   };
   await tx.update(events).set({ settings }).where(eq(events.id, eventId));
   return settings;

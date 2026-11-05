@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull, lt, notInArray } from 'drizzle-orm';
 import type { Executor } from '../db/client.js';
-import { assets, type AssetKind, type Branding } from '../db/schema.js';
+import { assets, type AssetKind, type Branding, type CertificateTemplate } from '../db/schema.js';
 import { badRequest } from '../errors.js';
 
 export const ASSET_KINDS = ['logo', 'displayBackground', 'certificateBackground'] as const satisfies readonly AssetKind[];
@@ -22,18 +22,25 @@ export function sniffImage(data: Buffer): 'image/png' | 'image/jpeg' | 'image/we
 /** Which branding field holds which kind of image */
 const BRANDING_IMAGES = { logoId: 'logo', displayBackgroundId: 'displayBackground' } as const;
 
-/** Every image a branding refers to must exist, be of the right kind and belong to the same scope */
+/** An image a setting refers to must exist, be of the right kind and belong to the same scope */
+async function checkImage(ex: Executor, id: string | null | undefined, kind: AssetKind, eventId: string | null, field: string) {
+  if (!id) return;
+  const [row] = await ex
+    .select({ id: assets.id })
+    .from(assets)
+    .where(and(eq(assets.id, id), eq(assets.kind, kind), eventId ? eq(assets.eventId, eventId) : isNull(assets.eventId)))
+    .limit(1);
+  if (!row) throw badRequest('unknownImage', { field });
+}
+
 export async function checkBrandingImages(ex: Executor, branding: Branding, eventId: string | null) {
   for (const [field, kind] of Object.entries(BRANDING_IMAGES) as [keyof typeof BRANDING_IMAGES, AssetKind][]) {
-    const id = branding[field];
-    if (!id) continue;
-    const [row] = await ex
-      .select({ id: assets.id })
-      .from(assets)
-      .where(and(eq(assets.id, id), eq(assets.kind, kind), eventId ? eq(assets.eventId, eventId) : isNull(assets.eventId)))
-      .limit(1);
-    if (!row) throw badRequest('unknownImage', { field });
+    await checkImage(ex, branding[field], kind, eventId, field);
   }
+}
+
+export async function checkCertificateImages(ex: Executor, template: CertificateTemplate, eventId: string | null) {
+  await checkImage(ex, template.backgroundId, 'certificateBackground', eventId, 'backgroundId');
 }
 
 /**
@@ -58,3 +65,4 @@ export async function pruneAssets(ex: Executor, eventId: string | null, kinds: r
 /** Images a branding refers to, for pruning */
 export const brandingImageIds = (b: Branding | undefined) => [b?.logoId, b?.displayBackgroundId];
 export const BRANDING_IMAGE_KINDS: readonly AssetKind[] = ['logo', 'displayBackground'];
+export const CERTIFICATE_IMAGE_KINDS: readonly AssetKind[] = ['certificateBackground'];

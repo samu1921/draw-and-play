@@ -1,5 +1,6 @@
 import type { CompetitionFormat, MatchResult, MatchRules, Placement, StandingsRow } from '@draw-and-play/domain';
 import type { Branding } from './branding.js';
+import type { CertificateTemplate } from './certificate.js';
 
 /** An error response from the API: `code` is stable and translated in the UI (`errors.<code>`). */
 export class ApiRequestError extends Error {
@@ -71,6 +72,7 @@ export interface EventInfo {
     privacyUrl?: string | null;
     privacyNote?: string | null;
     branding?: Branding;
+    certificate?: CertificateTemplate | null;
   };
   pinEnabled: boolean;
   /** The public views need the viewer code */

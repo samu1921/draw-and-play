@@ -11,18 +11,22 @@ import { useLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionStateInfo, type Forecast } from '../../lib/api.js';
 import type { Translate } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
-import { certificates, scheduleOverview, scheduleRows, scoresheets, type ScoresheetScope } from '../../lib/printData.js';
+import { assetUrl, branding, installationCertificate, loadConfig, useEventBranding } from '../../lib/branding.js';
+import { defaultLines, resolveTemplate } from '../../lib/certificate.js';
+import { certificates, scheduleOverview, scheduleRows, scoresheets, type PlacementRow, type ScoresheetScope } from '../../lib/printData.js';
 import { formatClock } from '../../lib/time.js';
 
 type PrintKind = 'scoresheets' | 'schedule' | 'competitions' | 'results' | 'certificates';
 
-const { t: rawT, te, d } = useI18n();
+const { t: rawT, te, d, locale } = useI18n();
 const t = rawT as Translate;
 const route = useRoute();
 const eventId = computed(() => route.params.eventId as string);
 const kind = computed(() => route.params.kind as PrintKind);
 const live = useLiveEvent(eventId);
 const overview = computed(() => live.overview.value);
+useEventBranding(computed(() => overview.value?.event.settings.branding));
+void loadConfig();
 
 const competitionId = computed(() => (typeof route.query.competition === 'string' ? route.query.competition : ''));
 const scope = computed<ScoresheetScope>(() => (['called', 'ready', 'open'].includes(route.query.scope as string) ? (route.query.scope as ScoresheetScope) : 'called'));
@@ -74,6 +78,11 @@ const scheduleForecast = computed(() => {
   return { ...f, competitions: f.competitions.filter((c) => selectedIds.value.has(c.id)), matches: f.matches.filter((m) => selectedIds.value.has(m.competitionId)) };
 });
 const certificateRows = computed(() => (states.value ? certificates(t, states.value, maxPlace.value) : []));
+/** The event's own template, else the installation's, on top of the built-in texts */
+const certificateTemplate = computed(() =>
+  resolveTemplate(overview.value?.event.settings.certificate ?? installationCertificate.value, defaultLines(locale.value)),
+);
+const certificateDate = (row: PlacementRow) => (row.day ? d(new Date(`${row.day}T12:00:00`)) : eventDate.value);
 const eventDate = computed(() => {
   const value = overview.value?.event.startsOn;
   // Noon, so the date stays the same in every time zone
@@ -120,7 +129,15 @@ const empty = computed(() => {
       />
       <PrintCompetitions v-else-if="kind === 'competitions'" :states="states" />
       <PrintResults v-else-if="kind === 'results'" :states="states" />
-      <PrintCertificates v-else-if="kind === 'certificates'" :rows="certificateRows" :event-name="overview.event.name" :date="eventDate" />
+      <PrintCertificates
+        v-else-if="kind === 'certificates'"
+        :rows="certificateRows"
+        :event-name="overview.event.name"
+        :date-of="certificateDate"
+        :template="certificateTemplate"
+        :logo-url="branding.logoId ? assetUrl(branding.logoId) : null"
+        :background-url="certificateTemplate.backgroundId ? assetUrl(certificateTemplate.backgroundId) : null"
+      />
     </template>
   </div>
 </template>
