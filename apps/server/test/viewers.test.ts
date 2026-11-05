@@ -65,7 +65,7 @@ describe.skipIf(!databaseAvailable)('viewer code for the public views', () => {
     expect(res.statusCode).toBe(401);
     expect(res.json()).toEqual({ error: 'viewerCodeRequired', details: { name: 'Geschützt', pinEnabled: false } });
     expect(await statuses()).toEqual([401, 401, 401, 401, 401, 401]);
-    expect((await api('GET', '/api/events/geschuetzt')).json().event).toMatchObject({ viewerProtected: true });
+    expect((await api('GET', '/api/events/geschuetzt')).json().event).toMatchObject({ viewerProtected: true, viewerCode: code });
   });
 
   it('opens every public read once the code was entered, in any spelling', async () => {

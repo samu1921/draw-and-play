@@ -153,6 +153,8 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
         settings: event.settings,
         pinEnabled: event.pinHash !== null,
         viewerProtected: event.viewerCode !== null,
+        // Admins need the code for the notice and the display links
+        ...(request.user && { viewerCode: event.viewerCode }),
       },
       tables: tables.map((t) => ({ id: t.id, name: t.name, sortOrder: t.sortOrder })),
       competitions: comps.map(competitionSummary),
