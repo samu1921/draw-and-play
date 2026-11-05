@@ -21,7 +21,7 @@ Was draw-and-play heute kann, Bereich für Bereich, in der Reihenfolge, in der e
 | [Benutzer und Rollen](#11-benutzer-und-rollen) | Admin | **Benutzer**, **Mein Konto** |
 | [Protokoll](#12-protokoll) | Admin | **Protokoll** |
 
-Die Oberfläche gibt es auf Englisch und Deutsch. Sie richtet sich nach der Browsersprache oder der Sprachauswahl. Hell oder dunkel folgt der Systemeinstellung und lässt sich in der Kopfleiste umschalten (wie System → hell → dunkel); die Wahl merkt sich der Browser.
+Die Oberfläche gibt es auf Englisch und Deutsch. Sie richtet sich nach der Browsersprache oder der Sprachauswahl. Hell oder dunkel folgt der Systemeinstellung und lässt sich im Benutzermenü oben rechts umschalten (wie System, hell, dunkel); dort liegen auch Sprache, Mein Konto und Abmelden. Die Wahl merkt sich der Browser.
 
 **Aufbau:** Nach der Anmeldung öffnen sich die Veranstaltungen, laufende zuerst, mit direktem Sprung in den Spielbetrieb. Innerhalb einer Veranstaltung führt eine Seitenleiste (auf dem Handy eine Reiterleiste) durch Übersicht, Spielbetrieb, Spieler, Konkurrenzen, Anzeigen, Drucken, Einstellungen und Protokoll. Die **Übersicht** zeigt eine Checkliste zur Vorbereitung (Tische, Spieler, Konkurrenzen, Auslosung, PIN, erstes Spiel), den Stand der Konkurrenzen und während des Turniers belegte Tische, spielbereite Spiele und das voraussichtliche Tagesende.
 

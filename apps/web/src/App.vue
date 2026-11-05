@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Calculator, CalendarDays, CircleUser, Languages, LogIn, LogOut, Moon, Sun, SunMoon, UserCog } from '@lucide/vue';
-import { onMounted } from 'vue';
+import { Calculator, CalendarDays, ChevronDown, CircleUser, Languages, LogIn, LogOut, Moon, Sun, SunMoon, UserCog } from '@lucide/vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import { locales, setLocale, type Locale } from './i18n/index.js';
 import AppLogo from './components/AppLogo.vue';
 import LegalFooter from './components/LegalFooter.vue';
 import { useLegalDefaults } from './composables/useLegal.js';
-import { nextThemePreference, setThemePreference, themePreference } from './lib/theme.js';
+import { nextThemePreference, setThemePreference, THEME_PREFERENCES, themePreference } from './lib/theme.js';
 import { useSessionStore } from './stores/session.js';
 
 const { t, locale } = useI18n();
@@ -17,8 +17,28 @@ const session = useSessionStore();
 const legal = useLegalDefaults();
 const version = `v${__APP_VERSION__}`;
 
+// --- User menu: account, appearance, language, sign-out ---
+const menu = ref<HTMLDetailsElement | null>(null);
+const closeMenu = () => menu.value?.removeAttribute('open');
+watch(() => route.fullPath, closeMenu);
+function onPointerDown(event: PointerEvent) {
+  if (menu.value?.open && !menu.value.contains(event.target as Node)) closeMenu();
+}
+function onKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && menu.value?.open) {
+    closeMenu();
+    menu.value.querySelector('summary')?.focus();
+  }
+}
+
 onMounted(() => {
   if (!session.checked) void session.check().catch(() => null);
+  document.addEventListener('pointerdown', onPointerDown);
+  document.addEventListener('keydown', onKeyDown);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onPointerDown);
+  document.removeEventListener('keydown', onKeyDown);
 });
 
 function onLocaleChange(event: Event) {
@@ -55,31 +75,58 @@ const inEvents = () => route.path === '/admin' || route.path.startsWith('/admin/
       </RouterLink>
     </nav>
     <div class="header-tools">
-      <RouterLink v-if="session.user" to="/account" class="link-button" active-class="active" :title="t('nav.account')">
-        <CircleUser aria-hidden="true" /><span class="nav-label">{{ session.user.username }}</span>
-      </RouterLink>
-      <button v-if="session.user" type="button" class="link-button" :title="t('nav.logout')" @click="logout">
-        <LogOut aria-hidden="true" /><span class="visually-hidden">{{ t('nav.logout') }}</span>
-      </button>
-      <RouterLink v-else-if="route.name !== 'login'" to="/login" class="link-button">
-        <LogIn aria-hidden="true" /><span>{{ t('nav.login') }}</span>
-      </RouterLink>
-      <button
-        type="button"
-        class="link-button"
-        :title="t('theme.current', { mode: t(`theme.${themePreference}`) })"
-        :aria-label="t('theme.current', { mode: t(`theme.${themePreference}`) })"
-        @click="cycleTheme"
-      >
-        <component :is="themeIcons[themePreference]" aria-hidden="true" />
-      </button>
-      <label class="locale" :title="t('language.label')">
-        <Languages aria-hidden="true" />
-        <span class="visually-hidden">{{ t('language.label') }}</span>
-        <select :value="locale" @change="onLocaleChange">
-          <option v-for="(name, code) in locales" :key="code" :value="code">{{ name }}</option>
-        </select>
-      </label>
+      <details v-if="session.user" ref="menu" class="user-menu">
+        <summary class="link-button" :title="t('nav.account')">
+          <CircleUser aria-hidden="true" /><span class="nav-label">{{ session.user.username }}</span>
+          <ChevronDown class="chevron" aria-hidden="true" />
+        </summary>
+        <div class="user-menu-panel">
+          <p class="user-menu-name">{{ session.user.username }}</p>
+          <RouterLink to="/account" class="user-menu-item"><CircleUser aria-hidden="true" />{{ t('nav.account') }}</RouterLink>
+          <div class="user-menu-group" role="group" :aria-label="t('theme.label')">
+            <span class="user-menu-label">{{ t('theme.label') }}</span>
+            <div class="segmented">
+              <button
+                v-for="mode in THEME_PREFERENCES"
+                :key="mode"
+                type="button"
+                :aria-pressed="themePreference === mode"
+                @click="setThemePreference(mode)"
+              >
+                <component :is="themeIcons[mode]" aria-hidden="true" />{{ t(`theme.${mode}`) }}
+              </button>
+            </div>
+          </div>
+          <label class="user-menu-group">
+            <span class="user-menu-label">{{ t('language.label') }}</span>
+            <select :value="locale" @change="onLocaleChange">
+              <option v-for="(name, code) in locales" :key="code" :value="code">{{ name }}</option>
+            </select>
+          </label>
+          <button type="button" class="user-menu-item" @click="logout"><LogOut aria-hidden="true" />{{ t('nav.logout') }}</button>
+        </div>
+      </details>
+      <template v-else>
+        <RouterLink v-if="route.name !== 'login'" to="/login" class="link-button">
+          <LogIn aria-hidden="true" /><span>{{ t('nav.login') }}</span>
+        </RouterLink>
+        <button
+          type="button"
+          class="link-button"
+          :title="t('theme.current', { mode: t(`theme.${themePreference}`) })"
+          :aria-label="t('theme.current', { mode: t(`theme.${themePreference}`) })"
+          @click="cycleTheme"
+        >
+          <component :is="themeIcons[themePreference]" aria-hidden="true" />
+        </button>
+        <label class="locale" :title="t('language.label')">
+          <Languages aria-hidden="true" />
+          <span class="visually-hidden">{{ t('language.label') }}</span>
+          <select :value="locale" @change="onLocaleChange">
+            <option v-for="(name, code) in locales" :key="code" :value="code">{{ name }}</option>
+          </select>
+        </label>
+      </template>
     </div>
   </header>
   <main :class="route.meta.bare ? 'bare-main' : 'app-main'">

@@ -3,7 +3,7 @@ export default {
   language: {
     label: 'Language',
   },
-  theme: { current: 'Appearance: {mode} (click to change)', system: 'as system', light: 'light', dark: 'dark' },
+  theme: { label: 'Appearance', current: 'Appearance: {mode} (click to change)', system: 'as system', light: 'light', dark: 'dark' },
   nav: {
     label: 'Main navigation',
     events: 'Events',

@@ -125,7 +125,7 @@ await section(admin, 'Einstellungen');
 await admin.getByLabel('Impressum (URL)').fill('https://ttc.example/impressum');
 await admin.getByLabel('Datenschutz (URL)').fill('https://ttc.example/datenschutz');
 await admin.getByLabel(/Hinweis auf den öffentlichen Seiten/).fill('Namen, Vereine und Ergebnisse werden hier veröffentlicht.');
-await admin.getByRole('button', { name: 'Speichern', exact: true }).click();
+await admin.locator('section:has(#legal-title)').getByRole('button', { name: 'Speichern', exact: true }).click();
 await admin.getByText('Gespeichert.').waitFor();
 
 step('PIN');

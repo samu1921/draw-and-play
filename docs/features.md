@@ -21,7 +21,7 @@ What draw-and-play does today, area by area, in the order a tournament runs thro
 | [Users and roles](#11-users-and-roles) | admin | **Users**, **My account** |
 | [Audit log](#12-audit-log) | admin | **Log** |
 
-The interface is available in English and German and switches with the browser language or the language picker. Light or dark follows the system setting and can be switched in the header (as system → light → dark); the browser remembers the choice.
+The interface is available in English and German and switches with the browser language or the language picker. Light or dark follows the system setting and can be switched in the user menu at the top right (as system, light, dark), next to language, my account and sign-out. The browser remembers the choice.
 
 **Layout:** after signing in, the events open, running ones first, with a direct jump to the match desk. Inside an event a sidebar (a tab bar on phones) leads through Overview, Match desk, Players, Competitions, Displays, Print, Settings and Log. The **Overview** shows a preparation checklist (tables, players, competitions, draw, PIN, first match), the state of the competitions and, during the tournament, tables in use, matches ready to play and the expected end of the day.
 

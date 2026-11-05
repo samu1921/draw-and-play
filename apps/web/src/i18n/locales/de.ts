@@ -4,7 +4,7 @@ const de: typeof en = {
   language: {
     label: 'Sprache',
   },
-  theme: { current: 'Darstellung: {mode} (klicken zum Wechseln)', system: 'wie System', light: 'hell', dark: 'dunkel' },
+  theme: { label: 'Darstellung', current: 'Darstellung: {mode} (klicken zum Wechseln)', system: 'wie System', light: 'hell', dark: 'dunkel' },
   nav: {
     label: 'Hauptnavigation',
     events: 'Veranstaltungen',
