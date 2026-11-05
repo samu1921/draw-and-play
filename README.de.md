@@ -13,7 +13,7 @@ Was sie besonders macht:
 
 Hintergrund: [Konzept](docs/02-konzept-draw-and-play.md). Für Entwickler: [HTTP-API](docs/api.md) (Englisch).
 
-> Stand: frühe Entwicklung. Die testgetriebene Domänenbibliothek (Auslosung, Tabellen, KO, Zeitplanung) die Planer-Oberfläche, das Datenmodell und die API mit Echtzeit stehen; als Nächstes folgt die Oberfläche für den Spielbetrieb (Tischübersicht, Ergebniseingabe per Handy, Beamer-Anzeige).
+> Stand: bereit für eine erste Vereinsmeisterschaft. Planer, Auslosung, Spielbetrieb, Ergebniseingabe per Handy (auch bei Funklöchern), Beamer-Anzeige, öffentliche Seiten mit Zugangscode, Druckansichten, CSV-Import und Backups stehen; als Nächstes folgen Benutzerverwaltung und Modusänderung im laufenden Turnier.
 
 ## Demo
 
@@ -56,7 +56,7 @@ docker compose up -d --build
 
 Danach erreichbar unter http://localhost:8080 (Health-Check: http://localhost:8080/api/health).
 
-Auf einem Server in `.env` `SITE_ADDRESS=turnier.example.de`, `HTTP_PORT=80` und `HTTPS_PORT=443` setzen. Caddy holt das Zertifikat dann automatisch.
+Auf einem Server in `.env` `SITE_ADDRESS=turnier.example.de`, `HTTP_PORT=80` und `HTTPS_PORT=443` setzen. Caddy holt das Zertifikat dann automatisch. Die [Server-Anleitung](docs/deploy.de.md) beschreibt den Server Schritt für Schritt, Updates, Backups und eine Checkliste für den Turniertag.
 
 ## Backups
 

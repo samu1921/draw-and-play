@@ -13,7 +13,7 @@ What sets it apart:
 
 Background (German): [concept](docs/02-konzept-draw-and-play.md). Developer reference: [HTTP API](docs/api.md).
 
-> Status: early development. The test-driven domain library (draw, standings, knockout, scheduling) the planner UI, the data model and the API with live updates are in place; the match operation UI (table overview, result entry by phone, projector display) comes next.
+> Status: ready for a first club championship. Planner, draw, match desk, result entry by phone (also through dead spots), projector display, public views behind an access code, print pages, CSV import and backups are in place; user management and format changes during the event come next.
 
 ## Demo
 
@@ -56,7 +56,7 @@ docker compose up -d --build
 
 Then open http://localhost:8080 (health check: http://localhost:8080/api/health).
 
-On a server, set `SITE_ADDRESS=tournament.example.org`, `HTTP_PORT=80` and `HTTPS_PORT=443` in `.env`. Caddy then obtains the certificate automatically.
+On a server, set `SITE_ADDRESS=tournament.example.org`, `HTTP_PORT=80` and `HTTPS_PORT=443` in `.env`. Caddy then obtains the certificate automatically. The [deployment guide](docs/deploy.md) covers the server step by step, updates, backups and a tournament day checklist.
 
 ## Backups
 
