@@ -15,6 +15,10 @@ updates:
       # The Node types follow the Node version in the Dockerfile and CI, which is upgraded on purpose.
       - dependency-name: '@types/node'
         update-types: [version-update:semver-major]
+      # vue-tsc builds on the JS API of the compiler, which the native TypeScript 7 no longer ships;
+      # a new major waits until the Vue tooling supports it.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
