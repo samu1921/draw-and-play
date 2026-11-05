@@ -1,20 +1,19 @@
 import type en from './en.js';
 
 const de: typeof en = {
-  app: {
-    tagline: 'Turniersoftware',
-  },
   language: {
     label: 'Sprache',
   },
+  theme: { current: 'Darstellung: {mode} (klicken zum Wechseln)', system: 'wie System', light: 'hell', dark: 'dunkel' },
   nav: {
+    label: 'Hauptnavigation',
+    events: 'Veranstaltungen',
     planner: 'Planer',
     admin: 'Turnierleitung',
     login: 'Anmelden',
     logout: 'Abmelden',
     users: 'Benutzer',
     account: 'Mein Konto',
-    status: 'Status',
   },
   common: {
     save: 'Speichern',
@@ -115,6 +114,9 @@ const de: typeof en = {
   admin: {
     events: {
       title: 'Veranstaltungen',
+      new: 'Neue Veranstaltung',
+      all: 'Alle Veranstaltungen',
+      today: 'Heute',
       create: 'Veranstaltung anlegen',
       name: 'Name',
       slug: 'Kurzname für Links',
@@ -126,7 +128,32 @@ const de: typeof en = {
       importHint: 'Legt aus einer Exportdatei eine neue Veranstaltung an, mit allen Spielern, Auslosungen und Ergebnissen. Die Ergebniseingabe per PIN ist danach ausgeschaltet.',
       importFile: 'Exportdatei (.json)',
     },
-    tabs: { setup: 'Einrichtung', persons: 'Spieler', competitions: 'Konkurrenzen', desk: 'Spielbetrieb', displays: 'Anzeigen', print: 'Drucken', audit: 'Protokoll' },
+    tabs: { label: 'Bereiche der Veranstaltung', overview: 'Übersicht', setup: 'Einstellungen', persons: 'Spieler', competitions: 'Konkurrenzen', desk: 'Spielbetrieb', displays: 'Anzeigen', print: 'Drucken', audit: 'Protokoll' },
+    dashboard: {
+      now: 'Aktueller Stand',
+      tablesBusy: 'Tische belegt',
+      ready: 'Spielbereit',
+      queued: '{n} Spiele in der Warteschlange',
+      latest: 'spätestens {time}',
+      stepsTitle: 'Vorbereitung',
+      open: 'noch {n} offen',
+      allDone: 'alles erledigt',
+      done: 'erledigt',
+      todo: 'offen',
+      steps: {
+        tables: 'Tische eingerichtet ({n})',
+        persons: 'Spieler erfasst ({n})',
+        competitions: 'Konkurrenzen angelegt ({n})',
+        drawn: 'Ausgelost ({drawn} von {total})',
+        pin: 'Ergebniseingabe per Handy eingeschaltet',
+        started: 'Erstes Spiel aufgerufen',
+      },
+      manage: 'Verwalten',
+      notDrawn: 'nicht ausgelost',
+      noCompetitions: 'Noch keine Konkurrenzen.',
+      quick: 'Schnellzugriff',
+      openDesk: 'Spielbetrieb öffnen',
+    },
     setup: {
       tables: 'Tische',
       tableNamesHint: 'Ein Name pro Zeile, z. B. 1, 2, 3 …',
@@ -544,17 +571,6 @@ const de: typeof en = {
     print: 'Drucken',
     table: 'Tisch {name}',
     scan: 'Scannen, um das Ergebnis einzutragen',
-  },
-  home: {
-    scaffoldRunning: 'Das Projektgerüst läuft.',
-    domainInBrowser: 'Domänenbibliothek im Browser: v{version}',
-  },
-  status: {
-    server: 'Server',
-    database: 'Datenbank',
-    checking: 'prüfe …',
-    unreachable: 'nicht erreichbar: {error}',
-    serverOk: '{status} (Domäne v{version})',
   },
   format: {
     roundRobin: 'Jeder gegen jeden',

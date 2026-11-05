@@ -97,7 +97,7 @@ The dumps lie on the same server as the database. Copy them to another computer 
 rsync -av <user>@<server>:draw-and-play/backups/ ./dap-backups/
 ```
 
-In addition, every event can be downloaded as a JSON file under **Setup → Backup** and imported under **Tournament desk → Import event** on any installation, a laptop included. This is also how an event moves from the server to a laptop and back.
+In addition, every event can be downloaded as a JSON file under **Settings → Backup** and imported under **Events → New event → Import event** on any installation, a laptop included. This is also how an event moves from the server to a laptop and back.
 
 ## 7. Logs and troubleshooting
 
@@ -115,7 +115,7 @@ docker compose logs backup       # backups
 **A week before**
 - [ ] Create the event, tables and competitions (use the planner to choose the format).
 - [ ] Prepare the player list as CSV (template under **Players → Download template**) and try the import once.
-- [ ] Check the legal notice, privacy link and note under **Setup**.
+- [ ] Check the legal notice, privacy link and note under **Settings**.
 - [ ] Dress rehearsal on the real server: create a test event, enter the PIN on two phones, enter results, open the projector link, then delete the test event.
 
 **The day before**

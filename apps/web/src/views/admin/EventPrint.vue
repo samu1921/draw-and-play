@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Award, ClipboardList, Clock, ListOrdered, Network } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
@@ -64,7 +65,7 @@ async function download(kind: 'placements' | 'results') {
 
     <div class="setup-grid">
       <section class="card" aria-labelledby="print-scoresheets">
-        <h2 id="print-scoresheets">{{ t('print.titles.scoresheets') }}</h2>
+        <h2 id="print-scoresheets"><ClipboardList aria-hidden="true" />{{ t('print.titles.scoresheets') }}</h2>
         <p class="muted">{{ t('print.hints.scoresheets') }}</p>
         <label class="field">
           <span>{{ t('print.scope') }}</span>
@@ -76,7 +77,7 @@ async function download(kind: 'placements' | 'results') {
       </section>
 
       <section class="card" aria-labelledby="print-schedule">
-        <h2 id="print-schedule">{{ t('print.titles.schedule') }}</h2>
+        <h2 id="print-schedule"><Clock aria-hidden="true" />{{ t('print.titles.schedule') }}</h2>
         <p class="muted">{{ t('print.hints.schedule') }}</p>
         <label v-if="days.length > 0" class="field">
           <span>{{ t('print.day') }}</span>
@@ -89,13 +90,13 @@ async function download(kind: 'placements' | 'results') {
       </section>
 
       <section class="card" aria-labelledby="print-competitions">
-        <h2 id="print-competitions">{{ t('print.titles.competitions') }}</h2>
+        <h2 id="print-competitions"><Network aria-hidden="true" />{{ t('print.titles.competitions') }}</h2>
         <p class="muted">{{ t('print.hints.competitions') }}</p>
         <div><a class="button" :href="link('competitions')" target="_blank">{{ t('print.open') }}</a></div>
       </section>
 
       <section class="card" aria-labelledby="print-results">
-        <h2 id="print-results">{{ t('print.titles.results') }}</h2>
+        <h2 id="print-results"><ListOrdered aria-hidden="true" />{{ t('print.titles.results') }}</h2>
         <p class="muted">{{ t('print.hints.results') }}</p>
         <div class="button-row">
           <a class="button" :href="link('results')" target="_blank">{{ t('print.open') }}</a>
@@ -105,7 +106,7 @@ async function download(kind: 'placements' | 'results') {
       </section>
 
       <section class="card" aria-labelledby="print-certificates">
-        <h2 id="print-certificates">{{ t('print.titles.certificates') }}</h2>
+        <h2 id="print-certificates"><Award aria-hidden="true" />{{ t('print.titles.certificates') }}</h2>
         <p class="muted">{{ t('print.hints.certificates') }}</p>
         <label class="field">
           <span>{{ t('print.maxPlace') }}</span>

@@ -29,6 +29,8 @@ const watch = (page, name) => {
 };
 const shot = (page, name, fullPage = true) => page.screenshot({ path: `${OUT}${name}.png`, fullPage });
 const step = (text) => console.log(`• ${text}`);
+/** Opens a section of the event from its navigation (sidebar or tabs) */
+const section = (page, name) => page.getByRole('navigation', { name: 'Bereiche der Veranstaltung' }).getByRole('link', { name, exact: true }).click();
 
 process.on('unhandledRejection', async (error) => {
   console.error('FAILED:', error.message.split('\n')[0]);
@@ -50,12 +52,15 @@ await admin.locator('form button[type=submit]').click();
 await admin.waitForURL(`${BASE}/admin`);
 
 step('create event');
+await admin.getByRole('button', { name: 'Neue Veranstaltung' }).click();
 await admin.getByLabel('Name', { exact: true }).fill('Vereinsmeisterschaft Demo');
 await admin.getByLabel(/Kurzname/).fill(slug);
 await admin.getByLabel('Tische').fill('4');
 await admin.getByRole('button', { name: 'Veranstaltung anlegen' }).click();
 await admin.waitForURL(/\/admin\/events\/[0-9a-f-]+$/);
 const eventId = admin.url().split('/').pop();
+await admin.getByRole('heading', { name: 'Vorbereitung' }).waitFor();
+await shot(admin, '00-event-overview');
 
 step('players via CSV import');
 const players = [
@@ -70,7 +75,7 @@ writeFileSync(
   csvFile,
   `\uFEFFVorname;Nachname;Verein;QTTR;Jahrgang\r\n${players.map((p) => `${p.join(';')};2000`).join('\r\n')}\r\nKaputt;Zeile;;;20x0\r\n`,
 );
-await admin.getByRole('link', { name: 'Spieler', exact: true }).click();
+await section(admin, 'Spieler');
 await admin.getByLabel('CSV-Datei').setInputFiles(csvFile);
 await admin.getByText('10 neu, 0 vorhanden, 1 mit Fehlern').waitFor();
 await shot(admin, '00-import-preview');
@@ -80,7 +85,7 @@ const imported = (await (await admin.request.get(`${BASE}/api/events/${eventId}/
 const personIds = players.map(([firstName]) => imported.find((p) => p.firstName === firstName).id);
 
 step('create competition via form');
-await admin.getByRole('link', { name: 'Konkurrenzen' }).click();
+await section(admin, 'Konkurrenzen');
 await admin.getByLabel('Name', { exact: true }).fill('Einzel');
 await admin.getByLabel('Erwartete Teilnehmer').fill('10');
 await admin.getByLabel('Modus').selectOption('g2-top2');
@@ -109,14 +114,14 @@ for (const id of personIds.slice(6, 10)) {
 await admin.request.post(`${BASE}/api/competitions/${hobby.competition.id}/draw`, { data: { seed: 'hobby' } });
 
 step('guest with a first name only via form');
-await admin.getByRole('link', { name: 'Spieler', exact: true }).click();
+await section(admin, 'Spieler');
 await admin.getByLabel('Vorname').fill('Gast');
 await admin.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 await admin.getByRole('rowheader', { name: 'Gast', exact: true }).waitFor();
 await shot(admin, '02b-persons');
 
 step('legal links of the event');
-await admin.getByRole('link', { name: 'Einrichtung' }).click();
+await section(admin, 'Einstellungen');
 await admin.getByLabel('Impressum (URL)').fill('https://ttc.example/impressum');
 await admin.getByLabel('Datenschutz (URL)').fill('https://ttc.example/datenschutz');
 await admin.getByLabel(/Hinweis auf den öffentlichen Seiten/).fill('Namen, Vereine und Ergebnisse werden hier veröffentlicht.');
@@ -127,14 +132,14 @@ step('PIN');
 // New events keep their public views behind a viewer code
 const viewerCode = (await (await admin.request.get(`${BASE}/api/events/${eventId}`)).json()).event.viewerCode;
 if (!/^[A-Z0-9]{6}$/.test(viewerCode ?? '')) errors.push(`viewer code missing: ${viewerCode}`);
-await admin.getByRole('link', { name: 'Einrichtung' }).click();
+await section(admin, 'Einstellungen');
 await admin.getByRole('button', { name: 'Neue PIN erzeugen' }).click();
 const pinText = await admin.locator('.pin-display[role=status]').textContent();
 const pin = /(\d{6})/.exec(pinText)[1];
 await shot(admin, '03-setup');
 
 step('call matches at the desk');
-await admin.getByRole('link', { name: 'Spielbetrieb' }).click();
+await section(admin, 'Spielbetrieb');
 await admin.locator('.queue-item').first().waitFor();
 await admin.getByRole('heading', { name: 'Prognose' }).waitFor();
 await admin.getByText(/≈ \d{2}:\d{2} · Tisch/).first().waitFor();
@@ -274,11 +279,12 @@ await deskPage.getByLabel('Benutzername').fill(deskUser);
 await deskPage.getByLabel('Passwort').fill('meldestelle-passwort');
 await deskPage.locator('form button[type=submit]').click();
 await deskPage.waitForURL(`${BASE}/admin`);
-// The event opens on the players; setup and match desk are not offered and redirect
+// Settings and match desk are not offered and lead to the event's overview
 await deskPage.goto(`${BASE}/admin/events/${eventId}/desk`);
-await deskPage.waitForURL(/\/persons$/);
-const deskTabs = await deskPage.locator('.tabs a').allInnerTexts();
-if (deskTabs.join('|') !== 'Spieler|Konkurrenzen|Drucken') errors.push(`desk tabs: ${deskTabs.join('|')}`);
+await deskPage.waitForURL(new RegExp(`/admin/events/${eventId}$`));
+const deskTabs = await deskPage.locator('.event-nav a').allInnerTexts();
+if (deskTabs.join('|') !== 'Übersicht|Spieler|Konkurrenzen|Drucken') errors.push(`desk tabs: ${deskTabs.join('|')}`);
+await section(deskPage, 'Spieler');
 await deskPage.getByLabel('Vorname').fill('Nachmeldung');
 await deskPage.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 await deskPage.getByRole('rowheader', { name: 'Nachmeldung', exact: true }).waitFor();
@@ -311,11 +317,13 @@ for (const [kind, query, ready] of [
 await printPage.close();
 
 step('export and import');
-await admin.goto(`${BASE}/admin/events/${eventId}`);
+await admin.goto(`${BASE}/admin/events/${eventId}/settings`);
 const [download] = await Promise.all([admin.waitForEvent('download'), admin.getByRole('link', { name: 'Export herunterladen' }).click()]);
 const exportFile = `${OUT}export.json`;
 await download.saveAs(exportFile);
 await admin.goto(`${BASE}/admin`);
+await shot(admin, '00-events');
+await admin.getByRole('button', { name: 'Neue Veranstaltung' }).click();
 await admin.getByLabel('Exportdatei (.json)').setInputFiles(exportFile);
 await admin.waitForURL((url) => /\/admin\/events\/[0-9a-f-]+$/.test(url.pathname) && !url.pathname.endsWith(eventId));
 const importedId = admin.url().split('/').pop();
@@ -324,7 +332,7 @@ const importedSingles = importedEvent.competitions.find((c) => c.name === 'Einze
 const importedState = await (await admin.request.get(`${BASE}/api/competitions/${importedSingles.id}/state`)).json();
 const finishedCount = importedState.matches.filter((m) => m.status === 'finished').length;
 if (finishedCount < 1) errors.push(`import: expected a finished match, got ${finishedCount}`);
-await admin.getByRole('link', { name: 'Spielbetrieb' }).click();
+await section(admin, 'Spielbetrieb');
 await admin.locator('.queue-item').first().waitFor();
 await shot(admin, '16-imported-desk');
 

@@ -8,8 +8,8 @@ What draw-and-play does today, area by area, in the order a tournament runs thro
 
 | Area | Who | Where in the app |
 |---|---|---|
-| [Tournament planner](#1-tournament-planner) | anyone, no sign-in | `/` |
-| [Events and tables](#2-events-and-tables) | admin | **Tournament desk** (`/admin`), **Setup** |
+| [Tournament planner](#1-tournament-planner) | admin, registration desk | **Planner** (`/admin/planner`) |
+| [Events and tables](#2-events-and-tables) | admin | **Events** (`/admin`, the start page), **Overview**, **Settings** |
 | [Players and entries](#3-players-and-entries) | admin, registration desk | **Players**, **Competitions** |
 | [Competitions and formats](#4-competitions-and-formats) | admin | **Competitions** |
 | [Draw](#5-draw) | admin | **Competitions → competition** |
@@ -17,15 +17,17 @@ What draw-and-play does today, area by area, in the order a tournament runs thro
 | [Result entry at the table](#7-result-entry-at-the-table) | players, umpires | `/e/<slug>/table/<table>` via QR code |
 | [Displays](#8-displays) | admin sets up, screen shows | **Displays**, `/e/<slug>/display/<profile>` |
 | [Public views](#9-public-views) | everybody (with access code if set) | `/e/<slug>` |
-| [Print and export](#10-print-and-export) | admin, registration desk | **Print**, **Setup → Backup** |
+| [Print and export](#10-print-and-export) | admin, registration desk | **Print**, **Settings → Backup** |
 | [Users and roles](#11-users-and-roles) | admin | **Users**, **My account** |
 | [Audit log](#12-audit-log) | admin | **Log** |
 
-The interface is available in English and German and switches with the browser language or the language picker.
+The interface is available in English and German and switches with the browser language or the language picker. Light or dark follows the system setting and can be switched in the header (as system → light → dark); the browser remembers the choice.
+
+**Layout:** after signing in, the events open, running ones first, with a direct jump to the match desk. Inside an event a sidebar (a tab bar on phones) leads through Overview, Match desk, Players, Competitions, Displays, Print, Settings and Log. The **Overview** shows a preparation checklist (tables, players, competitions, draw, PIN, first match), the state of the competitions and, during the tournament, tables in use, matches ready to play and the expected end of the day.
 
 ## 1. Tournament planner
 
-The planner answers the question "which format fits?" before anything is entered. It works without an event and without signing in.
+The planner answers the question "which format fits?" before anything is entered. It works without an event; the draft stays in the browser.
 
 - **Day:** number of tables, start time, optional minimum rest between two matches of a player, buffer in percent or minutes.
 - **Competitions** (up to 8 per day): name, number of entries, scoring (best of 1, 3, 5 or 7), minutes per match, format, placement matches, "not before" time, "starts after" another competition and a range of tables.
@@ -37,9 +39,9 @@ How the simulation works, with an example calculation, is described in the [arch
 
 ## 2. Events and tables
 
-- An admin creates an **event** with name, address in the link (slug), first and last day and number of tables. Tables are named "1" … "n" and can be renamed or extended under **Setup** (one name per line).
+- An admin creates an **event** with name, address in the link (slug), first and last day and number of tables. Tables are named "1" … "n" and can be renamed or extended under **Settings** (one name per line).
 - The sport is chosen when the event is created and decides scoring, result notation and standings order. Table tennis is the only profile so far, so the choice is not shown yet.
-- **Setup** also holds the result PIN, the access to the public views, the legal links, the public display options and the backup (see the following sections).
+- **Settings** also holds the result PIN, the access to the public views, the legal links, the public display options and the backup (see the following sections).
 - An event can be deleted with all its data.
 
 ## 3. Players and entries
@@ -92,7 +94,7 @@ Results use the short notation known from table tennis: per game the loser's poi
 
 ## 7. Result entry at the table
 
-- Under **Setup** the admin generates a six-digit **PIN** (shown once) and prints a sheet with one **QR code per table**.
+- Under **Settings** the admin generates a six-digit **PIN** (shown once) and prints a sheet with one **QR code per table**.
 - A player or umpire scans the code, enters the PIN once, and the phone stays signed in for 72 hours. The page shows the match called to this table and a keypad for the short notation.
 - Phones may only enter results of called matches: no walkovers, no corrections, no calls. A new PIN signs out every phone, for example one PIN per day.
 - **Dead spots:** if a result cannot be sent, it waits on the phone ("will be sent once the connection is back") and is sent automatically. Sending twice is harmless. If the desk entered a different result meanwhile, the phone shows it. The page itself also loads without a connection.
@@ -127,7 +129,7 @@ All print pages are formatted for A4 and can be saved as PDF from the browser's 
 
 **CSV** (UTF-8, opens in Excel): placements and all matches with game scores.
 
-**Event export:** under **Setup → Backup** the whole event (tables, players, competitions, draws, results, display profiles) is downloaded as a JSON file. Under **Tournament desk → Import event** it becomes a new event, on the same or any other installation, for example to move from the server to a laptop and back. PIN, sessions, users and the audit log are not exported.
+**Event export:** under **Settings → Backup** the whole event (tables, players, competitions, draws, results, display profiles) is downloaded as a JSON file. Under **Events → New event → Import event** it becomes a new event, on the same or any other installation, for example to move from the server to a laptop and back. PIN, sessions, users and the audit log are not exported.
 
 ## 11. Users and roles
 
@@ -148,7 +150,7 @@ Every change (draw, call, result, correction, withdrawal, settings, players …)
 1. Sign in at `/login`. Create the event, tables and competitions; choose each format with the planner.
 2. Import or enter the players, enter them into the competitions, set attendance on arrival.
 3. Draw the doubles pairs and the competitions.
-4. Under **Setup**, generate the PIN, print the QR codes for the tables and the access notice. Under **Displays**, open each profile's link on its screen.
+4. Under **Settings**, generate the PIN, print the QR codes for the tables and the access notice. Under **Displays**, open each profile's link on its screen.
 5. At the **match desk**, call ready matches to free tables. Players enter the result on their phone; the desk can always enter or correct it.
 6. At the end, print result lists and certificates and save the placements as CSV.
 

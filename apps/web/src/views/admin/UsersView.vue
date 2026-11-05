@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { UserPlus } from '@lucide/vue';
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { api } from '../../lib/api.js';
@@ -86,7 +87,7 @@ function remove(a: Account) {
     </section>
 
     <section class="card" aria-labelledby="create-user">
-      <h2 id="create-user">{{ t('users.create') }}</h2>
+      <h2 id="create-user"><UserPlus aria-hidden="true" />{{ t('users.create') }}</h2>
       <form class="fields" @submit.prevent="create">
         <label class="field">
           <span>{{ t('users.username') }}</span>

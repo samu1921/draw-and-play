@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Network, Shuffle, UserMinus, Users } from '@lucide/vue';
 import {
   bracketSize,
   generateVariants,
@@ -200,7 +201,7 @@ const removeCompetition = async () => {
 <template>
   <div v-if="state && competition" class="stack">
     <header class="page-title">
-      <h2>
+      <h2 class="competition-title">
         <span class="swatch" :style="{ background: `var(--series-${competition.color + 1})` }" aria-hidden="true"></span>
         {{ competition.name }}
         <span class="muted">· {{ t(`admin.competitions.kinds.${competition.kind}`) }}</span>
@@ -211,7 +212,7 @@ const removeCompetition = async () => {
 
     <template v-if="!competition.drawn">
       <section class="card" aria-labelledby="entries-title">
-        <h3 id="entries-title">{{ t('admin.competition.entries') }} ({{ activeEntries.length }})</h3>
+        <h3 id="entries-title"><Users aria-hidden="true" />{{ t('admin.competition.entries') }} ({{ activeEntries.length }})</h3>
         <div class="table-scroll">
           <table class="data-table">
             <thead>
@@ -304,7 +305,7 @@ const removeCompetition = async () => {
 
       <!-- Pair draw, format and draw belong to the tournament management, not to the registration desk -->
       <section v-if="isDoubles && session.isAdmin" class="card" aria-labelledby="pairs-title">
-        <h3 id="pairs-title">{{ t('admin.competition.pairDraw') }}</h3>
+        <h3 id="pairs-title"><Shuffle aria-hidden="true" />{{ t('admin.competition.pairDraw') }}</h3>
         <p v-if="unpaired.length === 0" class="muted">{{ t('admin.competition.noUnpaired') }}</p>
         <template v-else>
           <p>{{ t('admin.competition.unpairedCount', { n: unpaired.length }) }}</p>
@@ -334,7 +335,7 @@ const removeCompetition = async () => {
       </section>
 
       <section v-if="session.isAdmin" class="card" aria-labelledby="format-title">
-        <h3 id="format-title">{{ t('admin.competition.format') }}</h3>
+        <h3 id="format-title"><Network aria-hidden="true" />{{ t('admin.competition.format') }}</h3>
         <p>{{ describeFormat(t, competition.format, drawCount) }}</p>
         <p v-if="formatError" class="warning-text">{{ t('admin.competition.formatInvalid', { n: drawCount }) }}</p>
         <div v-if="variants.length > 0" class="fields">
@@ -357,7 +358,7 @@ const removeCompetition = async () => {
       </section>
 
       <section v-if="session.isAdmin" class="card" aria-labelledby="draw-title">
-        <h3 id="draw-title">{{ t('admin.competition.draw') }}</h3>
+        <h3 id="draw-title"><Shuffle aria-hidden="true" />{{ t('admin.competition.draw') }}</h3>
         <p v-if="unpaired.length > 0" class="warning-text">{{ t('admin.competition.drawNeedsPairs') }}</p>
         <div class="fields">
           <label class="field">
@@ -406,7 +407,7 @@ const removeCompetition = async () => {
         <CompetitionStateView :state="state" :table-name="tableName" />
       </section>
       <section v-if="session.isAdmin" class="card" aria-labelledby="withdrawals">
-        <h2 id="withdrawals">{{ t('admin.competition.withdrawals') }}</h2>
+        <h2 id="withdrawals"><UserMinus aria-hidden="true" />{{ t('admin.competition.withdrawals') }}</h2>
         <p class="muted small">{{ t('admin.competition.withdrawHint') }}</p>
         <ul class="withdraw-list">
           <li v-for="e in drawnEntries" :key="e.id">

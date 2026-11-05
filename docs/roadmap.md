@@ -27,7 +27,11 @@ Ready for a first club championship. Everything the [reference scenario](require
 | Go-live hardening | security headers, legal links, audit log view, deployment guide with checklist (N2–N4) |
 | Users | user management, roles admin and registration desk, own password |
 
-## Next: format changes during the event
+## In progress: look and feel
+
+Done: events as the start page, sidebar inside an event with an overview page (preparation checklist, current state), icons throughout, light/dark switch that follows the system. Still to come: rest times of both players at the match desk, colours and logo per installation and per event, background image for displays (16:9), certificate template with placeholders and background image.
+
+## Then: format changes during the event
 
 The remaining part of goal G3 and requirement F30. The API currently refuses format changes after the draw (`alreadyDrawn`).
 
@@ -39,10 +43,6 @@ The remaining part of goal G3 and requirement F30. The API currently refuses for
 | Late entry | group without results, or knockout not drawn yet | placed in a group or the draw, matches added |
 
 Every change shows the new forecast before it is confirmed ("final moves from 16:30 to 15:45") and is written to the audit log. Because of its size, this step gets its own detailed plan before implementation.
-
-## Then: look and feel
-
-Logo, colours and certificate design, based on feedback from the first event.
 
 ## Ideas for later
 

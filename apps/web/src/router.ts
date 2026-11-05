@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useSessionStore } from './stores/session.js';
-import PlannerView from './views/PlannerView.vue';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -16,16 +15,19 @@ declare module 'vue-router' {
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'planner', component: PlannerView },
+    // The tournament management is the start page; signed-out visitors land on the sign-in
+    { path: '/', redirect: { name: 'admin' } },
+    { path: '/status', redirect: '/' },
     { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
-    { path: '/status', name: 'status', component: () => import('./views/StatusView.vue') },
     { path: '/admin', name: 'admin', component: () => import('./views/admin/EventsView.vue'), meta: { admin: true } },
+    { path: '/admin/planner', name: 'planner', component: () => import('./views/PlannerView.vue'), meta: { admin: true } },
     {
       path: '/admin/events/:eventId',
       component: () => import('./views/admin/EventAdminView.vue'),
       meta: { admin: true },
       children: [
-        { path: '', name: 'admin-setup', component: () => import('./views/admin/EventSetup.vue'), meta: { adminRole: true } },
+        { path: '', name: 'admin-event', component: () => import('./views/admin/EventDashboard.vue') },
+        { path: 'settings', name: 'admin-setup', component: () => import('./views/admin/EventSetup.vue'), meta: { adminRole: true } },
         { path: 'persons', name: 'admin-persons', component: () => import('./views/admin/EventPersons.vue') },
         { path: 'competitions', name: 'admin-competitions', component: () => import('./views/admin/EventCompetitions.vue') },
         { path: 'competitions/:competitionId', name: 'admin-competition', component: () => import('./views/admin/CompetitionAdmin.vue') },
@@ -69,7 +71,7 @@ router.beforeEach(async (to) => {
   if (!session.checked) await session.check().catch(() => null);
   if (!session.user) return { name: 'login', query: { redirect: to.fullPath } };
   if (to.matched.some((r) => r.meta.adminRole) && !session.isAdmin) {
-    return typeof to.params.eventId === 'string' ? { name: 'admin-persons', params: { eventId: to.params.eventId } } : { name: 'admin' };
+    return typeof to.params.eventId === 'string' ? { name: 'admin-event', params: { eventId: to.params.eventId } } : { name: 'admin' };
   }
   return true;
 });

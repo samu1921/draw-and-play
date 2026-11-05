@@ -1,19 +1,18 @@
 // Reference locale: every other locale must provide the same keys (checked by the type of `de.ts`).
 export default {
-  app: {
-    tagline: 'Tournament software',
-  },
   language: {
     label: 'Language',
   },
+  theme: { current: 'Appearance: {mode} (click to change)', system: 'as system', light: 'light', dark: 'dark' },
   nav: {
+    label: 'Main navigation',
+    events: 'Events',
     planner: 'Planner',
     admin: 'Tournament desk',
     login: 'Sign in',
     logout: 'Sign out',
     users: 'Users',
     account: 'My account',
-    status: 'Status',
   },
   common: {
     save: 'Save',
@@ -114,6 +113,9 @@ export default {
   admin: {
     events: {
       title: 'Events',
+      new: 'New event',
+      all: 'All events',
+      today: 'Today',
       create: 'Create event',
       name: 'Name',
       slug: 'Short name for links',
@@ -125,7 +127,32 @@ export default {
       importHint: 'Creates a new event from an export file, with all players, draws and results. Result entry by PIN starts switched off.',
       importFile: 'Export file (.json)',
     },
-    tabs: { setup: 'Setup', persons: 'Players', competitions: 'Competitions', desk: 'Match desk', displays: 'Displays', print: 'Print', audit: 'Log' },
+    tabs: { label: 'Event sections', overview: 'Overview', setup: 'Settings', persons: 'Players', competitions: 'Competitions', desk: 'Match desk', displays: 'Displays', print: 'Print', audit: 'Log' },
+    dashboard: {
+      now: 'Current state',
+      tablesBusy: 'Tables in use',
+      ready: 'Ready to play',
+      queued: '{n} matches in the queue',
+      latest: 'at the latest {time}',
+      stepsTitle: 'Preparation',
+      open: '{n} still open',
+      allDone: 'all done',
+      done: 'done',
+      todo: 'open',
+      steps: {
+        tables: 'Tables set up ({n})',
+        persons: 'Players added ({n})',
+        competitions: 'Competitions created ({n})',
+        drawn: 'Drawn ({drawn} of {total})',
+        pin: 'Result entry by phone switched on',
+        started: 'First match called',
+      },
+      manage: 'Manage',
+      notDrawn: 'not drawn',
+      noCompetitions: 'No competitions yet.',
+      quick: 'Quick access',
+      openDesk: 'Open match desk',
+    },
     setup: {
       tables: 'Tables',
       tableNamesHint: 'One name per line, e.g. 1, 2, 3 …',
@@ -543,17 +570,6 @@ export default {
     print: 'Print',
     table: 'Table {name}',
     scan: 'Scan to enter the result',
-  },
-  home: {
-    scaffoldRunning: 'The project scaffold is up and running.',
-    domainInBrowser: 'Domain library in the browser: v{version}',
-  },
-  status: {
-    server: 'Server',
-    database: 'Database',
-    checking: 'checking …',
-    unreachable: 'unreachable: {error}',
-    serverOk: '{status} (domain v{version})',
   },
   format: {
     roundRobin: 'Round robin',

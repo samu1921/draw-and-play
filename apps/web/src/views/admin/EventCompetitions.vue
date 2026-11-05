@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Plus } from '@lucide/vue';
 import { generateVariants, type PlacementMode } from '@draw-and-play/domain';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -60,7 +61,7 @@ async function create() {
     </section>
 
     <section v-if="session.isAdmin" class="card" aria-labelledby="create-competition">
-      <h2 id="create-competition">{{ t('admin.competitions.create') }}</h2>
+      <h2 id="create-competition"><Plus aria-hidden="true" />{{ t('admin.competitions.create') }}</h2>
       <form class="fields" @submit.prevent="create">
         <label class="field">
           <span>{{ t('admin.competitions.name') }}</span>

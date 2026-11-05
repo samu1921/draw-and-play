@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { UserPlus, Users } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PersonImport from '../../components/admin/PersonImport.vue';
@@ -58,7 +59,7 @@ async function remove(p: PersonInfo) {
 <template>
   <div class="stack">
     <section class="card" aria-labelledby="add-person">
-      <h2 id="add-person">{{ t('admin.persons.add') }}</h2>
+      <h2 id="add-person"><UserPlus aria-hidden="true" />{{ t('admin.persons.add') }}</h2>
       <form class="fields" @submit.prevent="add">
         <label class="field">
           <span>{{ t('admin.persons.firstName') }}</span>
@@ -96,7 +97,7 @@ async function remove(p: PersonInfo) {
     />
 
     <section class="card" aria-labelledby="person-list">
-      <h2 id="person-list">{{ t('admin.persons.count', persons.length, { named: { n: persons.length } }) }}</h2>
+      <h2 id="person-list"><Users aria-hidden="true" />{{ t('admin.persons.count', persons.length, { named: { n: persons.length } }) }}</h2>
       <p v-if="duplicates.size > 0" class="warning-text" role="status">{{ t('admin.persons.duplicates', { names: duplicateList }) }}</p>
       <div class="table-scroll">
         <table class="data-table">

@@ -8,8 +8,8 @@ Was draw-and-play heute kann, Bereich für Bereich, in der Reihenfolge, in der e
 
 | Bereich | Wer | Wo in der App |
 |---|---|---|
-| [Turnierplaner](#1-turnierplaner) | alle, ohne Anmeldung | `/` |
-| [Veranstaltungen und Tische](#2-veranstaltungen-und-tische) | Admin | **Turnierleitung** (`/admin`), **Einrichtung** |
+| [Turnierplaner](#1-turnierplaner) | Admin, Meldestelle | **Planer** (`/admin/planner`) |
+| [Veranstaltungen und Tische](#2-veranstaltungen-und-tische) | Admin | **Veranstaltungen** (`/admin`, Startseite), **Übersicht**, **Einstellungen** |
 | [Spieler und Meldungen](#3-spieler-und-meldungen) | Admin, Meldestelle | **Spieler**, **Konkurrenzen** |
 | [Konkurrenzen und Spielsysteme](#4-konkurrenzen-und-spielsysteme) | Admin | **Konkurrenzen** |
 | [Auslosung](#5-auslosung) | Admin | **Konkurrenzen → Konkurrenz** |
@@ -17,15 +17,17 @@ Was draw-and-play heute kann, Bereich für Bereich, in der Reihenfolge, in der e
 | [Ergebniseingabe am Tisch](#7-ergebniseingabe-am-tisch) | Spieler, Schiedsrichter | `/e/<slug>/table/<tisch>` per QR-Code |
 | [Anzeigen](#8-anzeigen) | Admin richtet ein, Bildschirm zeigt | **Anzeigen**, `/e/<slug>/display/<profil>` |
 | [Öffentliche Ansichten](#9-öffentliche-ansichten) | alle (ggf. mit Zugangscode) | `/e/<slug>` |
-| [Drucken und Export](#10-drucken-und-export) | Admin, Meldestelle | **Drucken**, **Einrichtung → Datensicherung** |
+| [Drucken und Export](#10-drucken-und-export) | Admin, Meldestelle | **Drucken**, **Einstellungen → Datensicherung** |
 | [Benutzer und Rollen](#11-benutzer-und-rollen) | Admin | **Benutzer**, **Mein Konto** |
 | [Protokoll](#12-protokoll) | Admin | **Protokoll** |
 
-Die Oberfläche gibt es auf Englisch und Deutsch. Sie richtet sich nach der Browsersprache oder der Sprachauswahl.
+Die Oberfläche gibt es auf Englisch und Deutsch. Sie richtet sich nach der Browsersprache oder der Sprachauswahl. Hell oder dunkel folgt der Systemeinstellung und lässt sich in der Kopfleiste umschalten (wie System → hell → dunkel); die Wahl merkt sich der Browser.
+
+**Aufbau:** Nach der Anmeldung öffnen sich die Veranstaltungen, laufende zuerst, mit direktem Sprung in den Spielbetrieb. Innerhalb einer Veranstaltung führt eine Seitenleiste (auf dem Handy eine Reiterleiste) durch Übersicht, Spielbetrieb, Spieler, Konkurrenzen, Anzeigen, Drucken, Einstellungen und Protokoll. Die **Übersicht** zeigt eine Checkliste zur Vorbereitung (Tische, Spieler, Konkurrenzen, Auslosung, PIN, erstes Spiel), den Stand der Konkurrenzen und während des Turniers belegte Tische, spielbereite Spiele und das voraussichtliche Tagesende.
 
 ## 1. Turnierplaner
 
-Der Planer beantwortet die Frage „Welcher Modus passt?“, bevor irgendetwas angelegt ist. Er funktioniert ohne Veranstaltung und ohne Anmeldung.
+Der Planer beantwortet die Frage „Welcher Modus passt?“, bevor irgendetwas angelegt ist. Er funktioniert ohne Veranstaltung; der Entwurf bleibt im Browser.
 
 - **Tag:** Anzahl Tische, Startzeit, optionale Mindestpause zwischen zwei Spielen eines Spielers, Puffer in Prozent oder Minuten.
 - **Konkurrenzen** (bis zu 8 pro Tag): Name, Teilnehmerzahl, Wertung (Best-of-1, -3, -5 oder -7), Minuten pro Spiel, Modus, Platzierungsspiele, „nicht vor“, „startet nach“ einer anderen Konkurrenz und ein Tischbereich.
@@ -37,9 +39,9 @@ Wie die Simulation rechnet, steht mit Beispielrechnung in der [Architektur](arch
 
 ## 2. Veranstaltungen und Tische
 
-- Ein Admin legt eine **Veranstaltung** an: Name, Adresse im Link (Slug), erster und letzter Tag, Anzahl Tische. Die Tische heißen „1“ … „n“ und lassen sich unter **Einrichtung** umbenennen oder erweitern (ein Name pro Zeile).
+- Ein Admin legt eine **Veranstaltung** an: Name, Adresse im Link (Slug), erster und letzter Tag, Anzahl Tische. Die Tische heißen „1“ … „n“ und lassen sich unter **Einstellungen** umbenennen oder erweitern (ein Name pro Zeile).
 - Die Sportart wird beim Anlegen gewählt und bestimmt Wertung, Ergebnisnotation und Tabellenreihenfolge. Bisher gibt es nur das Profil Tischtennis, deshalb ist die Auswahl noch ausgeblendet.
-- Unter **Einrichtung** liegen außerdem Ergebnis-PIN, Zugang zu den öffentlichen Ansichten, Impressum und Datenschutz, die Optionen für die öffentliche Anzeige und die Datensicherung (siehe die folgenden Abschnitte).
+- Unter **Einstellungen** liegen außerdem Ergebnis-PIN, Zugang zu den öffentlichen Ansichten, Impressum und Datenschutz, die Optionen für die öffentliche Anzeige und die Datensicherung (siehe die folgenden Abschnitte).
 - Eine Veranstaltung lässt sich mit allen Daten löschen.
 
 ## 3. Spieler und Meldungen
@@ -92,7 +94,7 @@ Ergebnisse werden in der aus dem Tischtennis bekannten Kurznotation eingegeben: 
 
 ## 7. Ergebniseingabe am Tisch
 
-- Unter **Einrichtung** erzeugt der Admin eine sechsstellige **PIN** (wird nur einmal angezeigt) und druckt einen Bogen mit einem **QR-Code pro Tisch**.
+- Unter **Einstellungen** erzeugt der Admin eine sechsstellige **PIN** (wird nur einmal angezeigt) und druckt einen Bogen mit einem **QR-Code pro Tisch**.
 - Ein Spieler oder Schiedsrichter scannt den Code, gibt einmal die PIN ein, und das Handy bleibt 72 Stunden angemeldet. Die Seite zeigt das Spiel, das an diesem Tisch aufgerufen ist, und eine Tastatur für die Kurznotation.
 - Handys dürfen nur Ergebnisse aufgerufener Spiele eintragen: nicht kampflos, keine Korrekturen, keine Aufrufe. Eine neue PIN meldet alle Handys ab, z. B. eine PIN pro Tag.
 - **Funklöcher:** Lässt sich ein Ergebnis nicht senden, wartet es auf dem Handy („Wird gesendet, sobald wieder Verbindung besteht“) und wird automatisch nachgesendet. Doppeltes Senden ist harmlos. Hat die Turnierleitung inzwischen ein anderes Ergebnis eingetragen, zeigt das Handy es an. Die Seite selbst lädt auch ohne Verbindung.
@@ -127,7 +129,7 @@ Alle Druckseiten sind für A4 gesetzt und lassen sich über den Druckdialog des 
 
 **CSV** (UTF-8, öffnet in Excel): Platzierungen und alle Spiele mit Satzergebnissen.
 
-**Export der Veranstaltung:** Unter **Einrichtung → Datensicherung** lässt sich die ganze Veranstaltung (Tische, Spieler, Konkurrenzen, Auslosungen, Ergebnisse, Anzeige-Profile) als JSON-Datei herunterladen. Unter **Turnierleitung → Veranstaltung importieren** wird daraus eine neue Veranstaltung, auf derselben oder einer anderen Installation, z. B. um vom Server auf einen Laptop und zurück umzuziehen. PIN, Sitzungen, Benutzer und Protokoll werden nicht exportiert.
+**Export der Veranstaltung:** Unter **Einstellungen → Datensicherung** lässt sich die ganze Veranstaltung (Tische, Spieler, Konkurrenzen, Auslosungen, Ergebnisse, Anzeige-Profile) als JSON-Datei herunterladen. Unter **Veranstaltungen → Neue Veranstaltung → Veranstaltung importieren** wird daraus eine neue Veranstaltung, auf derselben oder einer anderen Installation, z. B. um vom Server auf einen Laptop und zurück umzuziehen. PIN, Sitzungen, Benutzer und Protokoll werden nicht exportiert.
 
 ## 11. Benutzer und Rollen
 
@@ -148,7 +150,7 @@ Jede Änderung (Auslosung, Aufruf, Ergebnis, Korrektur, Rückzug, Einstellungen,
 1. Unter `/login` anmelden. Veranstaltung, Tische und Konkurrenzen anlegen; den Modus jeweils mit dem Planer wählen.
 2. Spieler importieren oder eintragen, in die Konkurrenzen melden, bei Ankunft auf anwesend setzen.
 3. Doppelpaare und Konkurrenzen auslosen.
-4. Unter **Einrichtung** die PIN erzeugen, QR-Codes für die Tische und den Zugangsaushang drucken. Unter **Anzeigen** den Link jedes Profils auf seinem Bildschirm öffnen.
+4. Unter **Einstellungen** die PIN erzeugen, QR-Codes für die Tische und den Zugangsaushang drucken. Unter **Anzeigen** den Link jedes Profils auf seinem Bildschirm öffnen.
 5. Im **Spielbetrieb** spielbereite Spiele auf freie Tische aufrufen. Die Spieler tragen das Ergebnis am Handy ein; die Turnierleitung kann es jederzeit selbst eintragen oder korrigieren.
 6. Am Ende Ergebnislisten und Urkunden drucken und die Platzierungen als CSV sichern.
 

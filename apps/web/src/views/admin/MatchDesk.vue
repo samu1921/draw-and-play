@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CheckCheck, ListOrdered, Table2 } from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ForecastPanel from '../../components/live/ForecastPanel.vue';
@@ -97,7 +98,7 @@ async function onSaved() {
     <OutboxNotice :waiting="outbox.waiting.value" :refused="outbox.refused.value" @dismiss="outbox.dismiss" />
 
     <section aria-labelledby="desk-tables">
-      <h2 id="desk-tables">{{ t('admin.desk.tables') }}</h2>
+      <h2 id="desk-tables"><Table2 aria-hidden="true" />{{ t('admin.desk.tables') }}</h2>
       <div class="table-grid">
         <TableCard v-for="table in ops.tables" :key="table.id" :table="table" :competitions="competitions" :now="now">
           <template v-if="table.match">
@@ -109,7 +110,7 @@ async function onSaved() {
     </section>
 
     <section class="card" aria-labelledby="desk-queue">
-      <h2 id="desk-queue">{{ t('admin.desk.queue') }} ({{ ops.queue.length }})</h2>
+      <h2 id="desk-queue"><ListOrdered aria-hidden="true" />{{ t('admin.desk.queue') }} ({{ ops.queue.length }})</h2>
       <p v-if="ops.queue.length === 0" class="muted">{{ t('admin.desk.queueEmpty') }}</p>
       <ul v-else class="queue">
         <li v-for="m in queue" :key="m.id" class="queue-item" :class="{ blocked: m.busy }">
@@ -144,7 +145,7 @@ async function onSaved() {
     <ForecastPanel v-model:day="forecastDay" :forecast="forecast" selectable />
 
     <section v-if="ops.recent.length > 0" class="card" aria-labelledby="desk-recent">
-      <h2 id="desk-recent">{{ t('admin.desk.recent') }}</h2>
+      <h2 id="desk-recent"><CheckCheck aria-hidden="true" />{{ t('admin.desk.recent') }}</h2>
       <ul class="queue">
         <li v-for="m in ops.recent" :key="m.id" class="queue-item">
           <div class="queue-text">

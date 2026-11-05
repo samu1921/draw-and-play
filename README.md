@@ -45,7 +45,7 @@ cp .env.example .env   # set the passwords
 docker compose up -d --build
 ```
 
-Then open http://localhost:8080 and sign in at `/login` with `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env` (health check: http://localhost:8080/api/health). The planner at `/` works without signing in.
+Then open http://localhost:8080 and sign in at `/login` with `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env` (health check: http://localhost:8080/api/health). After signing in, the events open.
 
 For a server with its own domain and HTTPS, backups and restoring, follow the [deployment guide](docs/deploy.md).
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ScrollText } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
@@ -62,7 +63,7 @@ function detail(e: AuditEntry): string {
 
 <template>
   <section class="card" aria-labelledby="audit-title">
-    <h2 id="audit-title">{{ t('audit.title') }}</h2>
+    <h2 id="audit-title"><ScrollText aria-hidden="true" />{{ t('audit.title') }}</h2>
     <p class="muted small">{{ t('audit.hint') }}</p>
     <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
     <p v-else-if="loaded && entries.length === 0" class="muted">{{ t('audit.empty') }}</p>

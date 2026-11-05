@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { KeyRound } from '@lucide/vue';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { api } from '../lib/api.js';
@@ -35,7 +36,7 @@ async function change() {
       <p>
         {{ session.user?.username }} · <span class="muted">{{ session.user ? t(`users.roles.${session.user.role}`) : '' }}</span>
       </p>
-      <h2 id="account-password">{{ t('account.password') }}</h2>
+      <h2 id="account-password"><KeyRound aria-hidden="true" />{{ t('account.password') }}</h2>
       <form class="fields" @submit.prevent="change">
         <label class="field">
           <span>{{ t('account.current') }}</span>

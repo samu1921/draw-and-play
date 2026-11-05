@@ -97,7 +97,7 @@ Die Dumps liegen auf demselben Server wie die Datenbank. Kopiere sie regelmäßi
 rsync -av <benutzer>@<server>:draw-and-play/backups/ ./dap-backups/
 ```
 
-Zusätzlich lässt sich jede Veranstaltung unter **Einrichtung → Datensicherung** als JSON-Datei herunterladen und unter **Turnierleitung → Veranstaltung importieren** auf jeder Installation wieder einspielen, auch auf einem Laptop. So zieht eine Veranstaltung auch vom Server auf einen Laptop und zurück.
+Zusätzlich lässt sich jede Veranstaltung unter **Einstellungen → Datensicherung** als JSON-Datei herunterladen und unter **Veranstaltungen → Neue Veranstaltung → Veranstaltung importieren** auf jeder Installation wieder einspielen, auch auf einem Laptop. So zieht eine Veranstaltung auch vom Server auf einen Laptop und zurück.
 
 ## 7. Logs und Fehlersuche
 
@@ -115,7 +115,7 @@ docker compose logs backup       # Backups
 **Eine Woche vorher**
 - [ ] Veranstaltung, Tische und Konkurrenzen anlegen (Planer nutzen, um den Modus zu wählen).
 - [ ] Spielerliste als CSV vorbereiten (Vorlage unter **Spieler → Vorlage herunterladen**) und einmal probeweise importieren.
-- [ ] Impressum, Datenschutz und Hinweistext unter **Einrichtung** prüfen.
+- [ ] Impressum, Datenschutz und Hinweistext unter **Einstellungen** prüfen.
 - [ ] Generalprobe auf dem echten Server: Testveranstaltung anlegen, mit zwei Handys PIN eingeben, Ergebnisse eintragen, Beamer-Link öffnen, danach die Testveranstaltung löschen.
 
 **Am Vortag**

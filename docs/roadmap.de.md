@@ -27,7 +27,11 @@ Bereit für eine erste Vereinsmeisterschaft. Alles, was das [Referenzszenario](r
 | Go-live-Härtung | Sicherheits-Header, Impressum/Datenschutz, Protokoll-Ansicht, Deployment-Anleitung mit Checkliste (N2–N4) |
 | Benutzer | Benutzerverwaltung, Rollen Admin und Meldestelle, eigenes Passwort |
 
-## Als Nächstes: Modusänderung im laufenden Turnier
+## In Arbeit: Gestaltung
+
+Erledigt: Veranstaltungen als Startseite, Seitenleiste in der Veranstaltung mit Übersichtsseite (Checkliste zur Vorbereitung, aktueller Stand), Icons durchgehend, Hell/Dunkel-Schalter, der der Systemeinstellung folgt. Noch offen: Pausenzeiten beider Spieler im Spielbetrieb, Farben und Logo je Installation und je Veranstaltung, Hintergrundbild für Anzeigen (16:9), Urkundenvorlage mit Platzhaltern und Hintergrundbild.
+
+## Danach: Modusänderung im laufenden Turnier
 
 Der fehlende Teil von Ziel G3 und Anforderung F30. Heute lehnt die API Modusänderungen nach der Auslosung ab (`alreadyDrawn`).
 
@@ -39,10 +43,6 @@ Der fehlende Teil von Ziel G3 und Anforderung F30. Heute lehnt die API Modusänd
 | Nachmeldung | Gruppe ohne Ergebnisse oder KO noch nicht ausgelost | Einteilung in eine Gruppe bzw. die Auslosung, Spiele werden ergänzt |
 
 Jede Änderung zeigt vor der Bestätigung die neue Prognose („Finale verschiebt sich von 16:30 auf 15:45“) und wird protokolliert. Wegen des Umfangs bekommt dieser Schritt vor der Umsetzung einen eigenen, ausführlichen Plan.
-
-## Danach: Gestaltung
-
-Logo, Farben und Urkunden-Gestaltung, nach den Rückmeldungen aus der ersten Veranstaltung.
 
 ## Ideen für später
 

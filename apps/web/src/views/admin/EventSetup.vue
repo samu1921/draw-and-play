@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { DatabaseBackup, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLegalDefaults } from '../../composables/useLegal.js';
@@ -89,7 +90,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
 <template>
   <div class="setup-grid">
     <section class="card" aria-labelledby="tables-title">
-      <h2 id="tables-title">{{ t('admin.setup.tables') }}</h2>
+      <h2 id="tables-title"><Table2 aria-hidden="true" />{{ t('admin.setup.tables') }}</h2>
       <label class="field">
         <span>{{ t('admin.setup.tableNamesHint') }}</span>
         <textarea v-model="tableNames" rows="8"></textarea>
@@ -98,7 +99,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
     </section>
 
     <section class="card" aria-labelledby="pin-title">
-      <h2 id="pin-title">{{ t('admin.setup.pinTitle') }}</h2>
+      <h2 id="pin-title"><Smartphone aria-hidden="true" />{{ t('admin.setup.pinTitle') }}</h2>
       <p>{{ event.pinEnabled ? t('admin.setup.pinOn') : t('admin.setup.pinOff') }}</p>
       <p v-if="pin" class="pin-display" role="status">{{ t('admin.setup.pinShown', { pin }) }}</p>
       <div class="button-row">
@@ -109,7 +110,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
     </section>
 
     <section class="card" aria-labelledby="links-title">
-      <h2 id="links-title">{{ t('admin.setup.links') }}</h2>
+      <h2 id="links-title"><Globe aria-hidden="true" />{{ t('admin.setup.links') }}</h2>
       <ul class="link-list">
         <li><RouterLink :to="publicLink" target="_blank">{{ t('admin.setup.publicView') }}</RouterLink></li>
         <li><RouterLink :to="`/admin/events/${event.id}/displays`">{{ t('admin.setup.display') }}</RouterLink></li>
@@ -129,7 +130,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
     </section>
 
     <section class="card" aria-labelledby="viewer-title">
-      <h2 id="viewer-title">{{ t('admin.setup.viewerTitle') }}</h2>
+      <h2 id="viewer-title"><KeyRound aria-hidden="true" />{{ t('admin.setup.viewerTitle') }}</h2>
       <template v-if="viewerCode">
         <p>{{ t('admin.setup.viewerOn') }}</p>
         <p class="pin-display viewer-code">{{ viewerCode }}</p>
@@ -144,7 +145,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
     </section>
 
     <section class="card" aria-labelledby="legal-title">
-      <h2 id="legal-title">{{ t('admin.setup.legalTitle') }}</h2>
+      <h2 id="legal-title"><Scale aria-hidden="true" />{{ t('admin.setup.legalTitle') }}</h2>
       <p class="muted small">{{ t('admin.setup.legalHint') }}</p>
       <form class="stack" @submit.prevent="saveLegal">
         <label class="field">
@@ -164,7 +165,7 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
     </section>
 
     <section class="card" aria-labelledby="backup-title">
-      <h2 id="backup-title">{{ t('admin.setup.backupTitle') }}</h2>
+      <h2 id="backup-title"><DatabaseBackup aria-hidden="true" />{{ t('admin.setup.backupTitle') }}</h2>
       <p class="muted">{{ t('admin.setup.backupHint') }}</p>
       <div><a class="button secondary" :href="`/api/events/${event.id}/export`" download>{{ t('admin.setup.export') }}</a></div>
     </section>

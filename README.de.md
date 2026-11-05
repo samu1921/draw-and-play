@@ -45,7 +45,7 @@ cp .env.example .env   # Passwörter setzen
 docker compose up -d --build
 ```
 
-Danach http://localhost:8080 öffnen und unter `/login` mit `ADMIN_USERNAME` / `ADMIN_PASSWORD` aus der `.env` anmelden (Health-Check: http://localhost:8080/api/health). Der Planer unter `/` funktioniert ohne Anmeldung.
+Danach http://localhost:8080 öffnen und unter `/login` mit `ADMIN_USERNAME` / `ADMIN_PASSWORD` aus der `.env` anmelden (Health-Check: http://localhost:8080/api/health). Nach der Anmeldung öffnen sich die Veranstaltungen.
 
 Für einen Server mit eigener Domain und HTTPS, Backups und Wiederherstellung siehe die [Deployment-Anleitung](docs/deploy.de.md).
 

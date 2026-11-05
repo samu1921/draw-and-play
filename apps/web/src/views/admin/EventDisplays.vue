@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Monitor, Pencil } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
@@ -120,7 +121,7 @@ const slideOptions = ['tables', 'next', 'entries', 'liveDraw', 'todayOnly'] as c
 <template>
   <div class="displays">
     <section class="card" aria-labelledby="displays-title">
-      <h2 id="displays-title">{{ t('admin.displays.title') }}</h2>
+      <h2 id="displays-title"><Monitor aria-hidden="true" />{{ t('admin.displays.title') }}</h2>
       <p class="muted small">{{ t('admin.displays.intro') }}</p>
       <p v-if="profiles.length === 0" class="muted">{{ t('admin.displays.none') }}</p>
       <ul v-else class="display-list">
@@ -157,7 +158,7 @@ const slideOptions = ['tables', 'next', 'entries', 'liveDraw', 'todayOnly'] as c
     </section>
 
     <section v-if="selected && draft" class="card" aria-labelledby="display-edit-title">
-      <h2 id="display-edit-title">{{ t('admin.displays.edit', { name: selected.name }) }}</h2>
+      <h2 id="display-edit-title"><Pencil aria-hidden="true" />{{ t('admin.displays.edit', { name: selected.name }) }}</h2>
       <form class="stack" @submit.prevent="save">
         <div class="fields">
           <label class="field">
