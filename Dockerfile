@@ -3,7 +3,7 @@
 # --- Build: install everything, build frontend and server ---
 # The output is plain JavaScript, so this stage always runs on the build machine's own platform,
 # also when the image is built for other platforms.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine AS build
 WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY packages/domain/package.json packages/domain/
@@ -16,7 +16,7 @@ RUN npm run build
 # --- Runtime dependencies (server only) ---
 # Also runs on the build machine: npm fetches the prebuilt native modules (argon2) for the target
 # platform, which works because no runtime dependency has an install script.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS deps
+FROM --platform=$BUILDPLATFORM node:26-alpine AS deps
 ARG TARGETARCH
 WORKDIR /repo
 COPY package.json package-lock.json ./
@@ -28,7 +28,7 @@ RUN cpu="$(case "$TARGETARCH" in amd64) echo x64;; "") node -p process.arch;; *)
  && npm ci --omit=dev --os=linux --cpu="$cpu" --libc=musl
 
 # --- Runtime ---
-FROM node:22-alpine
+FROM node:26-alpine
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000 \
