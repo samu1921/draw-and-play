@@ -1,6 +1,6 @@
 // End-to-end walkthrough of the tournament day UI, with screenshots: `npm run e2e` (needs the Docker stack running).
 // Runs inside the Playwright Docker image, so no browser has to be installed locally.
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright-core';
 
 if (!process.env.ADMIN_PASSWORD && existsSync('.env')) process.loadEnvFile('.env');
@@ -54,18 +54,27 @@ await admin.getByRole('button', { name: 'Veranstaltung anlegen' }).click();
 await admin.waitForURL(/\/admin\/events\/[0-9a-f-]+$/);
 const eventId = admin.url().split('/').pop();
 
-step('players via API');
+step('players via CSV import');
 const players = [
   ['Anna', 'Berger', 'TTC Nord', 1720], ['Ben', 'Krüger', 'SV Süd', 1690], ['Clara', 'Wolf', 'TTC Nord', 1655],
   ['David', 'Schulz', 'TSG West', 1610], ['Emma', 'Lang', 'SV Süd', 1580], ['Felix', 'Hahn', 'TSG West', 1555],
   ['Greta', 'Vogel', 'TTC Nord', 1520], ['Hannes', 'Roth', 'SV Süd', 1490], ['Ida', 'Fuchs', 'TSG West', 1460],
   ['Jonas', 'Brandt', 'TTC Nord', 1430],
 ];
-const personIds = [];
-for (const [firstName, lastName, club, rating] of players) {
-  const res = await admin.request.post(`${BASE}/api/events/${eventId}/persons`, { data: { firstName, lastName, club, rating } });
-  personIds.push((await res.json()).person.id);
-}
+// As Excel saves it in German: semicolons, a byte order mark, one broken row that gets left out
+const csvFile = `${OUT}players.csv`;
+writeFileSync(
+  csvFile,
+  `\uFEFFVorname;Nachname;Verein;QTTR;Jahrgang\r\n${players.map((p) => `${p.join(';')};2000`).join('\r\n')}\r\nKaputt;Zeile;;;20x0\r\n`,
+);
+await admin.getByRole('link', { name: 'Spieler', exact: true }).click();
+await admin.getByLabel('CSV-Datei').setInputFiles(csvFile);
+await admin.getByText('10 neu, 0 vorhanden, 1 mit Fehlern').waitFor();
+await shot(admin, '00-import-preview');
+await admin.getByRole('button', { name: '10 Spieler importieren' }).click();
+await admin.getByText('10 Spieler angelegt').waitFor();
+const imported = (await (await admin.request.get(`${BASE}/api/events/${eventId}/persons`)).json()).persons;
+const personIds = players.map(([firstName]) => imported.find((p) => p.firstName === firstName).id);
 
 step('create competition via form');
 await admin.getByRole('link', { name: 'Konkurrenzen' }).click();

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import PersonImport from '../../components/admin/PersonImport.vue';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type PersonInfo } from '../../lib/api.js';
 import { errorText } from '../../lib/messages.js';
@@ -85,6 +86,14 @@ async function remove(p: PersonInfo) {
       </form>
       <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
     </section>
+
+    <PersonImport
+      :event-id="eventId"
+      :slug="live.overview.value!.event.slug"
+      :persons="persons"
+      :competitions="live.overview.value!.competitions"
+      @done="load"
+    />
 
     <section class="card" aria-labelledby="person-list">
       <h2 id="person-list">{{ t('admin.persons.count', persons.length, { named: { n: persons.length } }) }}</h2>

@@ -209,6 +209,24 @@ a {
   background: var(--selected);
 }
 
+.import-preview {
+  max-height: 28rem;
+}
+
+.import-preview select {
+  min-width: 8rem;
+  font-size: 0.8rem;
+}
+
+.import-column-title {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.import-error td {
+  color: var(--muted);
+}
+
 .badge.warning {
   color: var(--warning-text);
   background: transparent;
