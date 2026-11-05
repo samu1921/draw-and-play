@@ -45,7 +45,7 @@ describe('buildStructure', () => {
     ]);
   });
 
-  // Concept 3.3 lists 2–5 here, but the runner-up of the group of 4 has no bye: 3 group matches + 3 knockout = 6.
+  // The runner-up of the group of 4 gets no bye: 3 group matches + 3 knockout matches = 6 (example in docs/architecture.md).
   it('10 entries, 3 groups (4/3/3), top 2 → bracket of 8 with 2 byes: 17 matches, 2–6 per entry', () => {
     const s = buildStructure(groupsKo(3, 2), 10);
     expect(s.groupSizes).toEqual([4, 3, 3]);

@@ -77,13 +77,27 @@ If `docker/Caddyfile` changed, recreate the proxy: `docker compose up -d --force
 
 ## 6. Backups
 
-- The `backup` service writes database dumps to `./backups` (see the [README](../README.md#backups) for restoring).
-- The dumps lie on the same server. Copy them to another computer regularly, for example from your laptop:
+The `backup` service writes a database dump into `./backups` every hour and deletes old ones (`BACKUP_INTERVAL_MINUTES`, `BACKUP_KEEP_DAYS` and `BACKUP_DIR` in `.env`). On the tournament day a shorter interval such as 15 minutes is sensible. A dump right now, for example before the event starts:
 
-  ```bash
-  rsync -av <user>@<server>:draw-and-play/backups/ ./dap-backups/
-  ```
-- In addition, every event can be downloaded as a JSON file under **Setup → Backup** and imported on any installation, a laptop included.
+```bash
+docker compose exec backup sh /usr/local/bin/backup.sh once
+```
+
+Restore a dump (replaces the whole database):
+
+```bash
+docker compose stop app
+docker compose exec -T db pg_restore --clean --if-exists --no-owner -U drawandplay -d drawandplay < backups/drawandplay-<timestamp>.dump
+docker compose start app
+```
+
+The dumps lie on the same server as the database. Copy them to another computer regularly, for example from your laptop:
+
+```bash
+rsync -av <user>@<server>:draw-and-play/backups/ ./dap-backups/
+```
+
+In addition, every event can be downloaded as a JSON file under **Setup → Backup** and imported under **Tournament desk → Import event** on any installation, a laptop included. This is also how an event moves from the server to a laptop and back.
 
 ## 7. Logs and troubleshooting
 

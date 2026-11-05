@@ -77,13 +77,27 @@ Hat sich `docker/Caddyfile` geändert, den Proxy neu erstellen: `docker compose 
 
 ## 6. Backups
 
-- Der Dienst `backup` schreibt Datenbank-Dumps nach `./backups` (siehe [README](../README.de.md#backups) für Wiederherstellung).
-- Die Dumps liegen auf demselben Server. Kopiere sie regelmäßig auf einen anderen Rechner, zum Beispiel von deinem Laptop aus:
+Der Dienst `backup` schreibt stündlich einen Datenbank-Dump nach `./backups` und löscht alte (`BACKUP_INTERVAL_MINUTES`, `BACKUP_KEEP_DAYS` und `BACKUP_DIR` in der `.env`). Am Turniertag ist ein kürzerer Abstand wie 15 Minuten sinnvoll. Einen Dump sofort anlegen, zum Beispiel vor Turnierbeginn:
 
-  ```bash
-  rsync -av <benutzer>@<server>:draw-and-play/backups/ ./dap-backups/
-  ```
-- Zusätzlich lässt sich jede Veranstaltung unter **Einrichtung → Datensicherung** als JSON-Datei herunterladen und auf jeder Installation wieder importieren, auch auf einem Laptop.
+```bash
+docker compose exec backup sh /usr/local/bin/backup.sh once
+```
+
+Einen Dump wiederherstellen (ersetzt die ganze Datenbank):
+
+```bash
+docker compose stop app
+docker compose exec -T db pg_restore --clean --if-exists --no-owner -U drawandplay -d drawandplay < backups/drawandplay-<zeitstempel>.dump
+docker compose start app
+```
+
+Die Dumps liegen auf demselben Server wie die Datenbank. Kopiere sie regelmäßig auf einen anderen Rechner, zum Beispiel von deinem Laptop aus:
+
+```bash
+rsync -av <benutzer>@<server>:draw-and-play/backups/ ./dap-backups/
+```
+
+Zusätzlich lässt sich jede Veranstaltung unter **Einrichtung → Datensicherung** als JSON-Datei herunterladen und unter **Turnierleitung → Veranstaltung importieren** auf jeder Installation wieder einspielen, auch auf einem Laptop. So zieht eine Veranstaltung auch vom Server auf einen Laptop und zurück.
 
 ## 7. Logs und Fehlersuche
 

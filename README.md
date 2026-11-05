@@ -8,16 +8,27 @@ What sets it apart:
 
 - **Planner with simulation.** Before the event it compares every sensible format for the expected number of entries (groups, knockout, placement matches) by matches per player, finishing time and table usage.
 - **Live forecast.** During the event the schedule is recalculated from the actual state, and delays show up immediately.
-- **Format changes on the fly.** Whatever has not started yet can still be changed, with a preview of the impact.
-- **Everything in the browser.** Admin desk, result entry on phones via QR code and PIN, projector display and a public read-only view, all updated live.
+- **Everything in the browser, live.** Tournament desk, result entry on phones via QR code and PIN (also through dead spots), projector displays and public views, all updated without reloading.
+- **Made for the hall.** Print pages as paper fallback, backups, and the whole event can move between a cloud server and a laptop.
 
-Background (German): [concept](docs/02-konzept-draw-and-play.md). Developer reference: [HTTP API](docs/api.md).
+> **Status:** ready for a first club championship. Format changes during a running event come next, see the [roadmap](docs/roadmap.md).
 
-> Status: ready for a first club championship. Planner, draw, match desk, result entry by phone (also through dead spots), projector display, public views behind an access code, print pages, CSV import and backups are in place; user management and format changes during the event come next.
+## Documentation
 
-## Demo
+| Document | For whom | Contents |
+|---|---|---|
+| [Requirements](docs/requirements.md) | everybody | starting point, goals, reference scenario, roles, requirements with their status |
+| [Features](docs/features.md) | organisers, users | what the app does, area by area, and a tournament day in practice |
+| [Architecture](docs/architecture.md) | developers | structure, domain library, planner algorithm, consistency, security, data model, design decisions |
+| [Roadmap](docs/roadmap.md) | everybody | what is done, what comes next, ideas |
+| [Deployment](docs/deploy.md) | operators | server setup, updates, backups, tournament day checklist |
+| [HTTP API](docs/api.md) | developers | every endpoint, error codes, live updates |
 
-A separate demo stack with its own database contains a complete club championship with made-up players: Friday three youth competitions, Saturday doubles, singles (after the doubles) and hobby, on four tables. Everything is entered but not drawn yet.
+Every document exists in English and German.
+
+## Try the demo
+
+A separate demo stack with its own database contains a complete club championship with made-up players: on Friday three youth competitions, on Saturday doubles, singles (after the doubles) and hobby, on four tables. Everything is entered but not drawn yet.
 
 ```bash
 npm run demo          # http://localhost:8090 – sign in as admin / demo-admin-2026, table PIN 123456
@@ -25,60 +36,20 @@ npm run demo:reset    # throw the demo data away and start fresh
 npm run demo:down     # stop
 ```
 
-It runs next to the normal stack and never touches its data.
+It runs next to the normal stack and never touches its data. Requires Docker and Node 22.
 
-## Tournament day in short
-
-1. Sign in at `/login` (first admin from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`). Under **Users**, create further admins or accounts for the registration desk, which may only handle players, entries and attendance; everybody changes their own password under **My account**.
-2. **Tournament desk → create event**, then add players, create competitions (format chosen like in the planner), enter players and draw.
-3. **Setup:** generate a PIN and print the QR codes for the tables. New events keep their public views behind an access code; print the notice with its QR code and hang it up at the venue (or open the views to everybody). Under **Displays**, build a profile for each screen (projector, TV) and open its link there. The display is a 16:9 stage that never scrolls; arrow keys or a presenter remote switch slides, space pauses, F toggles full screen.
-4. **Match desk:** call ready matches to free tables. Players scan the QR code at their table, enter the PIN once and type the result; the desk can always enter or correct results itself. If a phone has no connection at that moment, the result waits on the phone and is sent once the connection is back (keep the page open).
-5. **Print:** score sheets (also the paper fallback if the network fails), the day's schedule, group sheets with cross tables and brackets, results and certificates, each as a print page or PDF; placements and all results also as CSV.
-6. Everybody else follows along at `/e/<slug>` (with the access code, if the event has one).
-
-## Repository layout
-
-| Path | Contents |
-|---|---|
-| `packages/domain` | Pure tournament logic in TypeScript (schedules, draw, standings, knockout, planner). No UI or database dependencies; runs in Node and in the browser. Consumed as TypeScript source, without a build step of its own. Returns language-neutral codes, never UI text. |
-| `apps/server` | Fastify API, Drizzle ORM + PostgreSQL. Also serves the built frontend in production. |
-| `apps/web` | Vue 3 + Vite + Vue Router + Pinia (SPA), localized with vue-i18n (English, German). |
-| `docker/` | Caddy configuration (reverse proxy, automatic HTTPS) |
-
-Stack: Node 22, TypeScript 6.0 (not 7, because `vue-tsc` needs the compiler's JavaScript API), Vitest, npm workspaces.
-
-## Run everything with Docker
+## Run with Docker
 
 ```bash
-cp .env.example .env   # set a password
+cp .env.example .env   # set the passwords
 docker compose up -d --build
 ```
 
-Then open http://localhost:8080 (health check: http://localhost:8080/api/health).
+Then open http://localhost:8080 and sign in at `/login` with `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env` (health check: http://localhost:8080/api/health). The planner at `/` works without signing in.
 
-On a server, set `SITE_ADDRESS=tournament.example.org`, `HTTP_PORT=80` and `HTTPS_PORT=443` in `.env`. Caddy then obtains the certificate automatically. The [deployment guide](docs/deploy.md) covers the server step by step, updates, backups and a tournament day checklist.
+For a server with its own domain and HTTPS, backups and restoring, follow the [deployment guide](docs/deploy.md).
 
-## Backups
-
-The `backup` service writes a database dump into `./backups` every hour (`BACKUP_INTERVAL_MINUTES`, `BACKUP_KEEP_DAYS` and `BACKUP_DIR` in `.env`). On the tournament day a shorter interval such as 15 minutes is sensible. A dump right now, for example before the event starts:
-
-```bash
-docker compose exec backup sh /usr/local/bin/backup.sh once
-```
-
-Restore a dump (replaces the whole database):
-
-```bash
-docker compose stop app
-docker compose exec -T db pg_restore --clean --if-exists --no-owner -U drawandplay -d drawandplay < backups/drawandplay-<timestamp>.dump
-docker compose start app
-```
-
-The dumps lie on the same server as the database. Copy them somewhere else from time to time, for example with `scp` or `rclone`.
-
-A single event can also be saved as a JSON file and imported again (**Setup → Export**, **Tournament desk → Import event**), for example to move it from the server to a laptop and back.
-
-## Development with hot reload
+## Development
 
 ```bash
 npm install
@@ -86,13 +57,11 @@ docker compose up -d db   # database only
 npm run dev               # server (tsx watch, :3000) + Vite (:5173, proxies /api → :3000)
 ```
 
-Frontend: http://localhost:5173
-
-## Commands
+Frontend: http://localhost:5173. The code is organised as npm workspaces: `packages/domain` (tournament logic), `apps/server` (Fastify API), `apps/web` (Vue app); details in the [architecture](docs/architecture.md#2-repository-and-stack).
 
 | Command | Purpose |
 |---|---|
-| `npm test` | Run all tests (Vitest) |
+| `npm test` | Run all tests (Vitest; the server tests need the database) |
 | `npm run typecheck` | Type-check all packages |
 | `npm run build` | Build frontend and server |
 | `npm run e2e` | Click through a whole tournament day in a real browser (Playwright in Docker, needs the stack running); screenshots in `e2e/screenshots/` |
@@ -100,8 +69,9 @@ Frontend: http://localhost:5173
 
 ## Contributing
 
-- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names: `domain`, `server`, `web`, plus `docker` and `docs`.
-- Code, comments and tests are in English. Every user-facing string goes into both locale files in `apps/web/src/i18n/locales/`.
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names `domain`, `server`, `web`, plus `docker` and `docs`.
+- Code, comments and tests are in English. Every user-facing string goes into both locale files in `apps/web/src/i18n/locales/`; the domain library and the API return codes, never text.
+- Tournament logic belongs in `packages/domain`, test-driven. API changes go into [docs/api.md](docs/api.md), user-visible changes into the [features](docs/features.md), always in both languages.
 
 ## License
 
