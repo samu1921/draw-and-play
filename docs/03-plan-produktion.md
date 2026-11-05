@@ -1,6 +1,6 @@
 # draw-and-play – Plan bis zum Produktivbetrieb
 
-Stand: 2026-11-04 (nach Commit `329f8b2`). Fortschritt 2026-11-05: Schritte 1–7 sind umgesetzt; offen sind 8–11. Ziel: Die Vereinsmeisterschaften laufen direkt auf einem Cloud-Server (VPS mit eigener Domain). Der Plan ist so geschrieben, dass ein neuer Chat ihn Schritt für Schritt abarbeiten kann.
+Stand: 2026-11-04 (nach Commit `329f8b2`). Fortschritt 2026-11-05: Schritte 1–8 sind umgesetzt; offen sind 9–11. Ziel: Die Vereinsmeisterschaften laufen direkt auf einem Cloud-Server (VPS mit eigener Domain). Der Plan ist so geschrieben, dass ein neuer Chat ihn Schritt für Schritt abarbeiten kann.
 
 ## Startprompt für den neuen Chat
 
@@ -128,7 +128,7 @@ Alle Druckseiten als eigene Routen unter `/admin/events/:eventId/print/...` mit 
 - **Bequemer Zugang per QR-Aushang:** Ein Druckblatt (wie `QrSheetView.vue`) mit QR-Code auf `/e/<slug>?code=…`. Wer scannt, ist direkt drin, und das Gerät wird als Zuschauer-Sitzung gemerkt (Cookie, wie die Gerätesitzung bei der Ergebnis-PIN). Manuelle Eingabe des Codes auf einer schlichten Zugangsseite als Alternative.
 - **Server:** Alle lesenden Endpunkte der öffentlichen Ansicht (`GET /api/events/:ref`, `/operations`, `/forecast`, `/stream`, `/api/competitions/:id/state` usw.) prüfen bei geschützten Veranstaltungen Admin-Sitzung, Ergebnis-Gerät oder Zuschauer-Sitzung, sonst `401 viewerCodeRequired`. Die Antwort auf `GET /api/events/:ref` ohne Zugang verrät nur den Namen der Veranstaltung und dass ein Code nötig ist. Code-Eingabe mit Rate-Limit wie bei der PIN.
 - **Anzeige (Beamer/TV):** Der Link eines Anzeigeprofils bekommt ein geheimes Token, damit der Beamer-PC ohne Code-Eingabe läuft. Token je Profil neu erzeugbar.
-- **Vorab mit dem User klären:** Soll der Code im Klartext gespeichert werden, damit der Aushang jederzeit neu gedruckt werden kann, oder gehasht wie die PIN (Anzeige und Druck nur direkt nach dem Erzeugen)? Wie lange bleibt eine Zuschauer-Sitzung gültig (Vorschlag: bis Ende der Veranstaltung + 1 Tag)?
+- **Entscheidung (2026-11-05):** Code im Klartext (Aushang jederzeit nachdruckbar), Zuschauer-Sitzung gültig bis Ende der Veranstaltung + 1 Tag. Statt eines eigenen Anzeige-Tokens tragen die Beamer-Links den Zugangscode (`?code=`).
 - **Tests:** Zugriff je Rolle auf jeden lesenden Endpunkt (offen/geschützt), Code-Rotation meldet Zuschauer ab, Anzeige-Token, Rate-Limit. Im E2E-Walkthrough: geschützte Veranstaltung über den QR-Link öffnen.
 
 ---
