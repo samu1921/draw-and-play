@@ -42,6 +42,7 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 | PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
 | GET | `/api/events/:id/persons` | admin | persons with personal data |
 | POST | `/api/events/:id/persons` | admin | `{ firstName, lastName?, club?, gender?, birthYear?, licenceNo?, rating? }`; a first name alone is enough, an empty `lastName` is stored as `null`. Admin views also carry `publicName`, the name as public views show it |
+| POST | `/api/events/:id/persons/import` | admin | `{ rows: [{ ...person fields, updateId?, competitionIds? }], status?: 'registered' \| 'present' }` (up to 1000 rows, all or nothing) → `{ created, updated, entered, skipped: [{ row, competitionId, reason: 'alreadyDrawn' \| 'alreadyEntered' }] }`. `updateId` updates that person (fields left out stay unchanged); `competitionIds` enter the player, in doubles without a partner. Unknown persons or competitions → 400 with `details.row` |
 | PATCH / DELETE | `/api/persons/:id` | admin | |
 | GET | `/api/events/:idOrSlug/stream` | public | Server-Sent Events, see below |
 

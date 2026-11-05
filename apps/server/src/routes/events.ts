@@ -8,6 +8,7 @@ import { auditLog, competitions, entryMembers, eventTables, events, matches, per
 import { conflict, notFound, parse } from '../errors.js';
 import { eventSettingsSchema } from '../schemas.js';
 import { competitionSummary, personView } from '../services/competitions.js';
+import { importPersons } from '../services/personImport.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
 
@@ -53,6 +54,15 @@ const personBody = z.object({
   birthYear: z.int().min(1900).max(2100).nullable().optional(),
   licenceNo: z.string().trim().max(40).nullable().optional(),
   rating: z.int().min(0).max(4000).nullable().optional(),
+});
+
+const importBody = z.object({
+  /** Status of the new entries: on the tournament day everyone in the file is usually present */
+  status: z.enum(['registered', 'present']).default('registered'),
+  rows: z
+    .array(personBody.extend({ updateId: uuid.optional(), competitionIds: z.array(uuid).max(50).default([]) }))
+    .min(1)
+    .max(1000),
 });
 
 function slugify(name: string): string {
@@ -205,6 +215,28 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
     const [person] = await db.insert(persons).values({ ...body, eventId: event.id }).returning();
     publish(event.id, 'persons', person!.id);
     return reply.code(201).send({ person: personView(person!, event.settings, 'admin') });
+  });
+
+  /** Many persons at once (CSV import in the browser), optionally entered in competitions right away */
+  app.post('/api/events/:eventId/persons/import', { preHandler: requireAdmin }, async (request) => {
+    const event = await findEvent(db, (request.params as { eventId: string }).eventId);
+    const body = parse(importBody, request.body);
+    const report = await db.transaction(async (tx) => {
+      const result = await importPersons(tx, event.id, body.rows, body.status);
+      await tx.insert(auditLog).values({
+        eventId: event.id,
+        actor: actorOf(request),
+        action: 'importPersons',
+        entityType: 'event',
+        entityId: event.id,
+        data: { created: result.created, updated: result.updated, entered: result.entered },
+      });
+      return result;
+    });
+    publish(event.id, 'persons');
+    for (const id of report.competitionIds) broadcaster.publish({ eventId: event.id, type: 'competition', id });
+    const { competitionIds: _, ...rest } = report;
+    return rest;
   });
 
   app.patch('/api/persons/:personId', { preHandler: requireAdmin }, async (request) => {
