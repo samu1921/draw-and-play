@@ -19,10 +19,14 @@ const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull(
 
 // --- Access ---
 
+export type UserRole = 'admin' | 'desk';
+
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  /** admin: everything; desk (registration desk): players, entries and attendance only */
+  role: text('role').$type<UserRole>().notNull().default('admin'),
   createdAt: createdAt(),
 });
 

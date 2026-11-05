@@ -11,7 +11,7 @@ import { competitionSummary, personView } from '../services/competitions.js';
 import { importPersons } from '../services/personImport.js';
 import { generateViewerCode } from '../auth/viewers.js';
 import { legalLinks } from '../legal.js';
-import { actorOf, requireAdmin } from './auth.js';
+import { actorOf, isAdmin, requireAdmin, requireStaff } from './auth.js';
 import type { RouteDeps } from './deps.js';
 import { requireViewer } from './viewers.js';
 
@@ -102,7 +102,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
 
   const publish = (eventId: string, type: 'event' | 'tables' | 'persons', id = eventId) => broadcaster.publish({ eventId, type, id });
 
-  app.get('/api/events', { preHandler: requireAdmin }, async () => {
+  app.get('/api/events', { preHandler: requireStaff }, async () => {
     return { events: (await db.select().from(events).orderBy(asc(events.startsOn), asc(events.name))).map(eventView) };
   });
 
@@ -156,7 +156,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
         viewerProtected: event.viewerCode !== null,
         legal: legalLinks(event.settings, legal),
         // Admins need the code for the notice and the display links
-        ...(request.user && { viewerCode: event.viewerCode }),
+        ...(isAdmin(request) && { viewerCode: event.viewerCode }),
       },
       tables: tables.map((t) => ({ id: t.id, name: t.name, sortOrder: t.sortOrder })),
       competitions: comps.map(competitionSummary),
@@ -215,9 +215,9 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
     return { tables };
   });
 
-  // --- Persons (admin only: they hold personal data) ---
+  // --- Persons (staff only, i.e. admins and the registration desk: they hold personal data) ---
 
-  app.get('/api/events/:eventId/persons', { preHandler: requireAdmin }, async (request) => {
+  app.get('/api/events/:eventId/persons', { preHandler: requireStaff }, async (request) => {
     const event = await findEvent(db, (request.params as { eventId: string }).eventId);
     const rows = await db.select().from(persons).where(eq(persons.eventId, event.id))
       // Without a last name, the first name takes its place in the alphabet.
@@ -225,7 +225,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
     return { persons: rows.map((p) => personView(p, event.settings, 'admin')) };
   });
 
-  app.post('/api/events/:eventId/persons', { preHandler: requireAdmin }, async (request, reply) => {
+  app.post('/api/events/:eventId/persons', { preHandler: requireStaff }, async (request, reply) => {
     const event = await findEvent(db, (request.params as { eventId: string }).eventId);
     const body = parse(personBody, request.body);
     const [person] = await db.insert(persons).values({ ...body, eventId: event.id }).returning();
@@ -234,7 +234,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
   });
 
   /** Many persons at once (CSV import in the browser), optionally entered in competitions right away */
-  app.post('/api/events/:eventId/persons/import', { preHandler: requireAdmin }, async (request) => {
+  app.post('/api/events/:eventId/persons/import', { preHandler: requireStaff }, async (request) => {
     const event = await findEvent(db, (request.params as { eventId: string }).eventId);
     const body = parse(importBody, request.body);
     const report = await db.transaction(async (tx) => {
@@ -255,7 +255,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
     return rest;
   });
 
-  app.patch('/api/persons/:personId', { preHandler: requireAdmin }, async (request) => {
+  app.patch('/api/persons/:personId', { preHandler: requireStaff }, async (request) => {
     const { personId } = request.params as { personId: string };
     const body = parse(personBody.partial(), request.body);
     const [person] = await db.update(persons).set(body).where(eq(persons.id, parse(uuid, personId))).returning();
@@ -265,7 +265,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
     return { person: personView(person, event.settings, 'admin') };
   });
 
-  app.delete('/api/persons/:personId', { preHandler: requireAdmin }, async (request, reply) => {
+  app.delete('/api/persons/:personId', { preHandler: requireStaff }, async (request, reply) => {
     const personId = parse(uuid, (request.params as { personId: string }).personId);
     const person = await db.transaction(async (tx) => {
       const [entered] = await tx.select({ entryId: entryMembers.entryId }).from(entryMembers).where(eq(entryMembers.personId, personId)).limit(1);

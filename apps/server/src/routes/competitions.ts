@@ -19,7 +19,7 @@ import {
   type CommandContext,
 } from '../services/commands.js';
 import { competitionSummary, competitionView, eventSettings, loadCompetition, loadCompetitionState } from '../services/competitions.js';
-import { actorOf, requireAdmin } from './auth.js';
+import { actorOf, isAdmin, requireAdmin, requireStaff } from './auth.js';
 import type { RouteDeps } from './deps.js';
 import { deviceOf } from './devices.js';
 import { findEvent } from './events.js';
@@ -189,7 +189,7 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
 
   // --- Entries ---
 
-  app.post('/api/competitions/:competitionId/entries', { preHandler: requireAdmin }, async (request, reply) => {
+  app.post('/api/competitions/:competitionId/entries', { preHandler: requireStaff }, async (request, reply) => {
     const id = idParam(request.params, 'competitionId');
     const body = parse(entryBody, request.body);
     const competition = await loadCompetition(db, id);
@@ -233,7 +233,7 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     return reply.code(204).send();
   });
 
-  app.patch('/api/entries/:entryId', { preHandler: requireAdmin }, async (request) => {
+  app.patch('/api/entries/:entryId', { preHandler: requireStaff }, async (request) => {
     const entryId = idParam(request.params, 'entryId');
     const body = parse(updateEntryBody, request.body);
     const [entry] = await db.select().from(entries).where(eq(entries.id, entryId)).limit(1);
@@ -246,7 +246,7 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     return { entry: updated };
   });
 
-  app.delete('/api/entries/:entryId', { preHandler: requireAdmin }, async (request, reply) => {
+  app.delete('/api/entries/:entryId', { preHandler: requireStaff }, async (request, reply) => {
     const entryId = idParam(request.params, 'entryId');
     const [entry] = await db.select().from(entries).where(eq(entries.id, entryId)).limit(1);
     if (!entry) throw notFound('entry');
@@ -296,7 +296,8 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
   app.post('/api/matches/:matchId/result', async (request) => {
     const body = parse(resultBody, request.body);
     const matchId = idParam(request.params, 'matchId');
-    if (request.user) return { match: await recordResult(ctx(request), matchId, body) };
+    // The desk records and corrects results; the registration desk only like a phone at a table (with the PIN)
+    if (isAdmin(request)) return { match: await recordResult(ctx(request), matchId, body) };
     const device = await deviceOf(request, db, await eventOfMatch(db, matchId));
     if (!device) throw new ApiError(401, 'notLoggedIn');
     const deviceCtx = { db, broadcaster, actor: `device:${device.id.slice(0, 12)}` };

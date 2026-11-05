@@ -14,9 +14,9 @@ Errors carry a stable, language-neutral code that the UI translates:
 |---|---|
 | 400 | `validation` (details: zod issues), `invalidFormat`, `invalidResult` (details: parser error code), `incompleteResult`, `wrongMemberCount`, `unpairedPlayers` (details: `count`), `oddPlayerCount` (details: `count`), `notDoubles`, `unknownPerson`, `unknownTable`, `unknownCompetition`, `startAfterSelf`, `unsupportedFormat`, `invalidImport` (details: `reason`, `at`) |
 | 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin`, `viewerCodeRequired` (details: `name`, `pinEnabled`), `invalidViewerCode` |
-| 403 | `correctionsAdminOnly`, `walkoverAdminOnly` |
+| 403 | `adminOnly`, `correctionsAdminOnly`, `walkoverAdminOnly` |
 | 404 | `notFound` (details: `entity`) |
-| 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `matchCalled`, `alreadyWithdrawn`, `notWithdrawn`, `slugTaken`, `duplicateTableName`, `pinDisabled` |
+| 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `matchCalled`, `alreadyWithdrawn`, `notWithdrawn`, `usernameTaken`, `lastAdmin`, `cannotDeleteSelf`, `slugTaken`, `duplicateTableName`, `pinDisabled` |
 | 415 | `jsonRequired` |
 | 429 | `tooManyRequests` (login: 10 attempts, PIN: 5 attempts per 15 minutes) |
 
@@ -30,11 +30,23 @@ Errors carry a stable, language-neutral code that the UI translates:
 
 The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 
+## Users and roles
+
+Two roles: `admin` manages everything; `desk` (registration desk) may list events, read and edit persons (also the CSV import) and create, change and delete entries, and read what the public views show. Everything else answers `403 adminOnly` for the desk. In the access column below, "admin" means the admin role and "staff" means both roles. All passwords need at least 12 characters.
+
+| Method | Path | Access | Body / result |
+|---|---|---|---|
+| POST | `/api/auth/password` | staff | `{ current, next }` → 204; signs out the user's other sessions |
+| GET | `/api/users` | admin | `{ users: [{ id, username, role, createdAt }] }` |
+| POST | `/api/users` | admin | `{ username, password, role? }` (default `admin`) → 201 `{ user }` |
+| PATCH | `/api/users/:id` | admin | `{ role?, password? }`; signs that user out. The last admin cannot lose the role (`lastAdmin`) |
+| DELETE | `/api/users/:id` | admin | not the own account (`cannotDeleteSelf`), not the last admin |
+
 ## Events, tables, persons
 
 | Method | Path | Access | Body / result |
 |---|---|---|---|
-| GET | `/api/events` | admin | all events |
+| GET | `/api/events` | staff | all events |
 | POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount?, sport? }` → creates tables "1" … "n"; `sport` (default `table-tennis`) cannot be changed later and decides scoring, result notation and standings order |
 | GET | `/api/events/:idOrSlug` | public | event, tables, competitions; `event.legal` holds the footer links (`imprintUrl`, `privacyUrl`: the event's own, else the installation's `IMPRINT_URL` / `PRIVACY_URL`) and `privacyNote` |
 | GET | `/api/config` | public | `{ legal: { imprintUrl, privacyUrl } }`, the installation's defaults |
@@ -42,10 +54,10 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 | DELETE | `/api/events/:id` | admin | deletes the event with all its data |
 | PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames?, imprintUrl?, privacyUrl?, privacyNote? } }`; the links are http(s) URLs, an empty string clears a link or the note |
 | PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
-| GET | `/api/events/:id/persons` | admin | persons with personal data |
-| POST | `/api/events/:id/persons` | admin | `{ firstName, lastName?, club?, gender?, birthYear?, licenceNo?, rating? }`; a first name alone is enough, an empty `lastName` is stored as `null`. Admin views also carry `publicName`, the name as public views show it |
-| POST | `/api/events/:id/persons/import` | admin | `{ rows: [{ ...person fields, updateId?, competitionIds? }], status?: 'registered' \| 'present' }` (up to 1000 rows, all or nothing) → `{ created, updated, entered, skipped: [{ row, competitionId, reason: 'alreadyDrawn' \| 'alreadyEntered' }] }`. `updateId` updates that person (fields left out stay unchanged); `competitionIds` enter the player, in doubles without a partner. Unknown persons or competitions → 400 with `details.row` |
-| PATCH / DELETE | `/api/persons/:id` | admin | |
+| GET | `/api/events/:id/persons` | staff | persons with personal data |
+| POST | `/api/events/:id/persons` | staff | `{ firstName, lastName?, club?, gender?, birthYear?, licenceNo?, rating? }`; a first name alone is enough, an empty `lastName` is stored as `null`. Admin views also carry `publicName`, the name as public views show it |
+| POST | `/api/events/:id/persons/import` | staff | `{ rows: [{ ...person fields, updateId?, competitionIds? }], status?: 'registered' \| 'present' }` (up to 1000 rows, all or nothing) → `{ created, updated, entered, skipped: [{ row, competitionId, reason: 'alreadyDrawn' \| 'alreadyEntered' }] }`. `updateId` updates that person (fields left out stay unchanged); `competitionIds` enter the player, in doubles without a partner. Unknown persons or competitions → 400 with `details.row` |
+| PATCH / DELETE | `/api/persons/:id` | staff | |
 | GET | `/api/events/:idOrSlug/stream` | public | Server-Sent Events, see below |
 
 ## Export and import
@@ -65,8 +77,8 @@ The file has `format: "draw-and-play-event"` and `formatVersion: 1`; anything el
 | PATCH | `/api/competitions/:id` | admin | same fields + `version`; `format` and `kind` only before the draw |
 | DELETE | `/api/competitions/:id` | admin | only while no match was called or played |
 | GET | `/api/competitions/:id/state` | public | live state, see below; admins also get seeds and the draw seed |
-| POST | `/api/competitions/:id/entries` | admin | `{ personIds: [id] or [id, id], seed?, status? }`; in doubles a single player waits for the pair draw |
-| PATCH / DELETE | `/api/entries/:id` | admin | before the draw; afterwards only `status: present/registered` |
+| POST | `/api/competitions/:id/entries` | staff | `{ personIds: [id] or [id, id], seed?, status? }`; in doubles a single player waits for the pair draw |
+| PATCH / DELETE | `/api/entries/:id` | staff | before the draw; afterwards only `status: present/registered` |
 | POST | `/api/entries/:id/withdraw` | admin | after the draw → `{ walkovers }`: the remaining matches of the entry become walkovers for the opponents, also in later knockout rounds; recorded results stay. A called match of the entry must be taken back first (`matchCalled`) |
 | POST | `/api/entries/:id/reinstate` | admin | takes a withdrawal back (status `present`) while no match that builds on one of its walkovers has started (`dependentMatchStarted`) |
 | POST | `/api/competitions/:id/draw` | admin | `{ seed?, seedCount?, seedPlacement? }` → `{ draw, seed }`; same seed and options, same draw. Doubles need every player paired |

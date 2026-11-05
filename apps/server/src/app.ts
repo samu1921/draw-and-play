@@ -15,6 +15,7 @@ import { deviceRoutes } from './routes/devices.js';
 import { displayRoutes } from './routes/displays.js';
 import { eventRoutes } from './routes/events.js';
 import { transferRoutes } from './routes/transfer.js';
+import { userRoutes } from './routes/users.js';
 import { viewerRoutes } from './routes/viewers.js';
 
 export interface AppOptions {
@@ -88,6 +89,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await transferRoutes(app, deps);
     await viewerRoutes(app, deps);
     await auditRoutes(app, deps);
+    await userRoutes(app, deps);
   }
 
   /** Installation-wide settings the frontend needs before it knows an event */
