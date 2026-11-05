@@ -936,6 +936,8 @@ textarea {
 
 .check input {
   width: auto;
+  /* Keep the box at full size when a long label wraps onto a second line */
+  flex: none;
 }
 
 .check-grid {
