@@ -47,6 +47,12 @@ export interface EventSettings {
   publicRatings?: boolean;
   /** Public views show "Max M." instead of the full name */
   shortNames?: boolean;
+  /** Legal notice (Impressum) of this event; empty = the installation's default */
+  imprintUrl?: string | null;
+  /** Privacy policy of this event; empty = the installation's default */
+  privacyUrl?: string | null;
+  /** Short note on the public pages, e.g. that names and results are published */
+  privacyNote?: string | null;
 }
 
 export const events = pgTable('events', {

@@ -21,7 +21,13 @@ export async function requireViewer(request: FastifyRequest, db: Db, event: Even
   if (event.viewerCode === null || request.user) return;
   if (await hasViewerSession(db, event.id, request.cookies[VIEWER_COOKIE])) return;
   if (await deviceOf(request, db, event.id)) return;
-  throw new ApiError(401, 'viewerCodeRequired', { name: event.name, pinEnabled: event.pinHash !== null });
+  // The legal links stay reachable on the locked page; the client adds the installation's defaults
+  throw new ApiError(401, 'viewerCodeRequired', {
+    name: event.name,
+    pinEnabled: event.pinHash !== null,
+    imprintUrl: event.settings.imprintUrl ?? null,
+    privacyUrl: event.settings.privacyUrl ?? null,
+  });
 }
 
 /** Viewer cookie: tokens are checked on the server, so it may outlive any single session */

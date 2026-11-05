@@ -6,7 +6,9 @@ import { DOMAIN_VERSION } from '@draw-and-play/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Db } from './db/client.js';
 import { ApiError } from './errors.js';
+import type { LegalLinks } from './legal.js';
 import { Broadcaster } from './realtime/broadcaster.js';
+import { auditRoutes } from './routes/audit.js';
 import { authRoutes } from './routes/auth.js';
 import { competitionRoutes } from './routes/competitions.js';
 import { deviceRoutes } from './routes/devices.js';
@@ -24,6 +26,8 @@ export interface AppOptions {
   db?: Db;
   broadcaster?: Broadcaster;
   sessionTtlHours?: number;
+  /** Default footer links for the public pages */
+  legal?: LegalLinks;
 }
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -70,7 +74,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   if (options.db) {
     // Registered directly (not via app.register) so the auth hook applies to every route.
-    const deps = { db: options.db, broadcaster: options.broadcaster ?? new Broadcaster(), sessionTtlHours: options.sessionTtlHours ?? 24 };
+    const deps = {
+      db: options.db,
+      broadcaster: options.broadcaster ?? new Broadcaster(),
+      sessionTtlHours: options.sessionTtlHours ?? 24,
+      legal: options.legal ?? { imprintUrl: null, privacyUrl: null },
+    };
     await authRoutes(app, deps);
     await eventRoutes(app, deps);
     await competitionRoutes(app, deps);
@@ -78,7 +87,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await displayRoutes(app, deps);
     await transferRoutes(app, deps);
     await viewerRoutes(app, deps);
+    await auditRoutes(app, deps);
   }
+
+  /** Installation-wide settings the frontend needs before it knows an event */
+  app.get('/api/config', async () => ({ legal: options.legal ?? { imprintUrl: null, privacyUrl: null } }));
 
   if (options.webDist && existsSync(options.webDist)) {
     await app.register(fastifyStatic, { root: options.webDist, wildcard: false });

@@ -63,7 +63,7 @@ describe.skipIf(!databaseAvailable)('viewer code for the public views', () => {
     expect(code).toMatch(/^[A-HJ-KM-NP-Z2-9]{6}$/);
     const res = await ctx.app.inject({ method: 'GET', url: '/api/events/geschuetzt' });
     expect(res.statusCode).toBe(401);
-    expect(res.json()).toEqual({ error: 'viewerCodeRequired', details: { name: 'Geschützt', pinEnabled: false } });
+    expect(res.json()).toEqual({ error: 'viewerCodeRequired', details: { name: 'Geschützt', pinEnabled: false, imprintUrl: null, privacyUrl: null } });
     expect(await statuses()).toEqual([401, 401, 401, 401, 401, 401]);
     expect((await api('GET', '/api/events/geschuetzt')).json().event).toMatchObject({ viewerProtected: true, viewerCode: code });
   });

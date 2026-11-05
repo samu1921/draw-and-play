@@ -30,4 +30,17 @@ export const displaySettingsSchema = z
   .partial();
 
 /** Event-wide settings (see `EventSettings`) */
-export const eventSettingsSchema = z.object({ publicRatings: z.boolean().optional(), shortNames: z.boolean().optional() });
+const httpUrl = z
+  .url({ protocol: /^https?$/ })
+  .max(500)
+  .nullable()
+  .optional();
+
+export const eventSettingsSchema = z.object({
+  publicRatings: z.boolean().optional(),
+  shortNames: z.boolean().optional(),
+  // An empty field in the form clears the link (back to the installation's default)
+  imprintUrl: z.preprocess((v) => (v === '' ? null : v), httpUrl),
+  privacyUrl: z.preprocess((v) => (v === '' ? null : v), httpUrl),
+  privacyNote: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? null : v), z.string().trim().max(1000).nullable().optional()),
+});

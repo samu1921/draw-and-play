@@ -18,6 +18,7 @@ const app = await buildApp({
   pingDb: () => database.ping(),
   db: database.db,
   sessionTtlHours: config.sessionTtlHours,
+  legal: config.legal,
 });
 
 try {

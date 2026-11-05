@@ -1,3 +1,5 @@
+import type { LegalLinks } from './legal.js';
+
 export interface Config {
   host: string;
   port: number;
@@ -11,6 +13,8 @@ export interface Config {
   sessionTtlHours: number;
   /** Create the demo event on startup (separate demo stack only) */
   demoSeed: boolean;
+  /** Default links for the footer of the public pages; each event can set its own */
+  legal: LegalLinks;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -32,5 +36,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     adminPassword: env.ADMIN_PASSWORD || undefined,
     sessionTtlHours: Number(env.SESSION_TTL_HOURS ?? 24) || 24,
     demoSeed: env.DEMO_SEED === 'true',
+    legal: { imprintUrl: httpUrl(env.IMPRINT_URL, 'IMPRINT_URL'), privacyUrl: httpUrl(env.PRIVACY_URL, 'PRIVACY_URL') },
   };
+}
+
+/** An http(s) URL from the environment, or null when unset */
+function httpUrl(value: string | undefined, name: string): string | null {
+  if (!value) return null;
+  if (!/^https?:\/\/\S+$/.test(value)) throw new Error(`${name} must be an http(s) URL: ${value}`);
+  return value;
 }

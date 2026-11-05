@@ -10,6 +10,7 @@ import { eventSettingsSchema } from '../schemas.js';
 import { competitionSummary, personView } from '../services/competitions.js';
 import { importPersons } from '../services/personImport.js';
 import { generateViewerCode } from '../auth/viewers.js';
+import { legalLinks } from '../legal.js';
 import { actorOf, requireAdmin } from './auth.js';
 import type { RouteDeps } from './deps.js';
 import { requireViewer } from './viewers.js';
@@ -92,7 +93,7 @@ export async function findEvent(ex: Executor, ref: string) {
   return row;
 }
 
-export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: RouteDeps) {
+export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal }: RouteDeps) {
   // Open streams are ended on shutdown; otherwise the server would wait for every client to disconnect.
   const streams = new Set<ServerResponse>();
   app.addHook('preClose', async () => {
@@ -153,6 +154,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
         settings: event.settings,
         pinEnabled: event.pinHash !== null,
         viewerProtected: event.viewerCode !== null,
+        legal: legalLinks(event.settings, legal),
         // Admins need the code for the notice and the display links
         ...(request.user && { viewerCode: event.viewerCode }),
       },

@@ -51,7 +51,7 @@ if (!databaseAvailable) {
 let database: Database | undefined;
 
 /** Fresh schema contents for every test file: migrate once, then truncate everything. */
-export async function setupTestApp() {
+export async function setupTestApp(options: Partial<Parameters<typeof buildApp>[0]> = {}) {
   database ??= createDatabase(url!);
   await runMigrations(database, migrationsFolder);
   await database.db.execute(sql`
@@ -59,7 +59,7 @@ export async function setupTestApp() {
   `);
   await ensureAdmin(database.db, ADMIN.username, ADMIN.password);
   const broadcaster = new Broadcaster();
-  const app = await buildApp({ pingDb: () => database!.ping(), db: database.db, broadcaster });
+  const app = await buildApp({ pingDb: () => database!.ping(), db: database.db, broadcaster, ...options });
   return { app, db: database.db, broadcaster };
 }
 

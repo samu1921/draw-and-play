@@ -36,9 +36,11 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 |---|---|---|---|
 | GET | `/api/events` | admin | all events |
 | POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount?, sport? }` → creates tables "1" … "n"; `sport` (default `table-tennis`) cannot be changed later and decides scoring, result notation and standings order |
-| GET | `/api/events/:idOrSlug` | public | event, tables, competitions |
+| GET | `/api/events/:idOrSlug` | public | event, tables, competitions; `event.legal` holds the footer links (`imprintUrl`, `privacyUrl`: the event's own, else the installation's `IMPRINT_URL` / `PRIVACY_URL`) and `privacyNote` |
+| GET | `/api/config` | public | `{ legal: { imprintUrl, privacyUrl } }`, the installation's defaults |
+| GET | `/api/events/:id/audit?before=&limit=` | admin | audit log, newest first: `{ entries: [{ id, createdAt, actor: { type, name }, action, entityType, entityId, data }], next }`; pass `next` as `before` for the next page (`limit` up to 200, default 50) |
 | DELETE | `/api/events/:id` | admin | deletes the event with all its data |
-| PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames? } }` |
+| PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames?, imprintUrl?, privacyUrl?, privacyNote? } }`; the links are http(s) URLs, an empty string clears a link or the note |
 | PUT | `/api/events/:id/tables` | admin | `{ names: string[] }` replaces the list by name; tables holding a called match stay |
 | GET | `/api/events/:id/persons` | admin | persons with personal data |
 | POST | `/api/events/:id/persons` | admin | `{ firstName, lastName?, club?, gender?, birthYear?, licenceNo?, rating? }`; a first name alone is enough, an empty `lastName` is stored as `null`. Admin views also carry `publicName`, the name as public views show it |
