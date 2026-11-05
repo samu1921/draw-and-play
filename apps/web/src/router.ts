@@ -29,7 +29,14 @@ export const router = createRouter({
         { path: 'competitions/:competitionId', name: 'admin-competition', component: () => import('./views/admin/CompetitionAdmin.vue') },
         { path: 'desk', name: 'admin-desk', component: () => import('./views/admin/MatchDesk.vue') },
         { path: 'displays', name: 'admin-displays', component: () => import('./views/admin/EventDisplays.vue') },
+        { path: 'print', name: 'admin-print-menu', component: () => import('./views/admin/EventPrint.vue') },
       ],
+    },
+    {
+      path: '/admin/events/:eventId/print/:kind(scoresheets|schedule|competitions|results|certificates)',
+      name: 'admin-print',
+      component: () => import('./views/admin/PrintView.vue'),
+      meta: { admin: true, bare: true },
     },
     { path: '/admin/events/:eventId/qr', name: 'admin-qr', component: () => import('./views/admin/QrSheetView.vue'), meta: { admin: true, bare: true } },
     {

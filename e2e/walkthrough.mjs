@@ -193,6 +193,25 @@ await admin.goto(`${BASE}/admin/events/${eventId}/qr`);
 await admin.locator('.qr-code svg').first().waitFor();
 await shot(admin, '14-qr');
 
+step('print pages');
+await admin.goto(`${BASE}/admin/events/${eventId}/print`);
+await admin.getByRole('heading', { name: 'Schiedsrichterzettel' }).waitFor();
+await shot(admin, '15-print-menu');
+const printPage = await desk.newPage();
+watch(printPage, 'print');
+for (const [kind, query, ready] of [
+  ['scoresheets', '?scope=open', '.scoresheet'],
+  ['schedule', '', '.schedule-sheet'],
+  ['competitions', '', '.cross-table'],
+  ['results', '', '.print-competition'],
+  ['certificates', '?places=3', '.certificate, .print-empty'],
+]) {
+  await printPage.goto(`${BASE}/admin/events/${eventId}/print/${kind}${query}`);
+  await printPage.locator(ready).first().waitFor();
+  await printPage.pdf({ path: `${OUT}print-${kind}.pdf`, preferCSSPageSize: true, printBackground: true });
+}
+await printPage.close();
+
 step('export and import');
 await admin.goto(`${BASE}/admin/events/${eventId}`);
 const [download] = await Promise.all([admin.waitForEvent('download'), admin.getByRole('link', { name: 'Export herunterladen' }).click()]);
@@ -209,7 +228,7 @@ const finishedCount = importedState.matches.filter((m) => m.status === 'finished
 if (finishedCount < 1) errors.push(`import: expected a finished match, got ${finishedCount}`);
 await admin.getByRole('link', { name: 'Spielbetrieb' }).click();
 await admin.locator('.queue-item').first().waitFor();
-await shot(admin, '15-imported-desk');
+await shot(admin, '16-imported-desk');
 
 console.log(JSON.stringify({ slug, eventId, errors }, null, 2));
 await browser.close();

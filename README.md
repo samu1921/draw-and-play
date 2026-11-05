@@ -33,7 +33,8 @@ It runs next to the normal stack and never touches its data.
 2. **Tournament desk → create event**, then add players, create competitions (format chosen like in the planner), enter players and draw.
 3. **Setup:** generate a PIN and print the QR codes for the tables. Under **Displays**, build a profile for each screen (projector, TV) and open its link there. The display is a 16:9 stage that never scrolls; arrow keys or a presenter remote switch slides, space pauses, F toggles full screen.
 4. **Match desk:** call ready matches to free tables. Players scan the QR code at their table, enter the PIN once and type the result; the desk can always enter or correct results itself. If a phone has no connection at that moment, the result waits on the phone and is sent once the connection is back (keep the page open).
-5. Everybody else follows along at `/e/<slug>`.
+5. **Print:** score sheets (also the paper fallback if the network fails), the day's schedule, group sheets with cross tables and brackets, results and certificates, each as a print page or PDF; placements and all results also as CSV.
+6. Everybody else follows along at `/e/<slug>`.
 
 ## Repository layout
 

@@ -1874,9 +1874,239 @@ textarea {
   color: var(--fg-secondary);
 }
 
+/* --- Print pages (scoresheets, schedule, groups, results, certificates) --- */
+
+.print-page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.print-head {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.print-title {
+  margin-bottom: 1rem;
+}
+
+.print-title p,
+.print-title h1 {
+  margin: 0;
+}
+
+.print-page h2 {
+  margin: 1.25rem 0 0.5rem;
+}
+
+.print-page h3 {
+  margin: 1rem 0 0.4rem;
+}
+
+.print-table {
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.print-table .print-place {
+  width: 4.5rem;
+}
+
+.cross-table td.diagonal {
+  background: var(--gridline);
+}
+
+.print-competition + .print-competition {
+  break-before: page;
+}
+
+.print-group,
+.print-placements {
+  break-inside: avoid;
+}
+
+.print-bracket-rounds {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+}
+
+.print-bracket-round {
+  flex: 1 1 0;
+  min-width: 9rem;
+}
+
+.print-bracket-round h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+}
+
+.print-bracket-match {
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--axis);
+  border-radius: 0.25rem;
+  font-size: 0.85rem;
+  break-inside: avoid;
+}
+
+.print-bracket-match .winner {
+  font-weight: 700;
+}
+
+.print-competition-select {
+  max-width: 24rem;
+}
+
+.scoresheets {
+  display: grid;
+  gap: 1rem;
+}
+
+.scoresheet {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--axis);
+  border-radius: 0.5rem;
+  break-inside: avoid;
+}
+
+.scoresheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+
+.scoresheet-head p,
+.scoresheet-head h2 {
+  margin: 0;
+}
+
+.scoresheet-table {
+  font-size: 1.2rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.scoresheet-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.scoresheet-grid th,
+.scoresheet-grid td {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--fg-secondary);
+  text-align: center;
+}
+
+.scoresheet-grid thead th {
+  width: 45%;
+}
+
+.scoresheet-grid thead th:first-child,
+.scoresheet-grid tbody th {
+  width: 10%;
+}
+
+.scoresheet-grid thead th .small {
+  display: block;
+  font-weight: 400;
+}
+
+.scoresheet-grid td {
+  height: 2.1rem;
+}
+
+.scoresheet-total th,
+.scoresheet-total td {
+  border-top-width: 2px;
+}
+
+.scoresheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+  padding-top: 0.75rem;
+}
+
+.certificates {
+  display: grid;
+  gap: 1rem;
+}
+
+.certificate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  aspect-ratio: 297 / 210;
+  padding: 2rem;
+  border: 6px double var(--axis);
+  text-align: center;
+  break-after: page;
+}
+
+.certificate p,
+.certificate h2 {
+  margin: 0;
+}
+
+.certificate-event {
+  font-size: 1.1rem;
+  color: var(--fg-secondary);
+}
+
+.certificate-title {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.certificate-name {
+  margin-top: 1rem !important;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 700;
+}
+
+.certificate-club {
+  font-size: 1.2rem;
+  color: var(--fg-secondary);
+}
+
+.certificate-place {
+  margin-top: 1rem !important;
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  font-weight: 700;
+}
+
+.certificate-competition {
+  font-size: 1.3rem;
+}
+
+.certificate-date {
+  margin-top: 1.5rem !important;
+  color: var(--fg-secondary);
+}
+
 @media print {
   @page {
     size: A4;
+    margin: 12mm;
+  }
+
+  @page certificate {
+    size: A4 landscape;
     margin: 12mm;
   }
 
@@ -1887,6 +2117,11 @@ textarea {
     --fg: #000000;
     --fg-secondary: #333333;
     --muted: #555555;
+    /* Lines stay light on paper, also when the screen uses the dark theme */
+    --border: rgba(0, 0, 0, 0.2);
+    --axis: #9a9a9a;
+    --gridline: #e6e6e6;
+    --warning-text: #8a5a00;
   }
 
   .no-print {
@@ -1895,5 +2130,47 @@ textarea {
 
   .qr-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .print-page {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Two score sheets per A4 page */
+  .scoresheets {
+    gap: 6mm;
+  }
+
+  .scoresheet {
+    height: 130mm;
+  }
+
+  .certificates {
+    display: block;
+  }
+
+  .certificate {
+    page: certificate;
+    aspect-ratio: auto;
+    height: 180mm;
+  }
+
+  .certificate-title {
+    font-size: 3.6rem;
+  }
+
+  .certificate-name {
+    font-size: 3rem;
+  }
+
+  .certificate-place {
+    font-size: 2.6rem;
+  }
+
+  .certificate-event,
+  .certificate-club,
+  .certificate-competition {
+    font-size: 1.4rem;
   }
 }
