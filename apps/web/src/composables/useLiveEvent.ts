@@ -21,9 +21,29 @@ const LIVE_EVENT: InjectionKey<LiveEvent> = Symbol('liveEvent');
  * Loads an event (and optionally its operations view) and keeps it current through one live stream per page.
  * Child components get it with `injectLiveEvent()`.
  */
-export function useLiveEvent(eventRef: Ref<string | undefined>, options: { operations?: boolean } = {}): LiveEvent {
+export function useLiveEvent(eventRef: Ref<string | undefined>, options: { operations?: boolean; remember?: boolean } = {}): LiveEvent {
   const overview = ref<EventOverview | null>(null);
   const operations = ref<Operations | null>(null);
+  // With `remember`, the last answers are kept on the device, so a page reloaded without a connection still shows
+  // the last known state (only for public data such as the table page).
+  const snapshot = (kind: string) => `dap-snapshot:${kind}:${eventRef.value}`;
+  const recall = <T>(target: Ref<T | null>, kind: string) => {
+    if (!options.remember || target.value !== null) return;
+    try {
+      const raw = localStorage.getItem(snapshot(kind));
+      if (raw) target.value = JSON.parse(raw) as T;
+    } catch {
+      // No storage, no snapshot
+    }
+  };
+  const remember = (kind: string, value: unknown) => {
+    if (!options.remember) return;
+    try {
+      localStorage.setItem(snapshot(kind), JSON.stringify(value));
+    } catch {
+      // Storage full or blocked: the page just has no snapshot after a reload
+    }
+  };
   const error = ref<unknown>(null);
   const listeners = new Set<(messages: ChangeMessage[]) => void>();
 
@@ -32,15 +52,17 @@ export function useLiveEvent(eventRef: Ref<string | undefined>, options: { opera
     if (!value) return;
     const path = `/api/events/${encodeURIComponent(value)}`;
     // Set independently: the overview is quick, the operations view resolves every competition.
-    const load = async <T>(target: Ref<T | null>, url: string) => {
+    const load = async <T>(target: Ref<T | null>, url: string, kind: string) => {
       try {
         target.value = await api<T>('GET', url);
         error.value = null;
+        remember(kind, target.value);
       } catch (e) {
         error.value = e;
+        recall(target, kind);
       }
     };
-    await Promise.all([load(overview, path), options.operations ? load(operations, `${path}/operations`) : null]);
+    await Promise.all([load(overview, path, 'overview'), options.operations ? load(operations, `${path}/operations`, 'operations') : null]);
   }
 
   const { status } = useEventStream(eventRef, (messages) => {

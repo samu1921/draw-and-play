@@ -22,7 +22,7 @@ const { t } = useI18n();
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const profileId = computed(() => (route.params.profileId as string | undefined) || null);
-const live = useLiveEvent(slug, { operations: true });
+const live = useLiveEvent(slug, { operations: true, remember: true });
 const now = useNow();
 
 // The projector always uses the dark theme: better contrast on weak projectors.
