@@ -1,6 +1,6 @@
 # draw-and-play – Plan bis zum Produktivbetrieb
 
-Stand: 2026-11-04 (nach Commit `329f8b2`). Ziel: Die Vereinsmeisterschaften laufen direkt auf einem Cloud-Server (VPS mit eigener Domain). Der Plan ist so geschrieben, dass ein neuer Chat ihn Schritt für Schritt abarbeiten kann.
+Stand: 2026-11-04 (nach Commit `329f8b2`). Fortschritt 2026-11-05: Schritte 1–7 sind umgesetzt; offen sind 8–11. Ziel: Die Vereinsmeisterschaften laufen direkt auf einem Cloud-Server (VPS mit eigener Domain). Der Plan ist so geschrieben, dass ein neuer Chat ihn Schritt für Schritt abarbeiten kann.
 
 ## Startprompt für den neuen Chat
 
@@ -69,7 +69,7 @@ Stand: 2026-11-04 (nach Commit `329f8b2`). Ziel: Die Vereinsmeisterschaften lauf
 
 ## Schritt 4 – Spieler-Import per CSV
 
-**Vorab vom User einholen:** eine anonymisierte Beispieldatei aus dem click-TT-Export des Vereins (Spaltennamen, Trennzeichen, Kodierung). Spaltennamen nicht raten.
+**Entscheidung (2026-11-05):** generischer Import mit den Stammdaten des Modells, kein click-TT-Format. Ziel: Spielerliste vorab vorbereiten und am Turniertag per Klick importieren. Zusätzlich optionale Spalte „Konkurrenzen“, die die Spieler gleich meldet.
 
 - Parser im Browser: `apps/web/src/lib/csv.ts` mit Unit-Tests. Trennzeichen `;` oder `,` automatisch erkennen, Anführungszeichen und Zeilenumbrüche in Feldern, UTF-8-BOM. Kodierung: zuerst UTF-8, bei ungültigen Zeichen Windows-1252 (`TextDecoder`), weil click-TT-Exporte oft so kodiert sind.
 - Spaltenzuordnung: Bekannte Kopfzeilen automatisch erkennen (Vorname, Nachname, Name, Verein, Geschlecht, Geburtsjahr oder Geburtsdatum → Jahr, Lizenz-Nr., QTTR/TTR), danach in einem Zuordnungsdialog manuell änderbar. Nur der Vorname ist Pflicht (siehe Schritt 3).
@@ -113,7 +113,7 @@ Alle Druckseiten als eigene Routen unter `/admin/events/:eventId/print/...` mit 
 
 **Ausgangslage:** Nach der Auslosung lehnt `PATCH /api/entries/:id` den Status `withdrawn` mit `alreadyDrawn` ab. Jedes Restspiel muss einzeln als kampflos eingetragen werden.
 
-- Domain: `resolveCompetition` bekommt die Menge der zurückgezogenen Meldungen. Jedes noch nicht gespielte Spiel einer zurückgezogenen Meldung wird kampflos für den Gegner gewertet, sobald der Gegner feststeht (auch spätere KO-Runden). Sind beide Seiten zurückgezogen, gilt das Spiel als ausgefallen, und der Platz im KO bleibt frei. Wertung in der Gruppe als Option im Sportprofil, Standard: Restspiele kampflos werten. Alternativ: alle Spiele des Spielers aus der Wertung nehmen. **Die genaue TT-Regel (Wettspielordnung) vorher mit dem User klären.** Ausführliche Unit-Tests.
+- Domain: `resolveCompetition` bekommt die Menge der zurückgezogenen Meldungen. Jedes noch nicht gespielte Spiel einer zurückgezogenen Meldung wird kampflos für den Gegner gewertet, sobald der Gegner feststeht (auch spätere KO-Runden). Sind beide Seiten zurückgezogen, gilt das Spiel als ausgefallen, und der Platz im KO bleibt frei. Wertung in der Gruppe als Option im Sportprofil, Standard: Restspiele kampflos werten. Alternativ: alle Spiele des Spielers aus der Wertung nehmen. **Entscheidung (2026-11-05):** Restspiele werden kampflos gewertet. Ausführliche Unit-Tests.
 - Server: `POST /api/entries/:entryId/withdraw` und `POST /api/entries/:entryId/reinstate` (Admin). Ein laufend aufgerufenes Spiel der Meldung muss vorher zurückgenommen werden (`409 matchCalled`). Zurücknehmen geht nur, solange kein Spiel begonnen hat, das auf einer der kampflosen Wertungen aufbaut. Audit-Eintrag und Broadcast.
 - UI: In `CompetitionAdmin.vue` und am Turniertisch (`MatchDesk.vue`) „Zurückziehen“ mit Vorschau, welche Spiele kampflos gewertet werden. Kampflose Spiele überall als „kampflos“ (w. o.) kennzeichnen.
 
