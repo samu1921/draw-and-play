@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Calculator, CalendarDays, ChevronDown, CircleUser, Languages, LogIn, LogOut, Moon, Sun, SunMoon, UserCog } from '@lucide/vue';
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import { locales, setLocale, type Locale } from './i18n/index.js';
 import AppLogo from './components/AppLogo.vue';
 import LegalFooter from './components/LegalFooter.vue';
 import { useLegalDefaults } from './composables/useLegal.js';
+import { APP_NAME, composeTitle, eventTitle } from './lib/pageTitle.js';
 import { nextThemePreference, setThemePreference, THEME_PREFERENCES, themePreference } from './lib/theme.js';
 import { useSessionStore } from './stores/session.js';
 
@@ -16,6 +17,16 @@ const router = useRouter();
 const session = useSessionStore();
 const legal = useLegalDefaults();
 const version = `v${__APP_VERSION__}`;
+
+// Browser tab: "Match desk · VM 2026 – Draw & Play"
+watchEffect(() => {
+  document.title = composeTitle({
+    page: route.meta.title ? t(route.meta.title) : null,
+    event: eventTitle.value,
+    app: APP_NAME,
+    publicPage: route.meta.publicPage,
+  });
+});
 
 // --- User menu: account, appearance, language, sign-out ---
 const menu = ref<HTMLDetailsElement | null>(null);
@@ -59,9 +70,9 @@ const inEvents = () => route.path === '/admin' || route.path.startsWith('/admin/
 
 <template>
   <header v-if="!route.meta.bare" class="app-header">
-    <RouterLink to="/" class="brand">
+    <RouterLink to="/" class="brand" :aria-label="APP_NAME">
       <AppLogo />
-      <span>draw-and-play</span>
+      <span>{{ APP_NAME }}</span>
     </RouterLink>
     <nav v-if="session.user" class="app-nav" :aria-label="t('nav.label')">
       <RouterLink to="/admin" :class="{ active: inEvents() }" :title="t('nav.events')">

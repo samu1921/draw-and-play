@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventTitle } from '../../lib/pageTitle.js';
 import { groupLetter } from '@draw-and-play/domain';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -24,6 +25,7 @@ const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const profileId = computed(() => (route.params.profileId as string | undefined) || null);
 const live = useLiveEvent(slug, { operations: true, remember: true });
+useEventTitle(computed(() => live.overview.value?.event.name ?? live.locked.value?.name));
 const now = useNow();
 
 // The projector always uses the dark theme: better contrast on weak projectors.

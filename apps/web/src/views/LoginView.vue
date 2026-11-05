@@ -2,7 +2,9 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import AppLogo from '../components/AppLogo.vue';
 import { errorText } from '../lib/messages.js';
+import { APP_NAME } from '../lib/pageTitle.js';
 import { useSessionStore } from '../stores/session.js';
 
 const { t, te } = useI18n();
@@ -30,7 +32,14 @@ async function submit() {
 </script>
 
 <template>
-  <section class="card narrow">
+  <section class="card narrow login-card">
+    <div class="login-brand">
+      <AppLogo :size="48" />
+      <div>
+        <p class="login-app">{{ APP_NAME }}</p>
+        <p class="muted small">{{ t('login.tagline') }}</p>
+      </div>
+    </div>
     <h1>{{ t('login.title') }}</h1>
     <form class="stack" @submit.prevent="submit">
       <label class="field">

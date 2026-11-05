@@ -42,7 +42,7 @@ const de: typeof en = {
     invalidPin: 'Falsche PIN.',
     noDevice: 'Dieses Gerät ist nicht angemeldet.',
     pinDisabled: 'Die Ergebniseingabe per PIN ist ausgeschaltet.',
-    unsupportedFormat: 'Das ist kein Export einer draw-and-play-Veranstaltung, oder er stammt aus einer neueren Version.',
+    unsupportedFormat: 'Das ist kein Export einer Draw-&-Play-Veranstaltung, oder er stammt aus einer neueren Version.',
     invalidImport: 'Die Datei ist beschädigt oder unvollständig ({reason} bei {at}).',
     notJson: 'Die Datei ist keine gültige JSON-Datei.',
     notFound: 'Nicht gefunden.',
@@ -108,6 +108,7 @@ const de: typeof en = {
   },
   login: {
     title: 'Anmelden',
+    tagline: 'Turniere planen, auslosen, live spielen',
     username: 'Benutzername',
     password: 'Passwort',
     submit: 'Anmelden',

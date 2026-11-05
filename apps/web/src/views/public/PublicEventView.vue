@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventTitle } from '../../lib/pageTitle.js';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -13,6 +14,7 @@ const { t, te } = useI18n();
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const live = useLiveEvent(slug, { operations: true });
+useEventTitle(computed(() => live.overview.value?.event.name ?? live.locked.value?.name));
 const legal = useEventLegal(live);
 </script>
 

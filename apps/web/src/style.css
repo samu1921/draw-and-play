@@ -142,6 +142,23 @@ a {
   text-decoration: none;
 }
 
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.login-brand p {
+  margin: 0;
+}
+
+.login-app {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
 .app-logo {
   flex: none;
   color: var(--accent);
@@ -180,6 +197,7 @@ a {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  margin-left: auto;
 }
 
 .locale {

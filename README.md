@@ -1,4 +1,6 @@
-# draw-and-play
+<img src="apps/web/public/favicon.svg" alt="" width="64" height="64">
+
+# Draw & Play
 
 **English** · [Deutsch](README.de.md)
 

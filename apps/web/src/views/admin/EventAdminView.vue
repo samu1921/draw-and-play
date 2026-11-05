@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventTitle } from '../../lib/pageTitle.js';
 import { ArrowLeft, ExternalLink, LayoutDashboard, Monitor, Play, Printer, ScrollText, Settings, Trophy, Users } from '@lucide/vue';
 import { computed, type Component } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -12,6 +13,7 @@ const { t, te, d } = useI18n();
 const route = useRoute();
 const eventId = computed(() => route.params.eventId as string);
 const live = useLiveEvent(eventId, { operations: true });
+useEventTitle(computed(() => live.overview.value?.event.name));
 const event = computed(() => live.overview.value?.event ?? null);
 
 const session = useSessionStore();

@@ -41,7 +41,7 @@ export default {
     invalidPin: 'Wrong PIN.',
     noDevice: 'This device is not signed in.',
     pinDisabled: 'Result entry by PIN is switched off.',
-    unsupportedFormat: 'This is not a draw-and-play event export, or it comes from a newer version.',
+    unsupportedFormat: 'This is not a Draw & Play event export, or it comes from a newer version.',
     invalidImport: 'The file is damaged or incomplete ({reason} at {at}).',
     notJson: 'The file is not a valid JSON file.',
     notFound: 'Not found.',
@@ -107,6 +107,7 @@ export default {
   },
   login: {
     title: 'Sign in',
+    tagline: 'Plan, draw and play tournaments live',
     username: 'Username',
     password: 'Password',
     submit: 'Sign in',
