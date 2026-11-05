@@ -18,7 +18,8 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "e2e": "docker run --rm --network host --ipc host --user \"$(id -u):$(id -g)\" -e HOME=/tmp -e BASE -e ADMIN_PASSWORD -v \"$PWD\":/repo -w /repo mcr.microsoft.com/playwright:v1.64.1-noble node e2e/walkthrough.mjs",
-    "release": "bash scripts/release.sh",
+    "release": "bash scripts/release.sh prepare",
+    "release:publish": "bash scripts/release.sh publish",
     "demo": "docker compose -p draw-and-play-demo --env-file docker/demo.env -f docker-compose.yml -f docker-compose.demo.yml up -d --build",
     "demo:down": "docker compose -p draw-and-play-demo --env-file docker/demo.env -f docker-compose.yml -f docker-compose.demo.yml down",
     "demo:reset": "docker compose -p draw-and-play-demo --env-file docker/demo.env -f docker-compose.yml -f docker-compose.demo.yml down -v && npm run demo"

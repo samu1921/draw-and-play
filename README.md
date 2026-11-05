@@ -71,17 +71,25 @@ Frontend: http://localhost:5173. The code is organised as npm workspaces: `packa
 | `npm run build` | Build frontend and server |
 | `npm run e2e` | Click through a whole tournament day in a real browser (Playwright in Docker, needs the stack running); screenshots in `e2e/screenshots/` |
 | `npm run db:generate -w @draw-and-play/server` | Generate a migration from the Drizzle schema |
-| `npm run release -- 0.2.0` | Prepare a release (see below) |
+| `npm run release -- 0.2.0` | Prepare a release as a pull request (see below) |
+| `npm run release:publish` | Publish the release after its pull request is merged |
 
 Every push and pull request runs the [CI](.github/workflows/ci.yml): type check, all tests against PostgreSQL, build, and the end-to-end walkthrough against the Docker stack.
 
 ### Releases
 
-Versions follow [Semantic Versioning](https://semver.org/). `npm run release -- <version>` runs the checks, sets the version in every package, writes the [CHANGELOG](CHANGELOG.md) from the commit messages, commits `chore(release): v<version>` and creates the tag. After `git push origin main v<version>` the [release workflow](.github/workflows/release.yml) runs CI again, publishes the Docker image `ghcr.io/samu1921/draw-and-play` (amd64 and arm64) and creates the GitHub release. Versions with a suffix such as `0.2.0-rc.1` become pre-releases.
+Versions follow [Semantic Versioning](https://semver.org/). Like every change, a release reaches `main` through a pull request:
+
+1. `npm run release -- 0.2.0` on an up-to-date `main` runs the checks, sets the version in every package, writes the [CHANGELOG](CHANGELOG.md) from the commit messages, commits `chore(release): v0.2.0` on the branch `release/v0.2.0` and pushes it.
+2. Open the pull request from the link it prints, check the changelog and merge once CI is green.
+3. `npm run release:publish` tags the merged release commit and pushes the tag. The [release workflow](.github/workflows/release.yml) then runs CI again, publishes the Docker image `ghcr.io/samu1921/draw-and-play` (amd64 and arm64) and creates the GitHub release.
+
+Versions with a suffix such as `0.2.0-rc.1` become pre-releases.
 
 ## Contributing
 
-- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names `domain`, `server`, `web`, plus `docker`, `docs` and `ci`. The changelog is generated from them.
+- `main` only accepts pull requests whose CI is green; merged by squash or rebase, so the history stays linear. Work on a branch such as `feat/print-layout`.
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names `domain`, `server`, `web`, plus `docker`, `docs` and `ci`. The changelog is generated from them, so with squash merging the pull request title follows the same format.
 - Code, comments and tests are in English. Every user-facing string goes into both locale files in `apps/web/src/i18n/locales/`; the domain library and the API return codes, never text.
 - Tournament logic belongs in `packages/domain`, test-driven. API changes go into [docs/api.md](docs/api.md), user-visible changes into the [features](docs/features.md), always in both languages.
 
