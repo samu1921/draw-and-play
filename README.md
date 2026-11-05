@@ -2,6 +2,9 @@
 
 # Draw & Play
 
+[![CI](https://github.com/samu1921/draw-and-play/actions/workflows/ci.yml/badge.svg)](https://github.com/samu1921/draw-and-play/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/samu1921/draw-and-play?include_prereleases)](https://github.com/samu1921/draw-and-play/releases)
+
 **English** · [Deutsch](README.de.md)
 
 Web-based tournament software: plan, draw and run multi-day events with several competitions on shared tables, entirely in the browser. It starts with table tennis club championships and is built sport-neutral from day one.
@@ -68,10 +71,17 @@ Frontend: http://localhost:5173. The code is organised as npm workspaces: `packa
 | `npm run build` | Build frontend and server |
 | `npm run e2e` | Click through a whole tournament day in a real browser (Playwright in Docker, needs the stack running); screenshots in `e2e/screenshots/` |
 | `npm run db:generate -w @draw-and-play/server` | Generate a migration from the Drizzle schema |
+| `npm run release -- 0.2.0` | Prepare a release (see below) |
+
+Every push and pull request runs the [CI](.github/workflows/ci.yml): type check, all tests against PostgreSQL, build, and the end-to-end walkthrough against the Docker stack.
+
+### Releases
+
+Versions follow [Semantic Versioning](https://semver.org/). `npm run release -- <version>` runs the checks, sets the version in every package, writes the [CHANGELOG](CHANGELOG.md) from the commit messages, commits `chore(release): v<version>` and creates the tag. After `git push origin main v<version>` the [release workflow](.github/workflows/release.yml) runs CI again, publishes the Docker image `ghcr.io/samu1921/draw-and-play` (amd64 and arm64) and creates the GitHub release. Versions with a suffix such as `0.2.0-rc.1` become pre-releases.
 
 ## Contributing
 
-- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names `domain`, `server`, `web`, plus `docker` and `docs`.
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `feat(domain): add knockout placements`. Scopes are the workspace names `domain`, `server`, `web`, plus `docker`, `docs` and `ci`. The changelog is generated from them.
 - Code, comments and tests are in English. Every user-facing string goes into both locale files in `apps/web/src/i18n/locales/`; the domain library and the API return codes, never text.
 - Tournament logic belongs in `packages/domain`, test-driven. API changes go into [docs/api.md](docs/api.md), user-visible changes into the [features](docs/features.md), always in both languages.
 

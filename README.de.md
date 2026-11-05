@@ -2,6 +2,9 @@
 
 # Draw & Play
 
+[![CI](https://github.com/samu1921/draw-and-play/actions/workflows/ci.yml/badge.svg)](https://github.com/samu1921/draw-and-play/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/samu1921/draw-and-play?include_prereleases)](https://github.com/samu1921/draw-and-play/releases)
+
 [English](README.md) · **Deutsch**
 
 Webbasierte Turniersoftware: mehrtägige Veranstaltungen mit mehreren Konkurrenzen auf gemeinsam genutzten Tischen planen, auslosen und durchführen, komplett im Browser. Zuerst für Tischtennis-Vereinsmeisterschaften, von Anfang an sportneutral gebaut.
@@ -68,10 +71,17 @@ Frontend: http://localhost:5173. Der Code ist in npm-Workspaces gegliedert: `pac
 | `npm run build` | Frontend und Server bauen |
 | `npm run e2e` | Einen ganzen Turniertag im echten Browser durchklicken (Playwright in Docker, Stack muss laufen); Screenshots in `e2e/screenshots/` |
 | `npm run db:generate -w @draw-and-play/server` | Migration aus dem Drizzle-Schema erzeugen |
+| `npm run release -- 0.2.0` | Ein Release vorbereiten (siehe unten) |
+
+Jeder Push und jeder Pull Request durchläuft die [CI](.github/workflows/ci.yml): Typprüfung, alle Tests gegen PostgreSQL, Build und den End-to-End-Durchlauf gegen den Docker-Stack.
+
+### Releases
+
+Versionen folgen [Semantic Versioning](https://semver.org/lang/de/). `npm run release -- <version>` führt die Prüfungen aus, setzt die Version in allen Paketen, schreibt das [CHANGELOG](CHANGELOG.md) aus den Commit-Nachrichten, committet `chore(release): v<version>` und legt den Tag an. Nach `git push origin main v<version>` lässt der [Release-Workflow](.github/workflows/release.yml) die CI erneut laufen, veröffentlicht das Docker-Image `ghcr.io/samu1921/draw-and-play` (amd64 und arm64) und erstellt das GitHub-Release. Versionen mit Zusatz wie `0.2.0-rc.1` werden Vorabversionen.
 
 ## Mitwirken
 
-- Commit-Nachrichten folgen [Conventional Commits](https://www.conventionalcommits.org/de/v1.0.0/), z. B. `feat(domain): add knockout placements`. Scopes sind die Workspace-Namen `domain`, `server`, `web` sowie `docker` und `docs`.
+- Commit-Nachrichten folgen [Conventional Commits](https://www.conventionalcommits.org/de/v1.0.0/), z. B. `feat(domain): add knockout placements`. Scopes sind die Workspace-Namen `domain`, `server`, `web` sowie `docker`, `docs` und `ci`. Aus ihnen entsteht das Changelog.
 - Code, Kommentare und Tests sind auf Englisch. Jeder sichtbare Text kommt in beide Locale-Dateien unter `apps/web/src/i18n/locales/`; Domänenbibliothek und API liefern Codes, nie Text.
 - Turnierlogik gehört testgetrieben nach `packages/domain`. API-Änderungen kommen in [docs/api.md](docs/api.md), sichtbare Änderungen in die [Funktionen](docs/features.de.md), immer in beiden Sprachen.
 
