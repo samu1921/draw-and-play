@@ -106,7 +106,9 @@ export async function loadCompetitionState(ex: Executor, competitionId: string):
     const results = new Map<string, MatchResult>(
       matchRows.flatMap((m) => (m.status === 'finished' && m.result ? [[m.matchKey, m.result] as const] : [])),
     );
-    state = resolveCompetition(structure, competition.draw, results, sport.ranking);
+    // Entries that withdrew after the draw lose their remaining matches by walkover.
+    const withdrawn = new Set(entryList.filter((e) => e.status === 'withdrawn').map((e) => e.id));
+    state = resolveCompetition(structure, competition.draw, results, sport.ranking, { withdrawn });
   }
   return { competition, sport, entries: entryList, matchRows, structure, state };
 }

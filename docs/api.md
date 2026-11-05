@@ -16,7 +16,7 @@ Errors carry a stable, language-neutral code that the UI translates:
 | 401 | `notLoggedIn`, `invalidCredentials`, `invalidPin` |
 | 403 | `correctionsAdminOnly`, `walkoverAdminOnly` |
 | 404 | `notFound` (details: `entity`) |
-| 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `slugTaken`, `duplicateTableName`, `pinDisabled` |
+| 409 | `versionConflict`, `alreadyDrawn`, `notDrawn`, `matchesStarted`, `alreadyEntered`, `alreadyCalled`, `notCalled`, `matchNotReady`, `matchFinished`, `tableBusy`, `tableNotAllowed`, `tableInUse`, `playerBusy`, `dependentMatchStarted`, `personHasEntries`, `matchCalled`, `alreadyWithdrawn`, `notWithdrawn`, `slugTaken`, `duplicateTableName`, `pinDisabled` |
 | 415 | `jsonRequired` |
 | 429 | `tooManyRequests` (login: 10 attempts, PIN: 5 attempts per 15 minutes) |
 
@@ -65,6 +65,8 @@ The file has `format: "draw-and-play-event"` and `formatVersion: 1`; anything el
 | GET | `/api/competitions/:id/state` | public | live state, see below; admins also get seeds and the draw seed |
 | POST | `/api/competitions/:id/entries` | admin | `{ personIds: [id] or [id, id], seed?, status? }`; in doubles a single player waits for the pair draw |
 | PATCH / DELETE | `/api/entries/:id` | admin | before the draw; afterwards only `status: present/registered` |
+| POST | `/api/entries/:id/withdraw` | admin | after the draw → `{ walkovers }`: the remaining matches of the entry become walkovers for the opponents, also in later knockout rounds; recorded results stay. A called match of the entry must be taken back first (`matchCalled`) |
+| POST | `/api/entries/:id/reinstate` | admin | takes a withdrawal back (status `present`) while no match that builds on one of its walkovers has started (`dependentMatchStarted`) |
 | POST | `/api/competitions/:id/draw` | admin | `{ seed?, seedCount?, seedPlacement? }` → `{ draw, seed }`; same seed and options, same draw. Doubles need every player paired |
 | POST | `/api/competitions/:id/pairs/draw` | admin | doubles: `{ seed?, mode?: 'seeded' \| 'random' }` → `{ seed, pairs: [{ entryId, personIds }] }`; pairs all players without a partner |
 | POST | `/api/competitions/:id/pairs/split` | admin | doubles: `{ entryIds? }` → `{ split }`; splits the given pairs (default all) back into single players |

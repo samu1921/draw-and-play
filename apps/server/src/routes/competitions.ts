@@ -11,9 +11,11 @@ import {
   drawDoublesPairs,
   eventOfMatch,
   recordResult,
+  reinstateEntry,
   splitDoublesPairs,
   uncallMatch,
   undoDraw,
+  withdrawEntry,
   type CommandContext,
 } from '../services/commands.js';
 import { competitionSummary, competitionView, eventSettings, loadCompetition, loadCompetitionState } from '../services/competitions.js';
@@ -216,6 +218,16 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     });
     publish(competition.eventId, id);
     return reply.code(201).send({ entry: { ...entry, personIds: body.personIds } });
+  });
+
+  /** After the draw: the remaining matches of the entry become walkovers */
+  app.post('/api/entries/:entryId/withdraw', { preHandler: requireAdmin }, async (request) => {
+    return withdrawEntry(ctx(request), idParam(request.params, 'entryId'));
+  });
+
+  app.post('/api/entries/:entryId/reinstate', { preHandler: requireAdmin }, async (request, reply) => {
+    await reinstateEntry(ctx(request), idParam(request.params, 'entryId'));
+    return reply.code(204).send();
   });
 
   app.patch('/api/entries/:entryId', { preHandler: requireAdmin }, async (request) => {

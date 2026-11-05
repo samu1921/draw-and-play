@@ -102,6 +102,59 @@ export async function undoDraw(ctx: CommandContext, competitionId: string) {
   ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
 }
 
+// --- Withdrawals ---
+
+async function loadEntry(ex: Db | Tx, entryId: string) {
+  const [entry] = await ex.select().from(entries).where(eq(entries.id, entryId)).limit(1);
+  if (!entry) throw notFound('entry');
+  return entry;
+}
+
+/**
+ * A player (or pair) withdraws after the draw: their remaining matches become walkovers for the opponents,
+ * now and in later knockout rounds. Results that are recorded stay. A match on a table has to be taken back first.
+ */
+export async function withdrawEntry(ctx: CommandContext, entryId: string) {
+  const { competitionId } = await loadEntry(ctx.db, entryId);
+  const { eventId } = await loadCompetition(ctx.db, competitionId);
+  const walkovers = await withEventLock(ctx.db, eventId, async (tx) => {
+    const loaded = await loadCompetitionState(tx, competitionId);
+    if (!loaded.competition.draw) throw conflict('notDrawn');
+    const entry = loaded.entries.find((e) => e.id === entryId)!;
+    if (entry.status === 'withdrawn') throw conflict('alreadyWithdrawn');
+    const called = loaded.matchRows.find((m) => m.status === 'called' && (m.sideA === entryId || m.sideB === entryId));
+    if (called) throw conflict('matchCalled', { matchId: called.id });
+    await tx.update(entries).set({ status: 'withdrawn' }).where(eq(entries.id, entryId));
+    const after = await loadCompetitionState(tx, competitionId);
+    const count = after.state?.matches.filter((m) => m.withdrawal && m.sides.includes(entryId)).length ?? 0;
+    await audit(tx, ctx, eventId, 'withdraw', 'entry', entryId, { walkovers: count });
+    return count;
+  });
+  ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
+  return { walkovers };
+}
+
+/** Takes a withdrawal back, as long as no match that builds on one of its walkovers has started. */
+export async function reinstateEntry(ctx: CommandContext, entryId: string) {
+  const { competitionId } = await loadEntry(ctx.db, entryId);
+  const { eventId } = await loadCompetition(ctx.db, competitionId);
+  await withEventLock(ctx.db, eventId, async (tx) => {
+    const loaded = await loadCompetitionState(tx, competitionId);
+    const entry = loaded.entries.find((e) => e.id === entryId)!;
+    if (entry.status !== 'withdrawn') throw conflict('notWithdrawn');
+    if (loaded.structure && loaded.state) {
+      const started = new Set(loaded.matchRows.filter((m) => m.status !== 'scheduled').map((m) => m.matchKey));
+      for (const m of loaded.state.matches.filter((x) => x.withdrawal && x.sides.includes(entryId))) {
+        const blocking = dependentMatches(loaded.structure, m.id).find((key) => started.has(key));
+        if (blocking) throw conflict('dependentMatchStarted', { matchKey: blocking });
+      }
+    }
+    await tx.update(entries).set({ status: 'present' }).where(eq(entries.id, entryId));
+    await audit(tx, ctx, eventId, 'reinstate', 'entry', entryId);
+  });
+  ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
+}
+
 // --- Doubles pairs ---
 
 /** Players registered without a partner in a doubles competition, which is still open for entries */
