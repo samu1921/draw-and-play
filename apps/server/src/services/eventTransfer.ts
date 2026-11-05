@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { buildStructure, DOMAIN_VERSION, validateDraw, type Draw } from '@draw-and-play/domain';
+import { buildStructure, DOMAIN_VERSION, SPORT_IDS, validateDraw, type Draw } from '@draw-and-play/domain';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Executor } from '../db/client.js';
@@ -52,7 +52,7 @@ export const eventExportSchema = z.object({
     startsOn: z.iso.date().nullable(),
     endsOn: z.iso.date().nullable(),
     timezone: z.string().min(1).max(64),
-    sport: z.string().min(1).max(40),
+    sport: z.enum(SPORT_IDS),
     settings: eventSettingsSchema,
   }),
   tables: z.array(z.object({ id, name: z.string().trim().min(1).max(20), sortOrder: z.int() })).min(1).max(64),
@@ -166,7 +166,8 @@ export async function exportEvent(ex: Executor, eventId: string): Promise<EventE
       startsOn: event.startsOn,
       endsOn: event.endsOn,
       timezone: event.timezone,
-      sport: event.sport,
+      // Only known sports can be stored (see the create schema); the type cannot express that.
+      sport: event.sport as EventExport['event']['sport'],
       settings: event.settings,
     },
     tables: tableRows.map((t) => ({ id: t.id, name: t.name, sortOrder: t.sortOrder })),

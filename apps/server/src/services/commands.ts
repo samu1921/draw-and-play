@@ -5,7 +5,6 @@ import {
   dependentMatches,
   drawForStructure,
   drawPairs,
-  tableTennis,
   validateFormat,
   type CompetitionDrawOptions,
   type MatchResult,
@@ -284,7 +283,7 @@ export async function recordResult(ctx: CommandContext, matchId: string, input: 
     if (input.walkoverWinner !== undefined) {
       result = { winner: input.walkoverWinner, games: [], walkover: true };
     } else {
-      const parsed = tableTennis.parseResult(input.notation ?? '', loaded.competition.matchRules);
+      const parsed = loaded.sport.parseResult(input.notation ?? '', loaded.competition.matchRules);
       if (!parsed.ok) throw badRequest('invalidResult', parsed.error);
       if (parsed.outcome.status !== 'finished') throw badRequest('incompleteResult', { games: parsed.outcome.games });
       result = { winner: parsed.outcome.winner, games: parsed.games };

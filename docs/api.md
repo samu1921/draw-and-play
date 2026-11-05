@@ -35,7 +35,7 @@ The first admin is created on startup from `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 | Method | Path | Access | Body / result |
 |---|---|---|---|
 | GET | `/api/events` | admin | all events |
-| POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount? }` → creates tables "1" … "n" |
+| POST | `/api/events` | admin | `{ name, slug?, startsOn?, endsOn?, tableCount?, sport? }` → creates tables "1" … "n"; `sport` (default `table-tennis`) cannot be changed later and decides scoring, result notation and standings order |
 | GET | `/api/events/:idOrSlug` | public | event, tables, competitions |
 | DELETE | `/api/events/:id` | admin | deletes the event with all its data |
 | PATCH | `/api/events/:id` | admin | `{ name?, startsOn?, endsOn?, settings?: { publicRatings?, shortNames? } }` |

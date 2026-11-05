@@ -1,12 +1,13 @@
 import {
   buildStructure,
+  getSportProfile,
   resolveCompetition,
-  tableTennis,
   type CompetitionState,
   type CompetitionStructure,
   type DrawEntry,
   type SeatRef,
   type MatchResult,
+  type SportProfile,
 } from '@draw-and-play/domain';
 import { asc, eq, inArray } from 'drizzle-orm';
 import type { Executor } from '../db/client.js';
@@ -76,8 +77,16 @@ export function toDrawEntry(entry: EntryWithMembers): DrawEntry {
   };
 }
 
+/** The sport profile of an event: scoring, result notation and standings order */
+export async function sportOfEvent(ex: Executor, eventId: string): Promise<SportProfile> {
+  const [event] = await ex.select({ sport: events.sport }).from(events).where(eq(events.id, eventId)).limit(1);
+  if (!event) throw notFound('event');
+  return getSportProfile(event.sport);
+}
+
 export interface LoadedCompetition {
   competition: CompetitionRow;
+  sport: SportProfile;
   entries: EntryWithMembers[];
   matchRows: MatchRow[];
   structure: CompetitionStructure | null;
@@ -86,9 +95,10 @@ export interface LoadedCompetition {
 
 export async function loadCompetitionState(ex: Executor, competitionId: string): Promise<LoadedCompetition> {
   const competition = await loadCompetition(ex, competitionId);
-  const [entryList, matchRows] = await Promise.all([
+  const [entryList, matchRows, sport] = await Promise.all([
     loadEntries(ex, competitionId),
     ex.select().from(matches).where(eq(matches.competitionId, competitionId)),
+    sportOfEvent(ex, competition.eventId),
   ]);
   const structure = structureFor(competition);
   let state: CompetitionState | null = null;
@@ -96,9 +106,9 @@ export async function loadCompetitionState(ex: Executor, competitionId: string):
     const results = new Map<string, MatchResult>(
       matchRows.flatMap((m) => (m.status === 'finished' && m.result ? [[m.matchKey, m.result] as const] : [])),
     );
-    state = resolveCompetition(structure, competition.draw, results, tableTennis.ranking);
+    state = resolveCompetition(structure, competition.draw, results, sport.ranking);
   }
-  return { competition, entries: entryList, matchRows, structure, state };
+  return { competition, sport, entries: entryList, matchRows, structure, state };
 }
 
 // --- Views ---

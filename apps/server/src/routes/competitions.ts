@@ -1,8 +1,8 @@
-import { tableTennis } from '@draw-and-play/domain';
+import { getSportProfile } from '@draw-and-play/domain';
 import { and, eq, inArray, ne } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { competitions, entries, entryMembers, eventTables, matches, persons } from '../db/schema.js';
+import { competitions, entries, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound, parse } from '../errors.js';
 import { formatSchema } from '../schemas.js';
 import {
@@ -107,8 +107,11 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
   app.post('/api/events/:eventId/competitions', { preHandler: requireAdmin }, async (request, reply) => {
     const eventId = idParam(request.params, 'eventId');
     const body = parse(createCompetitionBody, request.body);
+    const [event] = await db.select({ sport: events.sport }).from(events).where(eq(events.id, eventId)).limit(1);
+    if (!event) throw notFound('event');
     await checkReferences(eventId, body);
-    const matchRules = { ...tableTennis.defaultMatchRules, gamesToWin: body.gamesToWin };
+    const sport = getSportProfile(event.sport);
+    const matchRules = { ...sport.defaultMatchRules, gamesToWin: body.gamesToWin };
     const existing = await db.select({ color: competitions.color }).from(competitions).where(eq(competitions.eventId, eventId));
     const usedColors = new Set(existing.map((c) => c.color));
     const [created] = await db
@@ -119,7 +122,7 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
         kind: body.kind,
         day: body.day ?? null,
         matchRules,
-        matchMinutes: body.matchMinutes ?? tableTennis.estimateMatchMinutes(matchRules),
+        matchMinutes: body.matchMinutes ?? sport.estimateMatchMinutes(matchRules),
         format: body.format,
         earliestStart: body.earliestStart ?? null,
         startAfterId: body.startAfterId ?? null,

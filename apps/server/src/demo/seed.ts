@@ -1,4 +1,4 @@
-import { tableTennis, type CompetitionFormat } from '@draw-and-play/domain';
+import { getSportProfile, type CompetitionFormat } from '@draw-and-play/domain';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '../auth/password.js';
 import type { Db } from '../db/client.js';
@@ -94,6 +94,7 @@ export async function seedDemo(db: Db, today = new Date()): Promise<boolean> {
       .values({ slug: DEMO_SLUG, name: 'Vereinsmeisterschaft 2026 (Demo)', startsOn: friday, endsOn: saturday, pinHash, pinVersion: 1 })
       .returning();
     const eventId = event!.id;
+    const sport = getSportProfile(event!.sport);
     await tx.insert(eventTables).values([1, 2, 3, 4].map((n) => ({ eventId, name: String(n), sortOrder: n - 1 })));
     await tx.insert(displayProfiles).values({ eventId, name: 'Beamer Halle' });
 
@@ -124,7 +125,7 @@ export async function seedDemo(db: Db, today = new Date()): Promise<boolean> {
       startAfterId?: string;
       entries: string[][];
     }) => {
-      const matchRules = { ...tableTennis.defaultMatchRules, gamesToWin: values.gamesToWin };
+      const matchRules = { ...sport.defaultMatchRules, gamesToWin: values.gamesToWin };
       const [competition] = await tx
         .insert(competitions)
         .values({
@@ -133,7 +134,7 @@ export async function seedDemo(db: Db, today = new Date()): Promise<boolean> {
           kind: values.kind ?? 'singles',
           day: values.day,
           matchRules,
-          matchMinutes: tableTennis.estimateMatchMinutes(matchRules),
+          matchMinutes: sport.estimateMatchMinutes(matchRules),
           format: values.format,
           earliestStart: values.earliestStart,
           startAfterId: values.startAfterId ?? null,

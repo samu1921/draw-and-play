@@ -77,6 +77,18 @@ describe.skipIf(!databaseAvailable)('tournament flow via the API', () => {
     expect(duplicate.json()).toMatchObject({ error: 'alreadyEntered' });
   });
 
+  it('stores the sport of an event, table tennis by default', async () => {
+    const overview = await app.inject({ method: 'GET', url: '/api/events/vm-2026' });
+    expect(overview.json().event.sport).toBe('table-tennis');
+
+    const explicit = await api('POST', '/api/events', { name: 'Explicit', sport: 'table-tennis' });
+    expect(explicit.json().event.sport).toBe('table-tennis');
+    const unknown = await api('POST', '/api/events', { name: 'Chess', sport: 'chess' });
+    expect(unknown.statusCode).toBe(400);
+    expect(unknown.json()).toMatchObject({ error: 'validation' });
+    expect((await api('DELETE', `/api/events/${explicit.json().event.id}`)).statusCode).toBe(204);
+  });
+
   it('draws reproducibly with a seed and locks the field', async () => {
     const first = await api('POST', `/api/competitions/${competitionId}/draw`, { seed: 'vm' });
     expect(first.statusCode).toBe(200);

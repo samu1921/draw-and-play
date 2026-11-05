@@ -1,3 +1,4 @@
+import { DEFAULT_SPORT, SPORT_IDS } from '@draw-and-play/domain';
 import { and, asc, eq, inArray, notInArray, or } from 'drizzle-orm';
 import type { ServerResponse } from 'node:http';
 import type { FastifyInstance } from 'fastify';
@@ -22,6 +23,8 @@ const createEventBody = z.object({
     .max(60)
     .optional(),
   startsOn: isoDate.optional(),
+  /** Fixed at creation: results and standings of existing matches depend on it */
+  sport: z.enum(SPORT_IDS).optional(),
   endsOn: isoDate.optional(),
   tableCount: z.int().min(1).max(64).default(4),
 });
@@ -91,7 +94,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster }: Rou
       if (taken) throw conflict('slugTaken');
       const [event] = await tx
         .insert(events)
-        .values({ name: body.name, slug, startsOn: body.startsOn ?? null, endsOn: body.endsOn ?? null })
+        .values({ name: body.name, slug, sport: body.sport ?? DEFAULT_SPORT, startsOn: body.startsOn ?? null, endsOn: body.endsOn ?? null })
         .returning();
       await tx
         .insert(eventTables)

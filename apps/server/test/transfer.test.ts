@@ -152,6 +152,9 @@ describe.skipIf(!databaseAvailable)('event export and import', () => {
     const future = await api('POST', '/api/events/import', { ...original, formatVersion: 99 });
     expect(future.json()).toMatchObject({ error: 'unsupportedFormat', details: { formatVersion: 99 } });
 
+    const unknownSport = await api('POST', '/api/events/import', { ...original, event: { ...original.event, sport: 'chess' } });
+    expect(unknownSport.json()).toMatchObject({ error: 'validation' });
+
     const broken = await api('POST', '/api/events/import', { ...original, tables: 'nope' });
     expect(broken.json()).toMatchObject({ error: 'validation' });
   });
