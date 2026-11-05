@@ -83,6 +83,8 @@ export interface ResolvedMatch {
   result?: MatchResult;
   winner?: EntryId;
   loser?: EntryId;
+  /** Decided as a walkover because a side withdrew; there is no recorded result behind it */
+  withdrawal?: true;
 }
 
 export interface GroupState {
@@ -101,6 +103,15 @@ export interface CompetitionState {
   finished: boolean;
 }
 
+export interface ResolveOptions {
+  /**
+   * Entries that withdrew after the draw. Each of their matches without a recorded result is a walkover for the
+   * opponent as soon as both sides are known, in the groups and in every later knockout round. Recorded results
+   * stay as they are. If both sides withdrew, the first side goes through, so the bracket can still be resolved.
+   */
+  withdrawn?: ReadonlySet<EntryId>;
+}
+
 /**
  * The live state of a competition: who plays in which match, group standings, knockout progress and places.
  * `results` is keyed by structure match id; results for matches whose sides are not known yet are ignored.
@@ -110,7 +121,9 @@ export function resolveCompetition(
   draw: Draw,
   results: ReadonlyMap<string, MatchResult>,
   ranking: readonly RankingCriterion[],
+  options: ResolveOptions = {},
 ): CompetitionState {
+  const withdrawn = options.withdrawn ?? new Set<EntryId>();
   const resolved = new Map<string, ResolvedMatch>();
   const groupStates: GroupState[] = [];
 
@@ -134,11 +147,15 @@ export function resolveCompetition(
   const resolveMatch = (m: StructureMatch) => {
     const sides: [EntryId | null, EntryId | null] = [seatEntry(m.sides[0]), seatEntry(m.sides[1])];
     const base = { id: m.id, phase: m.phase, round: m.round, sides, ...(m.group !== undefined && { group: m.group }) };
-    const result = results.get(m.id);
+    const recorded = results.get(m.id);
     let match: ResolvedMatch;
     if (sides[0] === null || sides[1] === null) match = { ...base, status: 'pending' };
-    else if (!result) match = { ...base, status: 'ready' };
-    else match = { ...base, status: 'finished', result, winner: sides[result.winner]!, loser: sides[(1 - result.winner) as Side]! };
+    else if (recorded) match = { ...base, status: 'finished', result: recorded, winner: sides[recorded.winner]!, loser: sides[(1 - recorded.winner) as Side]! };
+    else if (withdrawn.has(sides[0]) || withdrawn.has(sides[1])) {
+      const winner: Side = withdrawn.has(sides[0]) && !withdrawn.has(sides[1]) ? 1 : 0;
+      const result: MatchResult = { winner, games: [], walkover: true };
+      match = { ...base, status: 'finished', result, winner: sides[winner]!, loser: sides[(1 - winner) as Side]!, withdrawal: true };
+    } else match = { ...base, status: 'ready' };
     resolved.set(m.id, match);
     return match;
   };

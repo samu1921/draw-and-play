@@ -155,6 +155,57 @@ describe('resolveCompetition', () => {
     expect(final.placements.slice(0, 2).map((p) => p.entryId)).toEqual(['S1', 'S2']);
   });
 
+  it('withdrawal in a group: the remaining matches are walkovers, played matches stay', () => {
+    const structure = buildStructure(roundRobin, 4);
+    const draw: Draw = { type: 'groups', groups: [['A', 'B', 'C', 'D']] };
+    // D played one match (and lost to A) before withdrawing
+    const played = resolveCompetition(structure, draw, new Map(), ranking).matches.find((m) => m.sides.includes('A') && m.sides.includes('D'))!;
+    const results = new Map([[played.id, win(played.sides[0] === 'A' ? 0 : 1)]]);
+    const state = resolveCompetition(structure, draw, results, ranking, { withdrawn: new Set(['D']) });
+
+    const ofD = state.matches.filter((m) => m.sides.includes('D'));
+    expect(ofD).toHaveLength(3);
+    expect(ofD.filter((m) => m.withdrawal).map((m) => [m.status, m.loser, m.result?.walkover])).toEqual([
+      ['finished', 'D', true],
+      ['finished', 'D', true],
+    ]);
+    const kept = ofD.find((m) => m.id === played.id)!;
+    expect([kept.loser, kept.withdrawal, kept.result?.walkover, kept.result?.games.length]).toEqual(['D', undefined, undefined, 3]);
+    // The others still play each other
+    expect(state.matches.filter((m) => m.status === 'ready')).toHaveLength(3);
+    expect(state.groups[0]!.standings.find((r) => r.entryId === 'D')).toMatchObject({ won: 0, lost: 3 });
+  });
+
+  it('withdrawal in the knockout: every later opponent goes through without playing', () => {
+    const structure = buildStructure({ knockout: { placements: 'thirdPlace' } }, 4);
+    const draw: Draw = { type: 'knockout', seats: ['S1', 'S4', 'S3', 'S2'] };
+    const withdrawn = new Set(['S4']);
+    const semi = resolveCompetition(structure, draw, new Map(), ranking, { withdrawn }).matches.filter((m) => m.round === 1);
+    expect(semi.map((m) => [m.status, m.winner ?? null])).toEqual([
+      ['finished', 'S1'],
+      ['ready', null],
+    ]);
+
+    // S4 has to play the match for third place as well: walkover for the other semifinal loser
+    const results = new Map([[semi[1]!.id, win(1)]]);
+    const state = resolveCompetition(structure, draw, results, ranking, { withdrawn });
+    const third = state.matches.find((m) => m.phase === 'knockout' && m.sides.includes('S4') && m.round === 2)!;
+    expect(third).toMatchObject({ status: 'finished', winner: 'S3', withdrawal: true });
+    expect(state.matches.find((m) => m.sides.includes('S1') && m.sides.includes('S2'))!.status).toBe('ready');
+  });
+
+  it('withdrawal of both sides: the first side goes through, so the bracket stays resolvable', () => {
+    const structure = buildStructure({ knockout: { placements: 'none' } }, 4);
+    const draw: Draw = { type: 'knockout', seats: ['S1', 'S4', 'S3', 'S2'] };
+    const state = resolveCompetition(structure, draw, new Map(), ranking, { withdrawn: new Set(['S1', 'S4']) });
+    const first = state.matches.find((m) => m.sides.includes('S1'))!;
+    expect(first).toMatchObject({ status: 'finished', winner: 'S1', withdrawal: true });
+    // and S1 then loses the final by walkover once the other semifinal is decided
+    const results = new Map([[state.matches.find((m) => m.sides.includes('S2'))!.id, win(1)]]);
+    const final = resolveCompetition(structure, draw, results, ranking, { withdrawn: new Set(['S1', 'S4']) }).matches.find((m) => m.round === 2)!;
+    expect(final).toMatchObject({ status: 'finished', winner: 'S2', withdrawal: true });
+  });
+
   it('ignores results for matches whose sides are not known yet', () => {
     const structure = buildStructure(twoGroupsTop2, 8);
     const draw: Draw = { type: 'groups', groups: [['A1', 'A2', 'A3', 'A4'], ['B1', 'B2', 'B3', 'B4']] };
