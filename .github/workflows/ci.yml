@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Typecheck, test, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: drawandplay
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: drawandplay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drawandplay"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://drawandplay:ci-only-password@localhost:5432/drawandplay_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: End-to-end walkthrough
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      COMPOSE_PROJECT_NAME: draw-and-play-ci
+      POSTGRES_PASSWORD: ci-only-password
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: ci-admin-password
+      BACKUP_DIR: /tmp/draw-and-play-backups
+      BASE: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      # Only playwright-core is needed on the host side; the browser comes with the Playwright image.
+      - run: npm ci
+      - name: Start the stack
+        run: docker compose up -d --build --wait --wait-timeout 180 db app proxy
+      - run: npm run e2e
+      - name: Logs
+        if: failure()
+        run: docker compose logs app proxy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: e2e/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
