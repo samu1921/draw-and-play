@@ -209,6 +209,12 @@ a {
   background: var(--selected);
 }
 
+.badge.warning {
+  color: var(--warning-text);
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
 /* --- Forms --- */
 
 .fields {

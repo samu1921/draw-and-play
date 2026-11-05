@@ -75,8 +75,10 @@ export interface PersonInfo {
   id: string;
   name: string;
   club: string | null;
+  /** Admin views: the name as public views show it */
+  publicName?: string;
   firstName?: string;
-  lastName?: string;
+  lastName?: string | null;
   gender?: 'f' | 'm' | 'd' | null;
   birthYear?: number | null;
   licenceNo?: string | null;

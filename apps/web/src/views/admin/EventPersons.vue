@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type PersonInfo } from '../../lib/api.js';
 import { errorText } from '../../lib/messages.js';
+import { duplicateNames, isDuplicate, listName } from '../../lib/persons.js';
 
 const { t, te } = useI18n();
 const live = injectLiveEvent();
@@ -12,6 +13,10 @@ const persons = ref<PersonInfo[]>([]);
 const error = ref('');
 const empty = () => ({ firstName: '', lastName: '', club: '', rating: '' as number | '', birthYear: '' as number | '' });
 const form = ref(empty());
+const duplicates = computed(() => duplicateNames(persons.value));
+const duplicateList = computed(() =>
+  [...new Set(persons.value.filter((p) => isDuplicate(p, duplicates.value)).map((p) => p.publicName ?? p.name))].join(', '),
+);
 
 async function load() {
   persons.value = (await api<{ persons: PersonInfo[] }>('GET', `/api/events/${eventId.value}/persons`)).persons;
@@ -25,7 +30,7 @@ async function add() {
     const f = form.value;
     await api('POST', `/api/events/${eventId.value}/persons`, {
       firstName: f.firstName,
-      lastName: f.lastName,
+      lastName: f.lastName.trim() || null,
       club: f.club || null,
       rating: f.rating === '' ? null : f.rating,
       birthYear: f.birthYear === '' ? null : f.birthYear,
@@ -59,8 +64,8 @@ async function remove(p: PersonInfo) {
           <input v-model="form.firstName" type="text" required maxlength="80" />
         </label>
         <label class="field">
-          <span>{{ t('admin.persons.lastName') }}</span>
-          <input v-model="form.lastName" type="text" required maxlength="80" />
+          <span>{{ t('admin.persons.lastName') }} ({{ t('common.optional') }})</span>
+          <input v-model="form.lastName" type="text" maxlength="80" />
         </label>
         <label class="field">
           <span>{{ t('admin.persons.club') }}</span>
@@ -83,6 +88,7 @@ async function remove(p: PersonInfo) {
 
     <section class="card" aria-labelledby="person-list">
       <h2 id="person-list">{{ t('admin.persons.count', persons.length, { named: { n: persons.length } }) }}</h2>
+      <p v-if="duplicates.size > 0" class="warning-text" role="status">{{ t('admin.persons.duplicates', { names: duplicateList }) }}</p>
       <div class="table-scroll">
         <table class="data-table">
           <thead>
@@ -96,7 +102,10 @@ async function remove(p: PersonInfo) {
           </thead>
           <tbody>
             <tr v-for="p in persons" :key="p.id">
-              <th scope="row">{{ p.lastName }}, {{ p.firstName }}</th>
+              <th scope="row">
+                {{ listName(p) }}
+                <span v-if="isDuplicate(p, duplicates)" class="badge warning">{{ t('admin.persons.duplicateMark') }}</span>
+              </th>
               <td>{{ p.club }}</td>
               <td class="num">{{ p.rating ?? '' }}</td>
               <td class="num">{{ p.birthYear ?? '' }}</td>

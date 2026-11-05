@@ -146,6 +146,8 @@ export default {
       birthYear: 'Born',
       count: 'no players | 1 player | {n} players',
       deleteConfirm: 'Delete {name}?',
+      duplicates: 'These names look the same in public views: {names}. Add a last name or its initial, for example, so the players can be told apart.',
+      duplicateMark: 'same name',
     },
     competitions: {
       create: 'Create competition',

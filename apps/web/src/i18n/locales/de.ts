@@ -147,6 +147,8 @@ const de: typeof en = {
       birthYear: 'Jahrgang',
       count: 'keine Spieler | 1 Spieler | {n} Spieler',
       deleteConfirm: '{name} löschen?',
+      duplicates: 'Diese Namen sehen öffentlich gleich aus: {names}. Ergänze zum Beispiel den Nachnamen oder einen Buchstaben davon, damit man die Spieler unterscheiden kann.',
+      duplicateMark: 'gleicher Name',
     },
     competitions: {
       create: 'Konkurrenz anlegen',

@@ -89,6 +89,13 @@ for (const id of personIds.slice(6, 10)) {
 }
 await admin.request.post(`${BASE}/api/competitions/${hobby.competition.id}/draw`, { data: { seed: 'hobby' } });
 
+step('guest with a first name only via form');
+await admin.getByRole('link', { name: 'Spieler', exact: true }).click();
+await admin.getByLabel('Vorname').fill('Gast');
+await admin.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+await admin.getByRole('rowheader', { name: 'Gast', exact: true }).waitFor();
+await shot(admin, '02b-persons');
+
 step('PIN');
 await admin.getByRole('link', { name: 'Einrichtung' }).click();
 await admin.getByRole('button', { name: 'Neue PIN erzeugen' }).click();
