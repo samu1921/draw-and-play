@@ -202,6 +202,22 @@ await admin.goto(`${BASE}/admin/events/${eventId}/qr`);
 await admin.locator('.qr-code svg').first().waitFor();
 await shot(admin, '14-qr');
 
+step('withdraw a player after the draw');
+const overviewNow = await (await admin.request.get(`${BASE}/api/events/${eventId}`)).json();
+const singlesId = overviewNow.competitions.find((c) => c.name === 'Einzel').id;
+const singlesState = await (await admin.request.get(`${BASE}/api/competitions/${singlesId}/state`)).json();
+// Someone without a match on a table right now
+const leaving = singlesState.entries.find((e) => !singlesState.matches.some((m) => m.status === 'called' && m.sides.includes(e.id)));
+const leavingName = leaving.members[0].name;
+await admin.goto(`${BASE}/admin/events/${eventId}/competitions/${singlesId}`);
+admin.once('dialog', (dialog) => dialog.accept());
+await admin.locator('.withdraw-list li', { hasText: leavingName }).getByRole('button', { name: 'Zurückziehen' }).click();
+await admin.locator('.withdraw-list li', { hasText: leavingName }).getByText('zurückgezogen').waitFor();
+const afterWithdraw = await (await admin.request.get(`${BASE}/api/competitions/${singlesId}/state`)).json();
+const walkovers = afterWithdraw.matches.filter((m) => m.sides.includes(leaving.id) && m.result?.walkover).length;
+if (walkovers < 1) errors.push(`withdrawal: expected walkovers for ${leavingName}, got ${walkovers}`);
+await shot(admin, '14b-withdrawn');
+
 step('print pages');
 await admin.goto(`${BASE}/admin/events/${eventId}/print`);
 await admin.getByRole('heading', { name: 'Schiedsrichterzettel' }).waitFor();

@@ -167,6 +167,19 @@ const draw = () =>
       seedPlacement: seedPlacement.value,
     }),
   );
+// --- Withdrawals after the draw ---
+
+/** Entries that take part in the draw (players withdrawn before the draw are not in it) */
+const drawnEntries = computed(() => {
+  const ids = new Set(state.value?.matches.flatMap((m) => m.sides).concat(state.value.groups.flatMap((g) => g.entries)) ?? []);
+  return state.value?.entries.filter((e) => ids.has(e.id)) ?? [];
+});
+const openMatches = (e: EntryInfo) => state.value?.matches.filter((m) => m.sides.includes(e.id) && m.status !== 'finished').length ?? 0;
+const withdraw = (e: EntryInfo) => {
+  if (confirm(t('admin.competition.withdrawConfirm', { name: entryName(e), n: openMatches(e) }))) void run(() => api('POST', `/api/entries/${e.id}/withdraw`));
+};
+const reinstate = (e: EntryInfo) => run(() => api('POST', `/api/entries/${e.id}/reinstate`));
+
 const undoDraw = () => {
   if (confirm(t('admin.competition.undoConfirm'))) void run(() => api('DELETE', `/api/competitions/${competitionId.value}/draw`));
 };
@@ -386,6 +399,18 @@ const removeCompetition = async () => {
       </div>
       <section class="card">
         <CompetitionStateView :state="state" :table-name="tableName" />
+      </section>
+      <section class="card" aria-labelledby="withdrawals">
+        <h2 id="withdrawals">{{ t('admin.competition.withdrawals') }}</h2>
+        <p class="muted small">{{ t('admin.competition.withdrawHint') }}</p>
+        <ul class="withdraw-list">
+          <li v-for="e in drawnEntries" :key="e.id">
+            <span :class="{ muted: e.status === 'withdrawn' }">{{ entryName(e) }}</span>
+            <span v-if="e.status === 'withdrawn'" class="badge warning">{{ t('admin.competition.statuses.withdrawn') }}</span>
+            <button v-if="e.status === 'withdrawn'" type="button" class="button secondary small" @click="reinstate(e)">{{ t('admin.competition.reinstate') }}</button>
+            <button v-else type="button" class="button secondary small" @click="withdraw(e)">{{ t('admin.competition.withdraw') }}</button>
+          </li>
+        </ul>
       </section>
     </template>
   </div>

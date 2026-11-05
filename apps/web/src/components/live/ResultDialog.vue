@@ -3,7 +3,7 @@ import type { MatchRules, SportProfile } from '@draw-and-play/domain';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { ResultOutbox } from '../../composables/useResultOutbox.js';
-import type { OperationsMatch } from '../../lib/api.js';
+import { api, type OperationsMatch } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
 import ResultKeypad from './ResultKeypad.vue';
@@ -43,6 +43,24 @@ watch(
   },
 );
 
+/** A player leaves the tournament: take the match off the table if needed, then withdraw the entry */
+async function withdraw(side: 0 | 1) {
+  const match = props.match;
+  const entry = match?.sides[side];
+  if (!match || !entry || !confirm(t('result.withdrawConfirm', { name: entry.name }))) return;
+  busy.value = true;
+  error.value = '';
+  try {
+    if (match.status === 'called') await api('POST', `/api/matches/${match.id}/uncall`, { version: match.version });
+    await api('POST', `/api/entries/${entry.entryId}/withdraw`);
+    emit('saved');
+  } catch (e) {
+    error.value = errorText(t, te, e);
+  } finally {
+    busy.value = false;
+  }
+}
+
 async function save(body: { notation: string } | { walkoverWinner: 0 | 1 }) {
   if (!props.match) return;
   busy.value = true;
@@ -79,6 +97,11 @@ async function save(body: { notation: string } | { walkoverWinner: 0 | 1 }) {
       <div v-if="allowWalkover" class="button-row">
         <button v-for="side in [0, 1] as const" :key="side" type="button" class="button secondary small" :disabled="busy" @click="save({ walkoverWinner: side })">
           {{ t('result.walkover', { name: names[side] }) }}
+        </button>
+      </div>
+      <div v-if="allowWalkover" class="button-row">
+        <button v-for="side in [0, 1] as const" :key="side" type="button" class="button secondary small" :disabled="busy" @click="withdraw(side)">
+          {{ t('result.withdraw', { name: names[side] }) }}
         </button>
       </div>
     </form>
