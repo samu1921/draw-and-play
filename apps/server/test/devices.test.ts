@@ -96,6 +96,18 @@ describe.skipIf(!databaseAvailable)('result entry by PIN and the operations view
     const ok = await asDevice(`/api/matches/${running.id}/result`, { notation: '4 -5 9 7', version: running.version });
     expect(ok.statusCode).toBe(200);
 
+    // Sent again with the old version, e.g. after the first answer got lost in a dead spot: accepted, nothing changes
+    const audit = (await api('GET', `/api/events/${eventId}/export`)).json().matches.find((m: { status: string }) => m.status === 'finished');
+    const repeated = await asDevice(`/api/matches/${running.id}/result`, { notation: '4 -5 9 7', version: running.version });
+    expect(repeated.statusCode).toBe(200);
+    expect(repeated.json().match).toMatchObject({ version: ok.json().match.version, result: ok.json().match.result });
+    const after = (await api('GET', `/api/events/${eventId}/export`)).json().matches.find((m: { status: string }) => m.status === 'finished');
+    expect(after.updatedAt).toBe(audit.updatedAt);
+    // Equal games in another notation are the same result
+    expect((await asDevice(`/api/matches/${running.id}/result`, { notation: '4,-5,9,7', version: running.version })).statusCode).toBe(200);
+
+    const different = await asDevice(`/api/matches/${running.id}/result`, { notation: '4 5 9', version: running.version });
+    expect(different.json()).toMatchObject({ error: 'versionConflict' });
     const correction = await asDevice(`/api/matches/${running.id}/result`, { notation: '-4 -5 -9', version: ok.json().match.version });
     expect(correction.json()).toEqual({ error: 'correctionsAdminOnly' });
     expect((await operations()).recent[0]).toMatchObject({ id: running.id, status: 'finished' });

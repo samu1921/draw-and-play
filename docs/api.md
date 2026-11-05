@@ -102,7 +102,7 @@ Every command names the match `version` it saw (optimistic locking) and runs und
 |---|---|---|
 | POST | `/api/matches/:id/call` | `{ tableId, version }` |
 | POST | `/api/matches/:id/uncall` | `{ version }` |
-| POST | `/api/matches/:id/result` | `{ notation: "4 -5 9 7", version }` or `{ walkoverWinner: 0 \| 1, version }` |
+| POST | `/api/matches/:id/result` | `{ notation: "4 -5 9 7", version }` or `{ walkoverWinner: 0 \| 1, version }` ; repeating a request is safe: if the match already holds exactly this result, the answer is `200` with the unchanged match, whatever `version` says |
 
 A result for a finished match is a correction; it is refused with `dependentMatchStarted` once a later match that builds on it has been called or played. Every command is written to the audit log.
 

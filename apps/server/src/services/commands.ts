@@ -8,15 +8,17 @@ import {
   validateFormat,
   type CompetitionDrawOptions,
   type MatchResult,
+  type MatchRules,
   type PairDrawMode,
   type Side,
+  type SportProfile,
 } from '@draw-and-play/domain';
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/client.js';
 import { auditLog, competitions, entries, entryMembers, eventTables, matches } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound } from '../errors.js';
 import type { Broadcaster } from '../realtime/broadcaster.js';
-import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, toDrawEntry } from './competitions.js';
+import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, sportOfEvent, toDrawEntry } from './competitions.js';
 
 export interface CommandContext {
   db: Db;
@@ -268,9 +270,40 @@ export interface ResultInput {
   byDevice?: boolean;
 }
 
+/** The result a request asks for; validation errors become 400s */
+function requestedResult(input: ResultInput, rules: MatchRules, sport: SportProfile): MatchResult {
+  if (input.walkoverWinner !== undefined) return { winner: input.walkoverWinner, games: [], walkover: true };
+  const parsed = sport.parseResult(input.notation ?? '', rules);
+  if (!parsed.ok) throw badRequest('invalidResult', parsed.error);
+  if (parsed.outcome.status !== 'finished') throw badRequest('incompleteResult', { games: parsed.outcome.games });
+  return { winner: parsed.outcome.winner, games: parsed.games };
+}
+
+function sameResult(a: MatchResult, b: MatchResult): boolean {
+  return (
+    a.winner === b.winner &&
+    Boolean(a.walkover) === Boolean(b.walkover) &&
+    a.games.length === b.games.length &&
+    a.games.every(([x, y], i) => x === b.games[i]![0] && y === b.games[i]![1])
+  );
+}
+
 export async function recordResult(ctx: CommandContext, matchId: string, input: ResultInput) {
   const eventId = await eventOfMatch(ctx.db, matchId);
+  let unchanged = false;
   const updated = await withEventLock(ctx.db, eventId, async (tx) => {
+    // A request that is sent again (e.g. by a phone whose first answer got lost in a dead spot) must not fail:
+    // if the match already holds exactly this result, nothing changes, whatever version the request names.
+    const [current] = await tx.select().from(matches).where(eq(matches.id, matchId)).limit(1);
+    if (current?.status === 'finished' && current.result) {
+      const competition = await loadCompetition(tx, current.competitionId);
+      const sport = await sportOfEvent(tx, competition.eventId);
+      if (sameResult(current.result, requestedResult(input, competition.matchRules, sport))) {
+        unchanged = true;
+        return current;
+      }
+    }
+
     const { row, loaded, resolved } = await matchContext(tx, matchId, input.version);
     if (resolved.status === 'pending') throw conflict('matchNotReady');
     if (input.byDevice) {
@@ -279,15 +312,7 @@ export async function recordResult(ctx: CommandContext, matchId: string, input: 
       if (row.status !== 'called') throw conflict('notCalled');
     }
 
-    let result: MatchResult;
-    if (input.walkoverWinner !== undefined) {
-      result = { winner: input.walkoverWinner, games: [], walkover: true };
-    } else {
-      const parsed = loaded.sport.parseResult(input.notation ?? '', loaded.competition.matchRules);
-      if (!parsed.ok) throw badRequest('invalidResult', parsed.error);
-      if (parsed.outcome.status !== 'finished') throw badRequest('incompleteResult', { games: parsed.outcome.games });
-      result = { winner: parsed.outcome.winner, games: parsed.games };
-    }
+    const result = requestedResult(input, loaded.competition.matchRules, loaded.sport);
 
     // A correction must not pull the rug from under matches that already build on this result.
     if (row.status === 'finished') {
@@ -320,6 +345,6 @@ export async function recordResult(ctx: CommandContext, matchId: string, input: 
     });
     return saved!;
   });
-  ctx.broadcaster.publish({ eventId, type: 'match', id: matchId });
+  if (!unchanged) ctx.broadcaster.publish({ eventId, type: 'match', id: matchId });
   return updated;
 }
