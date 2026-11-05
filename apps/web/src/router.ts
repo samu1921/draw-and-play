@@ -54,6 +54,7 @@ export const router = createRouter({
       meta: { admin: true, adminRole: true, bare: true },
     },
     { path: '/admin/events/:eventId/qr', name: 'admin-qr', component: () => import('./views/admin/QrSheetView.vue'), meta: { admin: true, adminRole: true, bare: true } },
+    { path: '/admin/branding', name: 'admin-branding', component: () => import('./views/admin/BrandingView.vue'), meta: { title: 'branding.title', admin: true, adminRole: true } },
     { path: '/admin/users', name: 'admin-users', component: () => import('./views/admin/UsersView.vue'), meta: { title: 'nav.users', admin: true, adminRole: true } },
     { path: '/account', name: 'account', component: () => import('./views/AccountView.vue'), meta: { title: 'nav.account', admin: true } },
     {

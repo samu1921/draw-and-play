@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { assetUrl, branding, DEFAULT_DISPLAY_DIM, useEventBranding } from '../../lib/branding.js';
 import { useEventTitle } from '../../lib/pageTitle.js';
 import { groupLetter } from '@draw-and-play/domain';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -26,6 +27,7 @@ const slug = computed(() => route.params.slug as string);
 const profileId = computed(() => (route.params.profileId as string | undefined) || null);
 const live = useLiveEvent(slug, { operations: true, remember: true });
 useEventTitle(computed(() => live.overview.value?.event.name ?? live.locked.value?.name));
+useEventBranding(computed(() => live.overview.value?.event.settings.branding));
 const now = useNow();
 
 // The projector always uses the dark theme: better contrast on weak projectors.
@@ -310,9 +312,13 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
 </script>
 
 <template>
-  <DisplayStage>
+  <DisplayStage
+    :background="branding.displayBackgroundId ? assetUrl(branding.displayBackgroundId) : null"
+    :dim="branding.displayDim ?? DEFAULT_DISPLAY_DIM"
+  >
     <div class="d-screen" :class="{ 'hide-cursor': !controlsVisible }" @mousemove="showControls">
       <header class="d-head">
+        <img v-if="branding.logoId" :src="assetUrl(branding.logoId)" alt="" class="d-logo" />
         <h1>{{ live.overview.value?.event.name ?? live.locked.value?.name }}</h1>
         <div class="d-meta">
           <span v-if="profile" class="d-profile">{{ profile.name }}</span>

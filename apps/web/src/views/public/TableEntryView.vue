@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventBranding } from '../../lib/branding.js';
 import { useEventTitle } from '../../lib/pageTitle.js';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -45,6 +46,7 @@ const complete = computed(() => {
 /** Known from the overview, or from the refusal while the public views need the viewer code */
 const eventName = computed(() => live.overview.value?.event.name ?? live.locked.value?.name ?? '');
 useEventTitle(computed(() => eventName.value));
+useEventBranding(computed(() => live.overview.value?.event.settings.branding));
 const pinEnabled = computed(() => live.overview.value?.event.pinEnabled ?? live.locked.value?.pinEnabled ?? false);
 /** The saved result of this table still waits on the phone */
 const savedQueued = computed(() => outbox.waiting.value.some((i) => i.matchId === savedMatchId.value));

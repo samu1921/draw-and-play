@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventBranding } from '../../lib/branding.js';
 import { useEventTitle } from '../../lib/pageTitle.js';
 import { ArrowLeft, ExternalLink, LayoutDashboard, Monitor, Play, Printer, ScrollText, Settings, Trophy, Users } from '@lucide/vue';
 import { computed, type Component } from 'vue';
@@ -14,6 +15,7 @@ const route = useRoute();
 const eventId = computed(() => route.params.eventId as string);
 const live = useLiveEvent(eventId, { operations: true });
 useEventTitle(computed(() => live.overview.value?.event.name));
+useEventBranding(computed(() => live.overview.value?.event.settings.branding));
 const event = computed(() => live.overview.value?.event ?? null);
 
 const session = useSessionStore();

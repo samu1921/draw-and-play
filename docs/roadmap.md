@@ -29,7 +29,7 @@ Ready for a first club championship. Everything the [reference scenario](require
 
 ## In progress: look and feel
 
-Done: events as the start page, sidebar inside an event with an overview page (preparation checklist, current state), icons throughout, light/dark switch that follows the system. Also done: event days and a schedule per competition in the interface, rest times of both players at the match desk. Still to come: colours and logo per installation and per event, background image for displays (16:9), certificate template with placeholders and background image.
+Done: events as the start page, sidebar inside an event with an overview page (preparation checklist, current state), icons throughout, light/dark switch that follows the system. Also done: event days and a schedule per competition in the interface, rest times of both players at the match desk. Also done: the name “Draw & Play” with a new icon and telling tab titles, appearance (name, accent colour, logo, display background) per installation and per event. Still to come: certificate template with placeholders and background image.
 
 ## Then: format changes during the event
 

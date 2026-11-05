@@ -20,6 +20,7 @@ Was draw-and-play heute kann, Bereich für Bereich, in der Reihenfolge, in der e
 | [Drucken und Export](#10-drucken-und-export) | Admin, Meldestelle | **Drucken**, **Einstellungen → Datensicherung** |
 | [Benutzer und Rollen](#11-benutzer-und-rollen) | Admin | **Benutzer**, **Mein Konto** |
 | [Protokoll](#12-protokoll) | Admin | **Protokoll** |
+| [Erscheinungsbild](#13-erscheinungsbild) | Admin | **Erscheinungsbild** (`/admin/branding`), **Einstellungen → Erscheinungsbild** |
 
 Die Oberfläche gibt es auf Englisch und Deutsch. Sie richtet sich nach der Browsersprache oder der Sprachauswahl. Hell oder dunkel folgt der Systemeinstellung und lässt sich im Benutzermenü oben rechts umschalten (wie System, hell, dunkel); dort liegen auch Sprache, Mein Konto und Abmelden. Die Wahl merkt sich der Browser.
 
@@ -145,6 +146,17 @@ Alle Druckseiten sind für A4 gesetzt und lassen sich über den Druckdialog des 
 ## 12. Protokoll
 
 Jede Änderung (Auslosung, Aufruf, Ergebnis, Korrektur, Rückzug, Einstellungen, Spieler …) landet mit Zeitpunkt, Akteur (Benutzer oder Tisch-Gerät) und Details im Protokoll. Der Reiter **Protokoll** zeigt es, neueste zuerst, in der Sprache der Oberfläche.
+
+## 13. Erscheinungsbild
+
+Unter **Erscheinungsbild** legt ein Admin das Aussehen der ganzen Installation fest:
+
+- **Name** oben links und im Browser-Tab, z. B. der Verein (sonst „Draw & Play“).
+- **Akzentfarbe** aus Vorschlägen oder frei gewählt. Die App leitet daraus lesbare Varianten für hell und dunkel ab (Kontrast mindestens 4,5:1) und wählt weiße oder dunkle Schrift auf Buttons; die Vorschau zeigt beide.
+- **Logo** (PNG, JPEG oder WebP bis 8 MB) oben links, auf Anzeigen, Ausdrucken und als Symbol im Browser-Tab.
+- **Hintergrund der Anzeigen:** ein Bild im Format 16:9 hinter Beamer und Bildschirmen, einstellbar abgedunkelt, damit die Schrift lesbar bleibt; die Karten darüber sind leicht durchscheinend.
+
+Jede Veranstaltung kann unter **Einstellungen → Erscheinungsbild** einzelne Werte überschreiben, z. B. für eine Kreismeisterschaft mit anderem Ausrichter; leere Felder nutzen die Vorgabe. Bilder liegen in der Datenbank, sind also in Backups enthalten, und wandern beim Export einer Veranstaltung mit.
 
 ## Ein Turniertag in der Praxis
 

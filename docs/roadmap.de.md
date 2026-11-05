@@ -29,7 +29,7 @@ Bereit für eine erste Vereinsmeisterschaft. Alles, was das [Referenzszenario](r
 
 ## In Arbeit: Gestaltung
 
-Erledigt: Veranstaltungen als Startseite, Seitenleiste in der Veranstaltung mit Übersichtsseite (Checkliste zur Vorbereitung, aktueller Stand), Icons durchgehend, Hell/Dunkel-Schalter, der der Systemeinstellung folgt. Ebenfalls erledigt: Tage der Veranstaltung und Zeitplan je Konkurrenz in der Oberfläche, Pausenzeiten beider Spieler im Spielbetrieb. Noch offen: Farben und Logo je Installation und je Veranstaltung, Hintergrundbild für Anzeigen (16:9), Urkundenvorlage mit Platzhaltern und Hintergrundbild.
+Erledigt: Veranstaltungen als Startseite, Seitenleiste in der Veranstaltung mit Übersichtsseite (Checkliste zur Vorbereitung, aktueller Stand), Icons durchgehend, Hell/Dunkel-Schalter, der der Systemeinstellung folgt. Ebenfalls erledigt: Tage der Veranstaltung und Zeitplan je Konkurrenz in der Oberfläche, Pausenzeiten beider Spieler im Spielbetrieb. Ebenfalls erledigt: Name „Draw & Play“ mit neuem Icon und sprechenden Tab-Titeln, Erscheinungsbild (Name, Akzentfarbe, Logo, Hintergrund der Anzeigen) je Installation und je Veranstaltung. Noch offen: Urkundenvorlage mit Platzhaltern und Hintergrundbild.
 
 ## Danach: Modusänderung im laufenden Turnier
 

@@ -20,6 +20,7 @@ What draw-and-play does today, area by area, in the order a tournament runs thro
 | [Print and export](#10-print-and-export) | admin, registration desk | **Print**, **Settings → Backup** |
 | [Users and roles](#11-users-and-roles) | admin | **Users**, **My account** |
 | [Audit log](#12-audit-log) | admin | **Log** |
+| [Appearance](#13-appearance) | admin | **Appearance** (`/admin/branding`), **Settings → Appearance** |
 
 The interface is available in English and German and switches with the browser language or the language picker. Light or dark follows the system setting and can be switched in the user menu at the top right (as system, light, dark), next to language, my account and sign-out. The browser remembers the choice.
 
@@ -145,6 +146,17 @@ All print pages are formatted for A4 and can be saved as PDF from the browser's 
 ## 12. Audit log
 
 Every change (draw, call, result, correction, withdrawal, settings, players …) is written to the audit log with time, actor (user or table device) and details. The **Log** tab shows it newest first, translated into the interface language.
+
+## 13. Appearance
+
+Under **Appearance** an admin sets the look of the whole installation:
+
+- **Name** top left and in the browser tab, for example the club (otherwise “Draw & Play”).
+- **Accent colour** from suggestions or picked freely. The app derives readable variants for light and dark (contrast at least 4.5:1) and picks white or dark text on buttons; the preview shows both.
+- **Logo** (PNG, JPEG or WebP up to 8 MB) top left, on displays, printouts and as the browser tab icon.
+- **Display background:** a 16:9 picture behind projectors and screens, darkened by an adjustable amount so the text stays readable; the cards on top are slightly translucent.
+
+Each event can override single values under **Settings → Appearance**, for example for a district championship with another host; empty fields use the default. Images are kept in the database, so backups include them, and they travel with an event's export.
 
 ## A tournament day in practice
 

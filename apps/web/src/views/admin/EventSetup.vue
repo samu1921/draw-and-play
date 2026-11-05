@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { CalendarDays, DatabaseBackup, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
+import { CalendarDays, DatabaseBackup, Palette, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLegalDefaults } from '../../composables/useLegal.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api } from '../../lib/api.js';
+import BrandingEditor from '../../components/admin/BrandingEditor.vue';
+import { installationBranding, loadConfig, type Branding } from '../../lib/branding.js';
 import { eventDays } from '../../lib/days.js';
 import { errorText } from '../../lib/messages.js';
 
@@ -35,6 +37,18 @@ const saveEvent = () =>
       endsOn: (eventForm.value.startsOn && eventForm.value.endsOn) || null,
     }),
   );
+
+// --- The event's own look on top of the installation's ---
+void loadConfig();
+const brandingOpen = ref(false);
+const brandingDraft = ref<Branding>({});
+watch(
+  () => JSON.stringify(event.value.settings.branding ?? {}),
+  (saved) => (brandingDraft.value = JSON.parse(saved) as Branding),
+  { immediate: true },
+);
+const hasOwnBranding = computed(() => Object.values(event.value.settings.branding ?? {}).some((v) => v !== null && v !== undefined && v !== ''));
+const saveBranding = (value: Branding) => run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: { branding: value } }));
 
 const tableNames = ref('');
 // Watched by value: live reloads bring new objects with the same content and must not wipe what is being typed
@@ -208,6 +222,23 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
         </label>
         <div><button type="submit" class="button">{{ t('admin.setup.saveLegal') }}</button></div>
       </form>
+    </section>
+
+    <section class="card wide-card" aria-labelledby="branding-title">
+      <div class="card-header">
+        <h2 id="branding-title"><Palette aria-hidden="true" />{{ t('branding.eventTitle') }}</h2>
+        <button type="button" class="button secondary small" :aria-expanded="brandingOpen" @click="brandingOpen = !brandingOpen">
+          {{ brandingOpen ? t('common.close') : t('branding.customize') }}
+        </button>
+      </div>
+      <p class="muted small">{{ hasOwnBranding ? t('branding.eventOwn') : t('branding.eventInherits') }}</p>
+      <template v-if="brandingOpen">
+        <BrandingEditor v-model="brandingDraft" :event-id="event.id" :inherited="installationBranding" />
+        <div class="button-row">
+          <button type="button" class="button" @click="saveBranding(brandingDraft)">{{ t('common.save') }}</button>
+          <button v-if="hasOwnBranding" type="button" class="button secondary" @click="saveBranding({})">{{ t('branding.resetEvent') }}</button>
+        </div>
+      </template>
     </section>
 
     <section class="card" aria-labelledby="backup-title">

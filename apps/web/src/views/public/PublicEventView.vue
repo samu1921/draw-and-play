@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventBranding } from '../../lib/branding.js';
 import { useEventTitle } from '../../lib/pageTitle.js';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -15,6 +16,7 @@ const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const live = useLiveEvent(slug, { operations: true });
 useEventTitle(computed(() => live.overview.value?.event.name ?? live.locked.value?.name));
+useEventBranding(computed(() => live.overview.value?.event.settings.branding));
 const legal = useEventLegal(live);
 </script>
 

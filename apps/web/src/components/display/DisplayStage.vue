@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
+/** Optional picture behind everything, darkened by `dim` percent so the text on top stays readable */
+defineProps<{ background?: string | null; dim?: number }>();
+
 /** Logical size of the projector stage; everything inside is laid out in these pixels */
 const WIDTH = 1920;
 const HEIGHT = 1080;
@@ -18,7 +21,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', fit));
 
 <template>
   <div class="stage-frame">
-    <div class="stage" :style="{ width: `${WIDTH}px`, height: `${HEIGHT}px`, transform: `translate(-50%, -50%) scale(${scale})` }">
+    <div
+      class="stage"
+      :class="{ 'has-bg': background }"
+      :style="{ width: `${WIDTH}px`, height: `${HEIGHT}px`, transform: `translate(-50%, -50%) scale(${scale})` }"
+    >
+      <template v-if="background">
+        <div class="stage-bg" :style="{ backgroundImage: `url(${background})` }" aria-hidden="true"></div>
+        <div class="stage-dim" :style="{ opacity: (dim ?? 0) / 100 }" aria-hidden="true"></div>
+      </template>
       <slot />
     </div>
   </div>

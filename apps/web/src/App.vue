@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Calculator, CalendarDays, ChevronDown, CircleUser, Languages, LogIn, LogOut, Moon, Sun, SunMoon, UserCog } from '@lucide/vue';
+import { Calculator, CalendarDays, ChevronDown, Palette, CircleUser, Languages, LogIn, LogOut, Moon, Sun, SunMoon, UserCog } from '@lucide/vue';
 import { onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
@@ -7,7 +7,9 @@ import { locales, setLocale, type Locale } from './i18n/index.js';
 import AppLogo from './components/AppLogo.vue';
 import LegalFooter from './components/LegalFooter.vue';
 import { useLegalDefaults } from './composables/useLegal.js';
-import { APP_NAME, composeTitle, eventTitle } from './lib/pageTitle.js';
+import { appName, assetUrl, branding, loadConfig } from './lib/branding.js';
+import { accentStyleSheet } from './lib/color.js';
+import { composeTitle, eventTitle } from './lib/pageTitle.js';
 import { nextThemePreference, setThemePreference, THEME_PREFERENCES, themePreference } from './lib/theme.js';
 import { useSessionStore } from './stores/session.js';
 
@@ -23,9 +25,24 @@ watchEffect(() => {
   document.title = composeTitle({
     page: route.meta.title ? t(route.meta.title) : null,
     event: eventTitle.value,
-    app: APP_NAME,
+    app: appName.value,
     publicPage: route.meta.publicPage,
   });
+});
+
+// Look of the installation or the current event: accent colour and favicon
+void loadConfig();
+const accentStyle = document.createElement('style');
+accentStyle.id = 'brand-accent';
+document.head.append(accentStyle);
+watchEffect(() => (accentStyle.textContent = branding.value.accent ? accentStyleSheet(branding.value.accent) : ''));
+watchEffect(() => {
+  const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!icon) return;
+  const logo = branding.value.logoId;
+  icon.href = logo ? assetUrl(logo) : '/favicon.svg';
+  if (logo) icon.removeAttribute('type');
+  else icon.type = 'image/svg+xml';
 });
 
 // --- User menu: account, appearance, language, sign-out ---
@@ -70,9 +87,10 @@ const inEvents = () => route.path === '/admin' || route.path.startsWith('/admin/
 
 <template>
   <header v-if="!route.meta.bare" class="app-header">
-    <RouterLink to="/" class="brand" :aria-label="APP_NAME">
-      <AppLogo />
-      <span>{{ APP_NAME }}</span>
+    <RouterLink to="/" class="brand" :aria-label="appName">
+      <img v-if="branding.logoId" :src="assetUrl(branding.logoId)" alt="" class="brand-logo" />
+      <AppLogo v-else />
+      <span>{{ appName }}</span>
     </RouterLink>
     <nav v-if="session.user" class="app-nav" :aria-label="t('nav.label')">
       <RouterLink to="/admin" :class="{ active: inEvents() }" :title="t('nav.events')">
@@ -83,6 +101,9 @@ const inEvents = () => route.path === '/admin' || route.path.startsWith('/admin/
       </RouterLink>
       <RouterLink v-if="session.isAdmin" to="/admin/users" active-class="active" :title="t('nav.users')">
         <UserCog aria-hidden="true" /><span class="nav-label">{{ t('nav.users') }}</span>
+      </RouterLink>
+      <RouterLink v-if="session.isAdmin" to="/admin/branding" active-class="active" :title="t('branding.title')">
+        <Palette aria-hidden="true" /><span class="nav-label">{{ t('branding.title') }}</span>
       </RouterLink>
     </nav>
     <div class="header-tools">

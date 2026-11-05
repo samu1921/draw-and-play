@@ -1,4 +1,5 @@
 import type { CompetitionFormat, MatchResult, MatchRules, Placement, StandingsRow } from '@draw-and-play/domain';
+import type { Branding } from './branding.js';
 
 /** An error response from the API: `code` is stable and translated in the UI (`errors.<code>`). */
 export class ApiRequestError extends Error {
@@ -29,7 +30,10 @@ export async function api<T>(
         method,
         credentials: 'same-origin',
         signal: controller.signal,
-        ...(body !== undefined && { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
+        // A file (an image upload) goes as it is, everything else as JSON
+        ...(body instanceof Blob
+          ? { headers: { 'content-type': body.type }, body }
+          : body !== undefined && { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
       });
     } catch {
       throw new ApiRequestError(0, 'offline');
@@ -60,7 +64,14 @@ export interface EventInfo {
   endsOn: string | null;
   /** Sport profile id, e.g. "table-tennis" */
   sport: string;
-  settings: { publicRatings?: boolean; shortNames?: boolean; imprintUrl?: string | null; privacyUrl?: string | null; privacyNote?: string | null };
+  settings: {
+    publicRatings?: boolean;
+    shortNames?: boolean;
+    imprintUrl?: string | null;
+    privacyUrl?: string | null;
+    privacyNote?: string | null;
+    branding?: Branding;
+  };
   pinEnabled: boolean;
   /** The public views need the viewer code */
   viewerProtected?: boolean;
