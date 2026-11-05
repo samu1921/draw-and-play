@@ -11,9 +11,10 @@ const live = injectLiveEvent();
 const event = computed(() => live.overview.value!.event);
 
 const tableNames = ref('');
+// Watched by value: live reloads bring new objects with the same content and must not wipe what is being typed
 watch(
-  () => live.overview.value?.tables,
-  (tables) => (tableNames.value = (tables ?? []).map((t) => t.name).join('\n')),
+  () => (live.overview.value?.tables ?? []).map((t) => t.name).join('\n'),
+  (names) => (tableNames.value = names),
   { immediate: true },
 );
 
@@ -69,9 +70,14 @@ const openViews = () => {
 const legalDefaults = useLegalDefaults();
 const legalForm = ref({ imprintUrl: '', privacyUrl: '', privacyNote: '' });
 watch(
-  () => event.value.settings,
-  (settings) =>
-    (legalForm.value = { imprintUrl: settings.imprintUrl ?? '', privacyUrl: settings.privacyUrl ?? '', privacyNote: settings.privacyNote ?? '' }),
+  () => {
+    const s = event.value.settings;
+    return JSON.stringify([s.imprintUrl ?? '', s.privacyUrl ?? '', s.privacyNote ?? '']);
+  },
+  (saved) => {
+    const [imprintUrl, privacyUrl, privacyNote] = JSON.parse(saved) as [string, string, string];
+    legalForm.value = { imprintUrl, privacyUrl, privacyNote };
+  },
   { immediate: true },
 );
 const saveLegal = () => run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: legalForm.value }));

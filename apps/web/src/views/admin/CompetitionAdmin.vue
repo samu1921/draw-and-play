@@ -88,15 +88,17 @@ const removeEntry = (e: EntryInfo) => run(() => api('DELETE', `/api/entries/${e.
 const placements = ref<PlacementMode>('none');
 const variantId = ref('');
 const variants = computed(() => generateVariants(drawCount.value, { placements: placements.value }));
+// Watched by value: every live reload brings a new competition object, which must not undo a choice not saved yet
+const savedFormat = computed(() => (competition.value ? JSON.stringify(competition.value.format) : null));
 watch(
-  competition,
-  (c) => {
-    if (c) placements.value = c.format.knockout?.placements ?? 'none';
+  savedFormat,
+  () => {
+    if (competition.value) placements.value = competition.value.format.knockout?.placements ?? 'none';
   },
   { immediate: true },
 );
 watch(
-  [variants, competition],
+  [variants, savedFormat],
   () => {
     const current = competition.value?.format;
     variantId.value = variants.value.find((v) => current && sameFormat(v.format, current))?.id ?? variants.value[0]?.id ?? '';
