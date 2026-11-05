@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Executor } from '../db/client.js';
 import { auditLog, competitions, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
-import { conflict, notFound, parse } from '../errors.js';
+import { badRequest, conflict, notFound, parse } from '../errors.js';
 import { eventSettingsSchema } from '../schemas.js';
 import { competitionSummary, personView } from '../services/competitions.js';
 import { importPersons } from '../services/personImport.js';
@@ -39,6 +39,11 @@ const updateEventBody = z.object({
   endsOn: isoDate.nullable().optional(),
   settings: eventSettingsSchema.optional(),
 });
+
+/** A multi-day event: the last day may not come before the first */
+function checkDays(startsOn: string | null | undefined, endsOn: string | null | undefined) {
+  if (startsOn && endsOn && endsOn < startsOn) throw badRequest('endsBeforeStart');
+}
 
 const tablesBody = z.object({ names: z.array(z.string().trim().min(1).max(20)).min(1).max(64) });
 
@@ -108,6 +113,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
 
   app.post('/api/events', { preHandler: requireAdmin }, async (request, reply) => {
     const body = parse(createEventBody, request.body);
+    checkDays(body.startsOn, body.endsOn);
     const slug = body.slug ?? `${slugify(body.name)}-${Math.random().toString(36).slice(2, 6)}`;
     const created = await db.transaction(async (tx) => {
       const [taken] = await tx.select({ id: events.id }).from(events).where(eq(events.slug, slug)).limit(1);
@@ -166,6 +172,7 @@ export async function eventRoutes(app: FastifyInstance, { db, broadcaster, legal
   app.patch('/api/events/:eventId', { preHandler: requireAdmin }, async (request) => {
     const event = await findEvent(db, (request.params as { eventId: string }).eventId);
     const body = parse(updateEventBody, request.body);
+    checkDays(body.startsOn !== undefined ? body.startsOn : event.startsOn, body.endsOn !== undefined ? body.endsOn : event.endsOn);
     const [updated] = await db
       .update(events)
       .set({

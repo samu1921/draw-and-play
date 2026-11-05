@@ -337,7 +337,8 @@ a {
   min-width: 0;
 }
 
-.field.wide {
+.field.wide,
+.fields > .wide {
   grid-column: 1 / -1;
 }
 
@@ -827,6 +828,23 @@ textarea {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
   gap: 0.35rem 1rem;
+}
+
+.plain-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fields > p {
+  margin: 0;
+}
+
+.plain-fieldset legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--fg-secondary);
 }
 
 .seed-input {

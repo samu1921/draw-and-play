@@ -5,6 +5,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { api, type EventInfo } from '../../lib/api.js';
+import { dayDate } from '../../lib/days.js';
 import { errorText } from '../../lib/messages.js';
 import { useSessionStore } from '../../stores/session.js';
 
@@ -12,7 +13,7 @@ const { t, te, d } = useI18n();
 const router = useRouter();
 const session = useSessionStore();
 const events = ref<EventInfo[] | null>(null);
-const form = ref({ name: '', slug: '', startsOn: '', tableCount: 4, sport: SPORT_IDS[0] as string });
+const form = ref({ name: '', slug: '', startsOn: '', endsOn: '', tableCount: 4, sport: SPORT_IDS[0] as string });
 const error = ref('');
 const importError = ref('');
 const importing = ref(false);
@@ -42,6 +43,12 @@ const sorted = computed(() =>
       return a.when === 'past' ? -byDate : byDate || a.event.name.localeCompare(b.event.name);
     }),
 );
+/** "Friday, 6 November 2026" or "Fri, 6 November – Sun, 8 November 2026" */
+const dateRange = (e: EventInfo) => {
+  if (!e.startsOn) return '';
+  if (!e.endsOn || e.endsOn === e.startsOn) return d(dayDate(e.startsOn), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return `${d(dayDate(e.startsOn), { weekday: 'short', day: 'numeric', month: 'long' })} – ${d(dayDate(e.endsOn), { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}`;
+};
 const dateParts = (iso: string) => {
   const date = new Date(`${iso}T12:00:00`);
   return { day: d(date, { day: 'numeric' }), month: d(date, { month: 'short' }) };
@@ -60,6 +67,7 @@ async function create() {
       sport: form.value.sport,
       ...(form.value.slug && { slug: form.value.slug }),
       ...(form.value.startsOn && { startsOn: form.value.startsOn }),
+      ...(form.value.startsOn && form.value.endsOn && { endsOn: form.value.endsOn }),
     });
     await router.push(`/admin/events/${event.id}`);
   } catch (e) {
@@ -117,6 +125,10 @@ async function importFile(input: HTMLInputElement) {
             <span>{{ t('admin.events.startsOn') }}</span>
             <input v-model="form.startsOn" type="date" />
           </label>
+          <label class="field">
+            <span>{{ t('admin.events.endsOn') }} ({{ t('common.optional') }})</span>
+            <input v-model="form.endsOn" type="date" :min="form.startsOn || undefined" :disabled="!form.startsOn" />
+          </label>
           <!-- Only worth asking once there is more than one sport -->
           <label v-if="SPORT_IDS.length > 1" class="field">
             <span>{{ t('admin.events.sport') }}</span>
@@ -167,7 +179,7 @@ async function importFile(input: HTMLInputElement) {
           <RouterLink :to="`/admin/events/${e.id}`" class="event-card-link">{{ e.name }}</RouterLink>
           <p class="muted small">
             {{ t(`sports.${e.sport}`) }}
-            <template v-if="e.startsOn"> · {{ d(new Date(`${e.startsOn}T12:00:00`), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}</template>
+            <template v-if="e.startsOn"> · {{ dateRange(e) }}</template>
           </p>
           <span v-if="when === 'today'" class="badge">{{ t('admin.events.today') }}</span>
         </div>

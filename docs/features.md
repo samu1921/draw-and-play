@@ -39,7 +39,7 @@ How the simulation works, with an example calculation, is described in the [arch
 
 ## 2. Events and tables
 
-- An admin creates an **event** with name, address in the link (slug), first and last day and number of tables. Tables are named "1" … "n" and can be renamed or extended under **Settings** (one name per line).
+- An admin creates an **event** with name, address in the link (slug), first and last day and number of tables. Name and days can be changed under **Settings → Event**. With several days, each competition's day is chosen when it is created or later under **Schedule**; forecast, match desk and print then work per day. Tables are named "1" … "n" and can be renamed or extended under **Settings** (one name per line).
 - The sport is chosen when the event is created and decides scoring, result notation and standings order. Table tennis is the only profile so far, so the choice is not shown yet.
 - **Settings** also holds the result PIN, the access to the public views, the legal links, the public display options and the backup (see the following sections).
 - An event can be deleted with all its data.
@@ -65,7 +65,7 @@ A competition has a name, a type (singles or doubles), a colour, scoring (games 
 
 Placement matches in the knockout: **none**, **3rd place** or **all places**. Group standings follow the sport profile; in table tennis: match points, game difference, head-to-head, point difference. The crossover from the groups into the knockout keeps entries of the same group apart for as long as possible.
 
-The format and type can be changed until the draw. Scoring, match duration, start time, dependency and tables can be changed at any time; they apply to matches that have not been called yet, and the forecast follows immediately.
+The format and type can be changed until the draw. Scoring, match duration, start time, dependency and tables can be changed at any time (day, start time, dependency, minutes per match and tables on the competition's page under **Schedule**); they apply to matches that have not been called yet, and the forecast follows immediately.
 
 ## 5. Draw
 

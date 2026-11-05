@@ -54,7 +54,9 @@ const inCompetition = computed(() => route.name === 'admin-competition');
 const dateLine = computed(() => {
   const e = event.value;
   if (!e?.startsOn) return '';
-  return d(new Date(`${e.startsOn}T12:00:00`), { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  const first = new Date(`${e.startsOn}T12:00:00`);
+  if (!e.endsOn || e.endsOn === e.startsOn) return d(first, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  return `${d(first, { day: 'numeric', month: 'short' })} – ${d(new Date(`${e.endsOn}T12:00:00`), { day: 'numeric', month: 'short', year: 'numeric' })}`;
 });
 const publicLink = computed(() =>
   event.value ? `/e/${event.value.slug}${event.value.viewerCode ? `?code=${event.value.viewerCode}` : ''}` : '',

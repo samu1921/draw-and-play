@@ -6,17 +6,23 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionInfo } from '../../lib/api.js';
+import { dayDate, eventDays } from '../../lib/days.js';
 import { describeFormat, describePlacements } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
 import { useSessionStore } from '../../stores/session.js';
 
-const { t, te } = useI18n();
+const { t, te, d } = useI18n();
 const router = useRouter();
 const live = injectLiveEvent();
 const session = useSessionStore();
 const overview = computed(() => live.overview.value!);
 
-const form = ref({ name: '', kind: 'singles' as 'singles' | 'doubles', gamesToWin: 3, expected: 8, variantId: '', placements: 'none' as PlacementMode });
+const form = ref({ name: '', kind: 'singles' as 'singles' | 'doubles', gamesToWin: 3, expected: 8, variantId: '', placements: 'none' as PlacementMode, day: '' });
+/** Days of a multi-day event; a new competition starts on the first one */
+const days = computed(() => eventDays(overview.value.event.startsOn, overview.value.event.endsOn));
+watch(days, (list) => {
+  if (list.length > 1 && !list.includes(form.value.day)) form.value.day = list[0]!;
+}, { immediate: true });
 const variants = computed(() => generateVariants(form.value.expected, { placements: form.value.placements }));
 watch(
   variants,
@@ -38,6 +44,7 @@ async function create() {
       kind: form.value.kind,
       gamesToWin: form.value.gamesToWin,
       format: variant.format,
+      ...(days.value.length > 1 && form.value.day && { day: form.value.day }),
     });
     await live.reload();
     await router.push(`/admin/events/${overview.value.event.id}/competitions/${competition.id}`);
@@ -55,6 +62,7 @@ async function create() {
           <span class="swatch" :style="{ background: `var(--series-${c.color + 1})` }" aria-hidden="true"></span>
           <RouterLink :to="`/admin/events/${overview.event.id}/competitions/${c.id}`">{{ c.name }}</RouterLink>
           <span class="muted"> · {{ t(`admin.competitions.kinds.${c.kind}`) }}</span>
+          <span v-if="c.day && days.length > 1" class="muted"> · {{ d(dayDate(c.day), { weekday: 'short', day: 'numeric', month: 'short' }) }}</span>
           <span v-if="c.drawn" class="badge">{{ t('admin.competitions.drawn') }}</span>
         </li>
       </ul>
@@ -66,6 +74,12 @@ async function create() {
         <label class="field">
           <span>{{ t('admin.competitions.name') }}</span>
           <input v-model="form.name" type="text" required maxlength="80" />
+        </label>
+        <label v-if="days.length > 1" class="field">
+          <span>{{ t('admin.schedule.day') }}</span>
+          <select v-model="form.day">
+            <option v-for="day in days" :key="day" :value="day">{{ d(dayDate(day), { weekday: 'long', day: 'numeric', month: 'long' }) }}</option>
+          </select>
         </label>
         <label class="field">
           <span>{{ t('admin.competitions.kind') }}</span>

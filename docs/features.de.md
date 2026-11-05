@@ -39,7 +39,7 @@ Wie die Simulation rechnet, steht mit Beispielrechnung in der [Architektur](arch
 
 ## 2. Veranstaltungen und Tische
 
-- Ein Admin legt eine **Veranstaltung** an: Name, Adresse im Link (Slug), erster und letzter Tag, Anzahl Tische. Die Tische heißen „1“ … „n“ und lassen sich unter **Einstellungen** umbenennen oder erweitern (ein Name pro Zeile).
+- Ein Admin legt eine **Veranstaltung** an: Name, Adresse im Link (Slug), erster und letzter Tag, Anzahl Tische. Name und Tage lassen sich unter **Einstellungen → Veranstaltung** ändern. Bei mehreren Tagen wählt man den Tag jeder Konkurrenz beim Anlegen oder später unter **Zeitplan**; Prognose, Spielbetrieb und Druck arbeiten dann je Tag. Die Tische heißen „1“ … „n“ und lassen sich unter **Einstellungen** umbenennen oder erweitern (ein Name pro Zeile).
 - Die Sportart wird beim Anlegen gewählt und bestimmt Wertung, Ergebnisnotation und Tabellenreihenfolge. Bisher gibt es nur das Profil Tischtennis, deshalb ist die Auswahl noch ausgeblendet.
 - Unter **Einstellungen** liegen außerdem Ergebnis-PIN, Zugang zu den öffentlichen Ansichten, Impressum und Datenschutz, die Optionen für die öffentliche Anzeige und die Datensicherung (siehe die folgenden Abschnitte).
 - Eine Veranstaltung lässt sich mit allen Daten löschen.
@@ -65,7 +65,7 @@ Eine Konkurrenz hat einen Namen, eine Art (Einzel oder Doppel), eine Farbe, eine
 
 Platzierungsspiele im KO: **keine**, **Spiel um Platz 3** oder **alle Plätze**. Die Gruppentabelle folgt dem Sport-Profil, im Tischtennis: Spielpunkte, Satzdifferenz, direkter Vergleich, Balldifferenz. Der Übergang von den Gruppen ins KO hält Spieler derselben Gruppe so lange wie möglich auseinander.
 
-Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startzeit, Abhängigkeit und Tische lassen sich jederzeit ändern; sie gelten für noch nicht aufgerufene Spiele, und die Prognose zieht sofort nach.
+Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startzeit, Abhängigkeit und Tische lassen sich jederzeit ändern (Tag, Startzeit, Abhängigkeit, Minuten pro Spiel und Tische auf der Seite der Konkurrenz unter **Zeitplan**); sie gelten für noch nicht aufgerufene Spiele, und die Prognose zieht sofort nach.
 
 ## 5. Auslosung
 

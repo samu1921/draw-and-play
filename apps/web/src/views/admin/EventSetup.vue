@@ -1,15 +1,40 @@
 <script setup lang="ts">
-import { DatabaseBackup, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
+import { CalendarDays, DatabaseBackup, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLegalDefaults } from '../../composables/useLegal.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api } from '../../lib/api.js';
+import { eventDays } from '../../lib/days.js';
 import { errorText } from '../../lib/messages.js';
 
 const { t, te } = useI18n();
 const live = injectLiveEvent();
 const event = computed(() => live.overview.value!.event);
+
+// --- Name and days of the event ---
+const eventForm = ref({ name: '', startsOn: '', endsOn: '' });
+watch(
+  () => JSON.stringify([event.value.name, event.value.startsOn ?? '', event.value.endsOn ?? '']),
+  (saved) => {
+    const [name, startsOn, endsOn] = JSON.parse(saved) as [string, string, string];
+    eventForm.value = { name, startsOn, endsOn };
+  },
+  { immediate: true },
+);
+/** Competitions planned on a day the event no longer covers */
+const strayCompetitions = computed(() => {
+  const days = eventDays(eventForm.value.startsOn || null, eventForm.value.endsOn || null);
+  return (live.overview.value?.competitions ?? []).filter((c) => c.day && !days.includes(c.day)).map((c) => c.name);
+});
+const saveEvent = () =>
+  run(() =>
+    api('PATCH', `/api/events/${event.value.id}`, {
+      name: eventForm.value.name,
+      startsOn: eventForm.value.startsOn || null,
+      endsOn: (eventForm.value.startsOn && eventForm.value.endsOn) || null,
+    }),
+  );
 
 const tableNames = ref('');
 // Watched by value: live reloads bring new objects with the same content and must not wipe what is being typed
@@ -89,6 +114,27 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
 
 <template>
   <div class="setup-grid">
+    <section class="card" aria-labelledby="event-title">
+      <h2 id="event-title"><CalendarDays aria-hidden="true" />{{ t('admin.setup.eventTitle') }}</h2>
+      <form class="fields" @submit.prevent="saveEvent">
+        <label class="field wide">
+          <span>{{ t('admin.events.name') }}</span>
+          <input v-model="eventForm.name" type="text" required maxlength="120" />
+        </label>
+        <label class="field">
+          <span>{{ t('admin.events.startsOn') }}</span>
+          <input v-model="eventForm.startsOn" type="date" />
+        </label>
+        <label class="field">
+          <span>{{ t('admin.events.endsOn') }}</span>
+          <input v-model="eventForm.endsOn" type="date" :min="eventForm.startsOn || undefined" :disabled="!eventForm.startsOn" />
+        </label>
+        <p class="muted small wide">{{ t('admin.setup.daysHint') }}</p>
+        <p v-if="strayCompetitions.length > 0" class="warning-text wide">{{ t('admin.setup.strayDays', { names: strayCompetitions.join(', ') }) }}</p>
+        <div class="field form-actions"><button type="submit" class="button">{{ t('common.save') }}</button></div>
+      </form>
+    </section>
+
     <section class="card" aria-labelledby="tables-title">
       <h2 id="tables-title"><Table2 aria-hidden="true" />{{ t('admin.setup.tables') }}</h2>
       <label class="field">

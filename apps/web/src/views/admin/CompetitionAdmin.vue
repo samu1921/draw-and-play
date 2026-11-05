@@ -12,6 +12,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import CompetitionSchedule from '../../components/admin/CompetitionSchedule.vue';
 import CompetitionStateView from '../../components/live/CompetitionStateView.vue';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionStateInfo, type EntryInfo, type PersonInfo } from '../../lib/api.js';
@@ -356,6 +357,8 @@ const removeCompetition = async () => {
           </div>
         </div>
       </section>
+
+      <CompetitionSchedule v-if="session.isAdmin" :competition="competition" @saved="load" />
 
       <section v-if="session.isAdmin" class="card" aria-labelledby="draw-title">
         <h3 id="draw-title"><Shuffle aria-hidden="true" />{{ t('admin.competition.draw') }}</h3>
