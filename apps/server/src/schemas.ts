@@ -26,6 +26,7 @@ export const displaySettingsSchema = z
     competitionIds: z.array(z.uuid()).max(64).nullable(),
     todayOnly: z.boolean(),
     liveDraw: z.boolean(),
+    rules: z.boolean(),
   })
   .partial();
 

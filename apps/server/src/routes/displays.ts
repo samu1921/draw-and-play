@@ -19,6 +19,7 @@ export const displayDefaults: DisplaySettings = {
   competitionIds: null,
   todayOnly: false,
   liveDraw: true,
+  rules: true,
 };
 
 const name = z.string().trim().min(1).max(60);
