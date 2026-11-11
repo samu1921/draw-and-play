@@ -4,7 +4,7 @@ import { drawGroups, rankForSeeding, type DrawEntry, type SeedPlacement } from '
 import { knockoutPlacements, resolveKnockout, type Placement } from './knockout.js';
 import type { Rng } from './rng.js';
 import type { RankingCriterion, Side } from './sport/types.js';
-import { computeStandings, type EntryId, type MatchResult, type StandingsMatch, type StandingsRow } from './standings.js';
+import { explainStandings, type EntryId, type MatchResult, type StandingsMatch, type StandingsRow, type TieBreak } from './standings.js';
 
 /** Result of the draw: entries per group position, or per knockout position (`null` = bye) */
 export type Draw =
@@ -91,6 +91,8 @@ export interface GroupState {
   group: number;
   entries: EntryId[];
   standings: StandingsRow[];
+  /** How entries level on wins were separated, for showing the calculation */
+  tieBreaks: TieBreak[];
   /** All matches of the group are finished, so the ranks are final */
   complete: boolean;
 }
@@ -168,12 +170,8 @@ export function resolveCompetition(
     const finished: StandingsMatch[] = own
       .filter((m) => m.status === 'finished')
       .map((m) => ({ a: m.sides[0]!, b: m.sides[1]!, result: m.result! }));
-    groupStates.push({
-      group,
-      entries,
-      standings: computeStandings(entries, finished, ranking),
-      complete: own.every((m) => m.status === 'finished'),
-    });
+    const { rows, tieBreaks } = explainStandings(entries, finished, ranking);
+    groupStates.push({ group, entries, standings: rows, tieBreaks, complete: own.every((m) => m.status === 'finished') });
   });
   const knockoutMatches = structure.matches.filter((m) => m.phase === 'knockout').map(resolveMatch);
   const matches = [...groupMatches, ...knockoutMatches];
@@ -205,20 +203,33 @@ function bracketPlacements(
   );
 }
 
+/** Places shared by the entries eliminated in the group stage, per group rank, e.g. all thirds share 9th–12th */
+export interface GroupRankPlaces {
+  rank: number;
+  /** Groups large enough to have this rank */
+  groups: number[];
+  place: number;
+  placeTo: number;
+}
+
 /** Entries eliminated in the group stage share places by group rank: all thirds, then all fourths, … */
-function groupStagePlacements(structure: CompetitionStructure, groups: readonly GroupState[]): Placement[] {
-  if (groups.length === 0) return [];
+export function groupStagePlaces(structure: CompetitionStructure): GroupRankPlaces[] {
+  if (structure.groupSizes.length === 0) return [];
   const qualifiers = structure.format.knockout?.qualifiersPerGroup ?? 0;
   let place = 1 + (structure.knockout?.seats.filter((s) => s !== null).length ?? 0);
-  const placements: Placement[] = [];
+  const result: GroupRankPlaces[] = [];
   for (let rank = qualifiers + 1; rank <= Math.max(...structure.groupSizes); rank++) {
-    const tier = groups.filter((g) => structure.groupSizes[g.group]! >= rank);
-    for (const g of tier) {
-      if (g.complete) placements.push({ entryId: g.standings[rank - 1]!.entryId, place, placeTo: place + tier.length - 1 });
-    }
-    place += tier.length;
+    const groups = structure.groupSizes.flatMap((size, g) => (size >= rank ? [g] : []));
+    result.push({ rank, groups, place, placeTo: place + groups.length - 1 });
+    place += groups.length;
   }
-  return placements;
+  return result;
+}
+
+function groupStagePlacements(structure: CompetitionStructure, groups: readonly GroupState[]): Placement[] {
+  return groupStagePlaces(structure).flatMap(({ rank, groups: tier, place, placeTo }) =>
+    tier.flatMap((g) => (groups[g]?.complete ? [{ entryId: groups[g].standings[rank - 1]!.entryId, place, placeTo }] : [])),
+  );
 }
 
 /** Every match that builds on the result of `matchId`, directly or indirectly (in structure order). */
