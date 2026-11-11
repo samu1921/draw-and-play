@@ -42,7 +42,7 @@ Wie die Simulation rechnet, steht mit Beispielrechnung in der [Architektur](arch
 
 - Ein Admin legt eine **Veranstaltung** an: Name, Adresse im Link (Slug), erster und letzter Tag, Anzahl Tische. Name und Tage lassen sich unter **Einstellungen → Veranstaltung** ändern. Bei mehreren Tagen wählt man den Tag jeder Konkurrenz beim Anlegen oder später unter **Zeitplan**; Prognose, Spielbetrieb und Druck arbeiten dann je Tag. Die Tische heißen „1“ … „n“ und lassen sich unter **Einstellungen** umbenennen oder erweitern (ein Name pro Zeile).
 - Die Sportart wird beim Anlegen gewählt und bestimmt Wertung, Ergebnisnotation und Tabellenreihenfolge. Bisher gibt es nur das Profil Tischtennis, deshalb ist die Auswahl noch ausgeblendet.
-- Unter **Einstellungen** liegen außerdem Ergebnis-PIN, Zugang zu den öffentlichen Ansichten, Impressum und Datenschutz, die Optionen für die öffentliche Anzeige und die Datensicherung (siehe die folgenden Abschnitte).
+- Unter **Einstellungen** liegen außerdem Ergebnis-PIN, Zugang zu den öffentlichen Ansichten, Impressum und Datenschutz, die Optionen für die öffentliche Anzeige, die Datensicherung und das Löschen der ganzen Veranstaltung (siehe die folgenden Abschnitte).
 - Eine Veranstaltung lässt sich mit allen Daten löschen.
 
 ## 3. Spieler und Meldungen

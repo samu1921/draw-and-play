@@ -42,7 +42,7 @@ How the simulation works, with an example calculation, is described in the [arch
 
 - An admin creates an **event** with name, address in the link (slug), first and last day and number of tables. Name and days can be changed under **Settings → Event**. With several days, each competition's day is chosen when it is created or later under **Schedule**; forecast, match desk and print then work per day. Tables are named "1" … "n" and can be renamed or extended under **Settings** (one name per line).
 - The sport is chosen when the event is created and decides scoring, result notation and standings order. Table tennis is the only profile so far, so the choice is not shown yet.
-- **Settings** also holds the result PIN, the access to the public views, the legal links, the public display options and the backup (see the following sections).
+- **Settings** also holds the result PIN, the access to the public views, the legal links, the public display options, the backup and deleting the whole event (see the following sections).
 - An event can be deleted with all its data.
 
 ## 3. Players and entries

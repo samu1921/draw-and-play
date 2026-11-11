@@ -262,6 +262,11 @@ export default {
       backupTitle: 'Backup',
       backupHint: 'Saves the whole event as a file: players, competitions, draws and results. Under Events it can be imported again, also on another installation.',
       export: 'Download export',
+      deleteTitle: 'Delete event',
+      deleteHint: 'Deletes the event for good, with all players, competitions, draws, results and displays. For example after the dress rehearsal. Best download the export first.',
+      deleteEvent: 'Delete event …',
+      deletePrompt: 'Really delete everything? To confirm, type the name of the event: {name}',
+      deleteMismatch: 'The name does not match, nothing was deleted.',
     },
     persons: {
       add: 'Add player',
