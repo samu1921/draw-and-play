@@ -40,7 +40,9 @@ export function computeStandings(
   criteria: readonly RankingCriterion[],
 ): StandingsRow[] {
   const stats = tally(entries, matches);
-  const ordered = rankIds([...entries], matches, criteria, stats).flat();
+  // The head-to-head mini table uses all criteria of the sport except head-to-head itself.
+  const miniTable = criteria.filter((c) => c !== 'headToHead');
+  const ordered = rankIds([...entries], matches, criteria, stats, miniTable).flat();
   return ordered.map((id, i) => ({ ...stats.get(id)!, rank: i + 1 }));
 }
 
@@ -83,6 +85,7 @@ function rankIds(
   matches: readonly StandingsMatch[],
   criteria: readonly RankingCriterion[],
   stats: Map<EntryId, Stats>,
+  miniTable: readonly RankingCriterion[],
 ): EntryId[][] {
   const [criterion, ...rest] = criteria;
   if (ids.length <= 1 || criterion === undefined) return [ids];
@@ -91,10 +94,9 @@ function rankIds(
     const members = new Set(ids);
     const among = matches.filter((m) => members.has(m.a) && members.has(m.b));
     // If the mini table covers every match, head-to-head adds nothing new.
-    if (among.length === matches.length) return rankIds(ids, matches, rest, stats);
-    const subCriteria = criteria.filter((c) => c !== 'headToHead');
-    const classes = rankIds(ids, among, subCriteria, tally(ids, among));
-    return classes.flatMap((cls) => rankIds(cls, matches, rest, stats));
+    if (among.length === matches.length) return rankIds(ids, matches, rest, stats, miniTable);
+    const classes = rankIds(ids, among, miniTable, tally(ids, among), miniTable);
+    return classes.flatMap((cls) => rankIds(cls, matches, rest, stats, miniTable));
   }
 
   const value = (id: EntryId) => criterionValue(criterion, stats.get(id)!);
@@ -105,7 +107,7 @@ function rankIds(
   }
   return [...groups.entries()]
     .sort(([a], [b]) => b - a)
-    .flatMap(([, group]) => rankIds(group, matches, rest, stats));
+    .flatMap(([, group]) => rankIds(group, matches, rest, stats, miniTable));
 }
 
 function criterionValue(criterion: Exclude<RankingCriterion, 'headToHead'>, s: Stats): number {
