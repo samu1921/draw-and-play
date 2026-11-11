@@ -108,7 +108,9 @@ export async function loadCompetitionState(ex: Executor, competitionId: string):
     );
     // Entries that withdrew after the draw lose their remaining matches by walkover.
     const withdrawn = new Set(entryList.filter((e) => e.status === 'withdrawn').map((e) => e.id));
-    state = resolveCompetition(structure, competition.draw, results, sport.ranking, { withdrawn });
+    // Lots in finished groups are drawn from the draw's seed: random, but the same on every load and reproducible.
+    const lotSeed = competition.drawSeed ?? competition.id;
+    state = resolveCompetition(structure, competition.draw, results, sport.ranking, { withdrawn, lotSeed });
   }
   return { competition, sport, entries: entryList, matchRows, structure, state };
 }
