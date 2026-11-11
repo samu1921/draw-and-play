@@ -194,7 +194,8 @@ export function competitionView(loaded: LoadedCompetition, settings: EventSettin
       members: e.members.map((m) => personView(m, settings, audience)),
     })),
     groups:
-      state?.groups.map((g) => ({ group: g.group, entries: g.entries, standings: g.standings, complete: g.complete })) ?? [],
+      state?.groups.map((g) => ({ group: g.group, entries: g.entries, standings: g.standings, tieBreaks: g.tieBreaks, complete: g.complete })) ??
+      [],
     matches:
       state?.matches.map((m) => {
         const row = rowByKey.get(m.id);

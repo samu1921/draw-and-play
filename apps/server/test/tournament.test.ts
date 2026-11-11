@@ -27,7 +27,7 @@ describe.skipIf(!databaseAvailable)('tournament flow via the API', () => {
       ? await app.inject({ method: 'GET', url: `/api/competitions/${competitionId}/state` })
       : await api('GET', `/api/competitions/${competitionId}/state`);
     expect(res.statusCode).toBe(200);
-    return res.json() as { matches: MatchView[]; groups: { complete: boolean; standings: { entryId: string }[] }[]; placements: { entryId: string; place: number }[]; finished: boolean; entries: { id: string; members: Record<string, unknown>[] }[] };
+    return res.json() as { matches: MatchView[]; groups: { complete: boolean; standings: { entryId: string }[]; tieBreaks: { entries: string[] }[] }[]; placements: { entryId: string; place: number }[]; finished: boolean; entries: { id: string; members: Record<string, unknown>[] }[] };
   };
   const finish = (m: MatchView, notation = '5 5 5') => api('POST', `/api/matches/${m.id}/result`, { notation, version: m.version });
 
@@ -172,6 +172,14 @@ describe.skipIf(!databaseAvailable)('tournament flow via the API', () => {
     }
     const s = await state();
     expect(s.groups.every((g) => g.complete)).toBe(true);
+    // Every tie in a table is explained, and the explained order is the order of the table
+    for (const g of s.groups) {
+      const order = g.standings.map((r) => r.entryId);
+      for (const tie of g.tieBreaks) {
+        const start = order.indexOf(tie.entries[0]!);
+        expect(order.slice(start, start + tie.entries.length)).toEqual(tie.entries);
+      }
+    }
     const semis = s.matches.filter((m) => m.phase === 'knockout' && m.places?.[0] === 1 && m.places[1] === 4);
     expect(semis).toHaveLength(2);
     expect(semis.every((m) => m.status === 'ready' && m.sides.every((side) => side !== null))).toBe(true);
