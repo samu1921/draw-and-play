@@ -2,6 +2,24 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.2.0] – 2026-11-11
+
+### Features
+
+- **domain:** Explain step by step how ties in a group table were broken
+- **server:** Send the tie-breaks of each group with the competition state
+- **web:** Explain the format and every tie-break on the public competition page
+- **web:** Delete an event from its settings
+- **server:** A display profile setting for the format and tie slides
+- **web:** Explain the format and every tie on the projector
+- **server:** Draw the lots of finished groups from the seed of the draw
+- **web:** Explain the WO ranking, lots and withdrawals, and warn before a walkover
+
+### Bug fixes
+
+- **domain:** Decide head-to-head by the duel's winner, not by its points alone
+- **domain:** Rank groups and withdrawals as in the DTTB Wettspielordnung D 7.5 and D 7.9
+
 ## [0.1.1] – 2026-11-05
 
 ### Bug fixes
