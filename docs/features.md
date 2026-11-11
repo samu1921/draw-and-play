@@ -64,7 +64,7 @@ A competition has a name, a type (singles or doubles), a colour, scoring (games 
 | Groups + knockout | number of groups, top *k* of each group advance |
 | Knockout | bracket size is the next power of two, byes go to the best seeds |
 
-Placement matches in the knockout: **none**, **3rd place** or **all places**. Group standings follow the sport profile; in table tennis: match points, game difference, head-to-head, point difference, and finally the order of the draw. Head-to-head looks only at the matches among the entries still level, again by match points, game and point difference. The crossover from the groups into the knockout keeps entries of the same group apart for as long as possible.
+Placement matches in the knockout: **none**, **3rd place** or **all places**. Group standings follow the sport profile; in table tennis the German federation's rules (DTTB Wettspielordnung D 7.5): more wins, then fewer losses, then game and point difference over all matches, then the matches among those still level (match, game and point difference), and finally lots. Lots are only drawn once the group is finished, automatically with the random key of the draw; until then the order of the draw applies provisionally. The crossover from the groups into the knockout keeps entries of the same group apart for as long as possible.
 
 The format and type can be changed until the draw. Scoring, match duration, start time, dependency and tables can be changed at any time (day, start time, dependency, minutes per match and tables on the competition's page under **Schedule**); they apply to matches that have not been called yet, and the forecast follows immediately.
 
@@ -79,7 +79,7 @@ The format and type can be changed until the draw. Scoring, match duration, star
 
 ### Withdrawals
 
-If a player withdraws after the draw, their remaining matches become walkovers for the opponents, including knockout matches that only arise later. Results already played stay. The dialog shows how many matches are affected. A withdrawal can be taken back as long as no match that builds on one of its walkovers has started.
+If a player withdraws after the draw, their remaining matches become walkovers for the opponents, including knockout matches that only arise later. As in DTTB Wettspielordnung D 7.9, all their group matches are annulled, including those already played, and they are last in the group. The same applies when a match is entered as a walkover: whoever does not turn up is out of the competition. The dialog shows how many matches are affected. A withdrawal can be taken back as long as no match that builds on one of its walkovers has started.
 
 ## 6. Match desk
 

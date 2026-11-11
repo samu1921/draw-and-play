@@ -158,6 +158,6 @@ One database holds any number of events. Migrations live in `apps/server/drizzle
 | Server-Sent Events instead of WebSockets | Updates only flow from server to client; commands are ordinary HTTP requests. SSE reconnects by itself and passes proxies easily. |
 | Outbox for results instead of full offline operation | A dead spot must not lose a result, but calling matches needs the overall state, so the desk stays online. |
 | Generic CSV import instead of a federation format | Player lists come from many sources (club software, Excel); a header-based import covers them all. Federation XML stays an idea for official tournaments. |
-| Withdrawal turns remaining matches into walkovers | Keeps standings and brackets valid without rebuilding groups; results already played count. |
+| Withdrawal turns remaining matches into walkovers and annuls the group matches | Keeps standings and brackets valid without rebuilding groups; the group table follows DTTB WO D 7.9 (all matches of the withdrawn entry annulled, ranked last). |
 | Viewer code in plain text, display links carry the code | It only grants reading; the notice must be printable again at any time, and projector PCs need no input. |
 | AGPL-3.0-or-later | Anyone may use and host draw-and-play; whoever offers a modified version over a network must publish its source. |

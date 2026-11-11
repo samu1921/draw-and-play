@@ -22,7 +22,7 @@ Bereit für eine erste Vereinsmeisterschaft. Alles, was das [Referenzszenario](r
 | Spieler | Vorname allein reicht, CSV-Import mit Vorschau, Dublettenerkennung und Meldungen (F3, F4) |
 | Funklöcher | Postausgang für Ergebnisse am Handy, idempotente Ergebnis-Anfragen, App-Hülle offline (N5) |
 | Drucken und Export | Schiedsrichterzettel, Zeitplan, Gruppenblätter, KO-Bäume, Ergebnisse, Urkunden, CSV (F33, F34) |
-| Rückzug | Restspiele werden kampflos gewertet, rücknehmbar (F27) |
+| Rückzug | Restspiele werden kampflos gewertet, Gruppenspiele gestrichen (WO D 7.9), rücknehmbar (F27) |
 | Zugang | Zugangscode für die öffentlichen Ansichten mit druckbarem QR-Aushang (N3) |
 | Go-live-Härtung | Sicherheits-Header, Impressum/Datenschutz, Protokoll-Ansicht, Deployment-Anleitung mit Checkliste (N2–N4) |
 | Benutzer | Benutzerverwaltung, Rollen Admin und Meldestelle, eigenes Passwort |

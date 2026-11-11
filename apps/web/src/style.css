@@ -1937,6 +1937,11 @@ textarea {
   color: var(--accent);
 }
 
+.d-withdrawn {
+  font-weight: 400;
+  color: var(--fg-secondary);
+}
+
 .d-tie-notes {
   margin: 8px 0 0;
   padding: 0;

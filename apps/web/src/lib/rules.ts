@@ -6,6 +6,7 @@ import {
   type CompetitionFormat,
   type CompetitionStructure,
   type MatchRules,
+  type Ranking,
   type RankingCriterion,
   type ScorePair,
   type TieBreak,
@@ -26,6 +27,7 @@ export function signed(n: number): string {
 export function criterionValueText(criterion: RankingCriterion, [own, other]: ScorePair): string {
   switch (criterion) {
     case 'matchPoints':
+    case 'record':
       return `${own}:${other}`;
     case 'gameRatio': {
       const ratio = other === 0 ? (own === 0 ? '0' : '∞') : (own / other).toFixed(2);
@@ -47,6 +49,8 @@ export interface TieBreakContext {
   rankOf: (entryId: string) => number;
   /** Finished matches among these entries, e.g. "Anna – Ben 3:1" */
   duels: (entryIds: string[]) => string[];
+  /** The group is still running: a draw-order step is only provisional, lots decide at the end */
+  provisional?: boolean;
 }
 
 export interface TieBreakText {
@@ -84,7 +88,9 @@ function stepText(t: Translate, step: TieBreakStep, ctx: TieBreakContext): strin
       return duels.length > 0 ? `${intro} ${duels.join(', ')}` : `${intro} ${t('rules.tie.noDuels')}`;
     }
     case 'drawOrder':
-      return `${t('rules.tie.drawOrder')} ${order(step.entries.map((id) => [id]))}`;
+      return `${t(ctx.provisional ? 'rules.tie.drawOrderProvisional' : 'rules.tie.drawOrder')} ${order(step.entries.map((id) => [id]))}`;
+    case 'lot':
+      return `${t('rules.tie.lot')} ${order(step.entries.map((id) => [id]))}`;
   }
 }
 
@@ -101,7 +107,7 @@ export function groupTieTexts(t: Translate, state: CompetitionStateInfo, group: 
       .filter((m) => m.sides.every((side) => side !== null && members.has(side)))
       .map((m) => `${name(m.sides[0])} – ${name(m.sides[1])} ${score(m)}`);
   };
-  return g.tieBreaks.map((tie) => tieBreakText(t, tie, { name, rankOf: (id) => rank.get(id) ?? 0, duels }));
+  return g.tieBreaks.map((tie) => tieBreakText(t, tie, { name, rankOf: (id) => rank.get(id) ?? 0, duels, provisional: !g.complete }));
 }
 
 /** One line per tie for the projector's group tables: "Place 2–3: same number of wins, decided by head-to-head" */
@@ -109,7 +115,7 @@ export function tieSummary(t: Translate, tie: TieBreak, rankOf: (entryId: string
   const ranks = tie.entries.map(rankOf);
   const deciding = new Set<string>();
   for (const step of tie.steps) {
-    if (step.type === 'drawOrder') deciding.add(t('rules.criterion.drawOrder'));
+    if (step.type === 'drawOrder' || step.type === 'lot') deciding.add(t(`rules.criterion.${step.type}`));
     else if (step.type === 'criterion' && step.classes.length > 1) {
       deciding.add(t(`rules.criterion.${step.among ? 'headToHead' : step.criterion}`));
     }
@@ -134,7 +140,9 @@ export interface RulesInput {
   format: CompetitionFormat;
   matchRules: MatchRules;
   /** The sport's standings order */
-  ranking: readonly RankingCriterion[];
+  ranking: Ranking;
+  /** The rulebook the ranking follows, e.g. "DTTB Wettspielordnung D 7.5" */
+  reference?: string;
   entryCount: number;
   drawn: boolean;
   /** Short wording for the projector: criteria without long explanations, no notes */
@@ -144,6 +152,7 @@ export interface RulesInput {
 /** The format of a competition in words: matches, group order with every tie-break, who advances, places. */
 export function competitionRules(t: Translate, input: RulesInput): RulesSection[] {
   const { format, matchRules, ranking } = input;
+  const criteria: readonly RankingCriterion[] = ranking.criteria;
   let structure: CompetitionStructure | null = null;
   try {
     structure = buildStructure(format, input.entryCount);
@@ -165,9 +174,9 @@ export function competitionRules(t: Translate, input: RulesInput): RulesSection[
   sections.push({ title: t('rules.matches'), paragraphs: [games.join(' ')] });
 
   if (format.groups) {
-    const miniTable = ranking.filter((c) => c !== 'headToHead').map((c) => t(`rules.criterion.${c}`));
+    const miniTable = (ranking.headToHead ?? criteria.filter((c) => c !== 'headToHead')).map((c) => t(`rules.criterion.${c}`));
     const hints = input.compact ? 'rules.short' : 'rules.hint';
-    const ordered = [...ranking, 'drawOrder' as const].map((c) => {
+    const ordered = [...criteria, ranking.lastResort ?? ('drawOrder' as const)].map((c) => {
       const hint = c === 'headToHead' ? t(`${hints}.headToHead`, { criteria: miniTable.join(', ') }) : t(`${hints}.${c}`);
       return `${t(`rules.criterion.${c}`)}: ${hint}`;
     });
@@ -179,7 +188,9 @@ export function competitionRules(t: Translate, input: RulesInput): RulesSection[
       ],
       ordered,
     });
-    if (!input.compact) sections.push({ title: t('rules.notes'), paragraphs: [t('rules.walkover'), t('rules.provisional')] });
+    const notes = input.compact ? [t('rules.short.withdrawal')] : [t('rules.withdrawal'), ...(ranking.lastResort === 'lot' ? [t('rules.lotNote')] : []), t('rules.provisional')];
+    if (input.reference) notes.push(input.reference);
+    sections.push({ title: t('rules.notes'), paragraphs: notes });
   }
 
   const ko = format.knockout;

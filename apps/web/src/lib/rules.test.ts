@@ -35,12 +35,13 @@ describe('tieBreakText', () => {
       duels: () => ['B – C 3:1'],
     });
     expect(text).toEqual({
-      title: 'Platz 1–3: gleich viele Siege',
+      title: 'Platz 1–3: gleiche Bilanz',
       level: 'A 1:1 · B 1:1 · C 1:1',
       steps: [
         'Satzdifferenz: A +2 (5:3) · B −1 (3:4) · C −1 (4:5) → A › B = C',
+        'Balldifferenz: B −10 (37:47) · C −10 (49:59) → keine Entscheidung',
         'Direkter Vergleich zwischen B, C, ab hier zählen nur ihre Spiele untereinander: B – C 3:1',
-        'Siege (nur Spiele untereinander): B 1:0 · C 0:1 → B › C',
+        'Spieldifferenz (nur Spiele untereinander): B +1 (1:0) · C −1 (0:1) → B › C',
       ],
     });
   });
@@ -62,14 +63,16 @@ describe('competitionRules', () => {
     expect(byTitle['Spiele']!.paragraphs[0]).toBe(
       'Ein Spiel gewinnt, wer zuerst 3 Sätze gewinnt (Best of 5). Ein Satz geht bis 11 Punkte, mit mindestens 2 Punkten Vorsprung.',
     );
+    // DTTB WO D 7.5
     expect(byTitle['Gruppenphase und Tabelle']!.ordered!.map((c) => c.split(':')[0])).toEqual([
-      'Siege',
+      'Siege und Niederlagen',
       'Satzdifferenz',
-      'Direkter Vergleich',
       'Balldifferenz',
-      'Auslosung',
+      'Direkter Vergleich',
+      'Los',
     ]);
-    expect(byTitle['Gruppenphase und Tabelle']!.ordered![2]).toContain('Siege, Satzdifferenz, Balldifferenz');
+    expect(byTitle['Gruppenphase und Tabelle']!.ordered![3]).toContain('Spieldifferenz, Satzdifferenz, Balldifferenz');
+    expect(byTitle['Gut zu wissen']!.paragraphs[0]).toMatch(/Gruppenletzter/);
     expect(byTitle['Weiterkommen']!.items).toHaveLength(4);
     expect(byTitle['Weiterkommen']!.items!.join(' ')).toMatch(/A1 – [BCD]2/);
     expect(byTitle['Platzierungen']!.items).toEqual([

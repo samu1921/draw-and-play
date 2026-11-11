@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { RankingCriterion } from '@draw-and-play/domain';
+import type { SportProfile } from '@draw-and-play/domain';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { CompetitionStateInfo } from '../../lib/api.js';
 import type { Translate } from '../../lib/describe.js';
 import { competitionRules } from '../../lib/rules.js';
 
-const props = defineProps<{ state: CompetitionStateInfo; ranking: readonly RankingCriterion[] }>();
-const { t } = useI18n();
+const props = defineProps<{ state: CompetitionStateInfo; sport: SportProfile }>();
+const { t, te } = useI18n();
 
 const sections = computed(() => {
   const { competition, groups, entries } = props.state;
@@ -15,7 +15,8 @@ const sections = computed(() => {
   return competitionRules(t as Translate, {
     format: competition.format,
     matchRules: competition.matchRules,
-    ranking: props.ranking,
+    ranking: props.sport.ranking,
+    ...(te(`rules.reference.${props.sport.id}`) && { reference: t(`rules.reference.${props.sport.id}`) }),
     entryCount: drawnCount > 0 ? drawnCount : entries.length,
     drawn: competition.drawn,
     compact: true,
