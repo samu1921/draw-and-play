@@ -46,7 +46,10 @@ const placementMatches = computed(() => props.state.matches.filter((m) => m.phas
             <tbody>
               <tr v-for="row in g.standings" :key="row.entryId">
                 <td class="num">{{ row.rank }}</td>
-                <th scope="row">{{ name(row.entryId) }}</th>
+                <th scope="row">
+                  {{ name(row.entryId) }}
+                  <span v-if="row.withdrawn" class="badge quiet">{{ t('public.withdrawn') }}</span>
+                </th>
                 <td class="num">{{ row.played }}</td>
                 <td class="num">{{ row.won }}:{{ row.lost }}</td>
                 <td class="num">{{ row.gamesWon }}:{{ row.gamesLost }}</td>

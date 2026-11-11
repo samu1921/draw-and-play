@@ -158,6 +158,6 @@ Eine Datenbank enthält beliebig viele Veranstaltungen. Die Migrationen liegen i
 | Server-Sent Events statt WebSockets | Updates fließen nur vom Server zum Client; Kommandos sind normale HTTP-Anfragen. SSE verbindet sich selbst neu und kommt problemlos durch Proxys. |
 | Postausgang für Ergebnisse statt vollständigem Offline-Betrieb | Ein Funkloch darf kein Ergebnis kosten, aber der Aufruf braucht den Gesamtstand, also bleibt die Turnierleitung online. |
 | Generischer CSV-Import statt Verbandsformat | Spielerlisten kommen aus vielen Quellen (Vereinssoftware, Excel); ein Import über Kopfzeilen deckt alle ab. Verbands-XML bleibt eine Idee für offizielle Turniere. |
-| Rückzug wertet Restspiele kampflos | Tabellen und KO-Baum bleiben gültig, ohne Gruppen umzubauen; bereits gespielte Ergebnisse zählen. |
+| Rückzug wertet Restspiele kampflos und streicht die Gruppenspiele | Tabellen und KO-Baum bleiben gültig, ohne Gruppen umzubauen; die Gruppentabelle folgt der WO D 7.9 (alle Spiele des Zurückgezogenen gestrichen, er wird Letzter). |
 | Zugangscode im Klartext, Anzeige-Links tragen den Code | Er erlaubt nur Lesen; der Aushang muss jederzeit nachdruckbar sein, und Beamer-PCs sollen ohne Eingabe auskommen. |
 | AGPL-3.0-or-later | Jeder darf draw-and-play nutzen und betreiben; wer eine veränderte Version über ein Netzwerk anbietet, muss deren Quelltext veröffentlichen. |

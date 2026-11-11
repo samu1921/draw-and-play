@@ -63,6 +63,11 @@ async function withdraw(side: 0 | 1) {
 
 async function save(body: { notation: string } | { walkoverWinner: 0 | 1 }) {
   if (!props.match) return;
+  // DTTB WO D 7.9: whoever does not turn up is out of the competition, and their group matches are annulled
+  if ('walkoverWinner' in body) {
+    const loser = names.value[1 - body.walkoverWinner];
+    if (!confirm(t('result.walkoverConfirm', { name: loser }))) return;
+  }
   busy.value = true;
   error.value = '';
   try {

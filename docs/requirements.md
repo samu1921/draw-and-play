@@ -114,7 +114,7 @@ Principle: **what has not started yet can be changed, what has been played is ke
 
 | # | Requirement | Status | Where |
 |---|---|---|---|
-| F27 | A player withdraws: remaining matches become walkovers, also in later knockout rounds; a withdrawal can be taken back while nothing builds on it. | ✅ | [Withdrawals](features.md#5-draw) |
+| F27 | A player withdraws or does not turn up: remaining matches become walkovers, also in later knockout rounds, their group matches are annulled (DTTB WO D 7.9); a withdrawal can be taken back while nothing builds on it. | ✅ | [Withdrawals](features.md#5-draw) |
 | F28 | Change the scoring or match duration for matches not called yet. | ✅ | [Competitions](features.md#4-competitions-and-formats) |
 | F29 | Move a competition to other tables or a later start. | ✅ | [Competitions](features.md#4-competitions-and-formats) |
 | F30 | Change knockout size or top *k* while the knockout has not started; add or remove placement matches; rebuild groups without results; late entries into groups without results. Each with a preview of the new forecast. | 🔜 | [Roadmap](roadmap.md#next-format-changes-during-the-event) |

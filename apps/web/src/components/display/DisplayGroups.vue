@@ -59,7 +59,9 @@ const notes = (g: CompetitionStateInfo['groups'][number]) => {
         <tbody v-else>
           <tr v-for="s in g.standings" :key="s.entryId">
             <td class="num">{{ s.rank }}</td>
-            <th class="name">{{ name(s.entryId) }}</th>
+            <th class="name">
+              {{ name(s.entryId) }}<span v-if="s.withdrawn" class="d-withdrawn"> · {{ t('public.withdrawn') }}</span>
+            </th>
             <td class="num">{{ s.played }}</td>
             <td class="num">{{ s.won }}:{{ s.lost }}</td>
             <td class="num">{{ s.gamesWon }}:{{ s.gamesLost }}</td>

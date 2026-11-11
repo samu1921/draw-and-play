@@ -114,7 +114,7 @@ Grundsatz: **Was noch nicht begonnen hat, ist änderbar. Was gespielt ist, bleib
 
 | # | Anforderung | Stand | Wo |
 |---|---|---|---|
-| F27 | Ein Spieler zieht zurück: Restspiele werden kampflos gewertet, auch spätere KO-Runden; der Rückzug lässt sich zurücknehmen, solange nichts darauf aufbaut. | ✅ | [Rückzug](features.de.md#5-auslosung) |
+| F27 | Ein Spieler zieht zurück oder tritt nicht an: Restspiele werden kampflos gewertet, auch spätere KO-Runden, seine Gruppenspiele werden gestrichen (WO D 7.9); der Rückzug lässt sich zurücknehmen, solange nichts darauf aufbaut. | ✅ | [Rückzug](features.de.md#5-auslosung) |
 | F28 | Wertung oder Spieldauer für noch nicht aufgerufene Spiele ändern. | ✅ | [Konkurrenzen](features.de.md#4-konkurrenzen-und-spielsysteme) |
 | F29 | Konkurrenz auf andere Tische oder eine spätere Startzeit legen. | ✅ | [Konkurrenzen](features.de.md#4-konkurrenzen-und-spielsysteme) |
 | F30 | KO-Größe oder Top *k* ändern, solange das KO nicht begonnen hat; Platzierungsspiele ergänzen oder streichen; Gruppen ohne Ergebnisse umbauen; Nachmeldung in Gruppen ohne Ergebnisse. Jeweils mit Vorschau der neuen Prognose. | 🔜 | [Roadmap](roadmap.de.md#als-nächstes-modusänderung-im-laufenden-turnier) |

@@ -64,7 +64,7 @@ Eine Konkurrenz hat einen Namen, eine Art (Einzel oder Doppel), eine Farbe, eine
 | Gruppen + KO | Anzahl Gruppen, Top *k* jeder Gruppe kommen weiter |
 | KO | Feldgröße ist die nächste Zweierpotenz, Freilose gehen an die Besten der Setzliste |
 
-Platzierungsspiele im KO: **keine**, **Spiel um Platz 3** oder **alle Plätze**. Die Gruppentabelle folgt dem Sport-Profil, im Tischtennis: Spielpunkte, Satzdifferenz, direkter Vergleich, Balldifferenz, zuletzt die Reihenfolge der Auslosung. Der direkte Vergleich wertet nur die Spiele der noch Gleichen untereinander, wieder nach Spielpunkten, Satz- und Balldifferenz. Der Übergang von den Gruppen ins KO hält Spieler derselben Gruppe so lange wie möglich auseinander.
+Platzierungsspiele im KO: **keine**, **Spiel um Platz 3** oder **alle Plätze**. Die Gruppentabelle folgt dem Sport-Profil, im Tischtennis der Wettspielordnung des DTTB (WO D 7.5): mehr Pluspunkte, dann weniger Minuspunkte, dann Satz- und Balldifferenz aus allen Spielen, dann die Spiele der noch Gleichen untereinander (Spiel-, Satz- und Balldifferenz), zuletzt das Los. Das Los wird erst gezogen, wenn die Gruppe beendet ist, automatisch mit dem Zufallsschlüssel der Auslosung; bis dahin gilt vorläufig die Reihenfolge der Auslosung. Der Übergang von den Gruppen ins KO hält Spieler derselben Gruppe so lange wie möglich auseinander.
 
 Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startzeit, Abhängigkeit und Tische lassen sich jederzeit ändern (Tag, Startzeit, Abhängigkeit, Minuten pro Spiel und Tische auf der Seite der Konkurrenz unter **Zeitplan**); sie gelten für noch nicht aufgerufene Spiele, und die Prognose zieht sofort nach.
 
@@ -79,7 +79,7 @@ Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startz
 
 ### Rückzug
 
-Zieht ein Spieler nach der Auslosung zurück, werden seine restlichen Spiele kampflos für die Gegner gewertet, auch KO-Spiele, die erst später entstehen. Bereits gespielte Ergebnisse bleiben. Der Dialog zeigt, wie viele Spiele betroffen sind. Ein Rückzug lässt sich zurücknehmen, solange kein Spiel begonnen hat, das auf einer der kampflosen Wertungen aufbaut.
+Zieht ein Spieler nach der Auslosung zurück, werden seine restlichen Spiele kampflos für die Gegner gewertet, auch KO-Spiele, die erst später entstehen. Wie in der WO D 7.9 werden in der Gruppe alle seine Spiele gestrichen, auch die schon gespielten, und er wird Gruppenletzter. Dasselbe gilt, wenn ein Spiel kampflos eingetragen wird: Wer nicht antritt, scheidet aus der Konkurrenz aus. Der Dialog zeigt, wie viele Spiele betroffen sind. Ein Rückzug lässt sich zurücknehmen, solange kein Spiel begonnen hat, das auf einer der kampflosen Wertungen aufbaut.
 
 ## 6. Spielbetrieb
 

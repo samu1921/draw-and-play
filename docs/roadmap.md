@@ -22,7 +22,7 @@ Ready for a first club championship. Everything the [reference scenario](require
 | Players | first name alone is enough, CSV import with preview, duplicate detection and entries (F3, F4) |
 | Dead spots | result outbox on phones, idempotent result requests, offline app shell (N5) |
 | Print and export | score sheets, schedule, group sheets, brackets, results, certificates, CSV (F33, F34) |
-| Withdrawals | remaining matches become walkovers, can be taken back (F27) |
+| Withdrawals | remaining matches become walkovers, group matches annulled (DTTB WO D 7.9), can be taken back (F27) |
 | Access | viewer code for the public views with a printable QR notice (N3) |
 | Go-live hardening | security headers, legal links, audit log view, deployment guide with checklist (N2–N4) |
 | Users | user management, roles admin and registration desk, own password |

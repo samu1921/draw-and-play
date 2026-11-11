@@ -401,7 +401,7 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
           <DisplayRules
             v-else-if="current.kind === 'rules' && stateOf(current.competitionId)"
             :state="stateOf(current.competitionId)!"
-            :ranking="live.sport.value.ranking"
+            :sport="live.sport.value"
           />
 
           <DisplayBracket

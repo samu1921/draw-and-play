@@ -7,7 +7,7 @@ import type { Translate } from '../../lib/describe.js';
 import { competitionRules } from '../../lib/rules.js';
 
 const props = defineProps<{ state: CompetitionStateInfo }>();
-const { t } = useI18n();
+const { t, te } = useI18n();
 const live = injectLiveEvent();
 
 const sections = computed(() => {
@@ -18,6 +18,7 @@ const sections = computed(() => {
     format: competition.format,
     matchRules: competition.matchRules,
     ranking: live.sport.value.ranking,
+    ...(te(`rules.reference.${live.sport.value.id}`) && { reference: t(`rules.reference.${live.sport.value.id}`) }),
     entryCount: drawnCount > 0 ? drawnCount : entries.length,
     drawn: competition.drawn,
   });
