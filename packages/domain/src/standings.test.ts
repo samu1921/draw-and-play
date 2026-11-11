@@ -87,6 +87,23 @@ describe('computeStandings', () => {
     expect(order(rows)).toEqual(['A', 'B', 'C', 'D']);
   });
 
+  it('head-to-head: the winner of the duel is ahead even with fewer points in it', () => {
+    // A and B: 2 wins each, games 6:4 and 7:5 (+2 each). A won the duel 3:1, but with fewer points in it (33:38).
+    const rows = computeStandings(
+      ['B', 'A', 'C', 'D'],
+      [
+        m('A', 'B', '9 9 -0 9'),
+        m('A', 'C', '1 1 1'),
+        m('D', 'A', '1 1 1'),
+        m('B', 'C', '1 1 1'),
+        m('B', 'D', '1 1 -1 -1 1'),
+        m('C', 'D', '1 1 1'),
+      ],
+      tt,
+    );
+    expect(order(rows).slice(0, 2)).toEqual(['A', 'B']);
+  });
+
   it('three-way tie with cyclic duels: points among the tied entries decide', () => {
     const rows = computeStandings(
       ['A', 'B', 'C', 'D'],
