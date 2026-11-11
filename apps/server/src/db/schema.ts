@@ -211,6 +211,8 @@ export interface DisplaySettings {
   todayOnly: boolean;
   /** Jump to a competition when it is drawn and reveal the draw step by step */
   liveDraw: boolean;
+  /** Slides with the format of each competition and how ties in finished groups were broken */
+  rules: boolean;
 }
 
 /** A named display configuration. Every admin can build their own; each screen opens one profile by its link. */

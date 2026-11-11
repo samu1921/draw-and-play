@@ -29,7 +29,7 @@ describe.skipIf(!databaseAvailable)('display profiles via the API', () => {
     expect(created.json().display).toMatchObject({
       name: 'Halle',
       createdBy: 'admin',
-      settings: { slideSeconds: 30, tables: false, next: true, entries: true, competitionIds: null, todayOnly: false, liveDraw: true },
+      settings: { slideSeconds: 30, tables: false, next: true, entries: true, competitionIds: null, todayOnly: false, liveDraw: true, rules: true },
     });
     expect(messages.at(-1)).toEqual({ eventId, type: 'display', id: profileId });
 
