@@ -64,7 +64,7 @@ A competition has a name, a type (singles or doubles), a colour, scoring (games 
 | Groups + knockout | number of groups, top *k* of each group advance |
 | Knockout | bracket size is the next power of two, byes go to the best seeds |
 
-Placement matches in the knockout: **none**, **3rd place** or **all places**. Group standings follow the sport profile; in table tennis: match points, game difference, head-to-head, point difference. The crossover from the groups into the knockout keeps entries of the same group apart for as long as possible.
+Placement matches in the knockout: **none**, **3rd place** or **all places**. Group standings follow the sport profile; in table tennis: match points, game difference, head-to-head, point difference, and finally the order of the draw. Head-to-head looks only at the matches among the entries still level, again by match points, game and point difference. The crossover from the groups into the knockout keeps entries of the same group apart for as long as possible.
 
 The format and type can be changed until the draw. Scoring, match duration, start time, dependency and tables can be changed at any time (day, start time, dependency, minutes per match and tables on the competition's page under **Schedule**); they apply to matches that have not been called yet, and the forecast follows immediately.
 
@@ -111,6 +111,7 @@ Results use the short notation known from table tennis: per game the loser's poi
 ## 9. Public views
 
 - `/e/<slug>` shows the tables with their current matches, the forecast per competition and day, and the latest results. Each competition has its own page with entries, groups with standings, the bracket and placements. Everything updates live.
+- **Transparent ranking:** every competition page explains under **Format and ranking** the format, the match rules, all standings criteria in order, who advances to the knockout, the pairings of the first knockout round (e.g. A1 – B2) and which places are played out or shared. Below each group table, **How the order comes about** walks through every tie step by step with the numbers: which criterion was applied, with which values, and who is ahead afterwards.
 - **Access code:** new events start with their public views behind a six-character code. A notice with a QR code is printed and hung up at the venue; whoever scans it is in and stays signed in until the day after the event. The code can be renewed (signs everybody out) or switched off.
 - **Privacy:** public pages show name and club only. Ratings only if enabled, short names ("Max M.") on request. Search engines are told not to index the pages.
 - **Legal links:** legal notice and privacy policy in the footer of every public page, plus an optional note (for example "names and results of this event are published here"). Each event can set its own links; otherwise the installation's defaults apply.
