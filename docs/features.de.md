@@ -64,7 +64,7 @@ Eine Konkurrenz hat einen Namen, eine Art (Einzel oder Doppel), eine Farbe, eine
 | Gruppen + KO | Anzahl Gruppen, Top *k* jeder Gruppe kommen weiter |
 | KO | Feldgröße ist die nächste Zweierpotenz, Freilose gehen an die Besten der Setzliste |
 
-Platzierungsspiele im KO: **keine**, **Spiel um Platz 3** oder **alle Plätze**. Die Gruppentabelle folgt dem Sport-Profil, im Tischtennis: Spielpunkte, Satzdifferenz, direkter Vergleich, Balldifferenz. Der Übergang von den Gruppen ins KO hält Spieler derselben Gruppe so lange wie möglich auseinander.
+Platzierungsspiele im KO: **keine**, **Spiel um Platz 3** oder **alle Plätze**. Die Gruppentabelle folgt dem Sport-Profil, im Tischtennis: Spielpunkte, Satzdifferenz, direkter Vergleich, Balldifferenz, zuletzt die Reihenfolge der Auslosung. Der direkte Vergleich wertet nur die Spiele der noch Gleichen untereinander, wieder nach Spielpunkten, Satz- und Balldifferenz. Der Übergang von den Gruppen ins KO hält Spieler derselben Gruppe so lange wie möglich auseinander.
 
 Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startzeit, Abhängigkeit und Tische lassen sich jederzeit ändern (Tag, Startzeit, Abhängigkeit, Minuten pro Spiel und Tische auf der Seite der Konkurrenz unter **Zeitplan**); sie gelten für noch nicht aufgerufene Spiele, und die Prognose zieht sofort nach.
 
@@ -111,6 +111,7 @@ Ergebnisse werden in der aus dem Tischtennis bekannten Kurznotation eingegeben: 
 ## 9. Öffentliche Ansichten
 
 - `/e/<slug>` zeigt die Tische mit den laufenden Spielen, die Prognose je Konkurrenz und Tag und die letzten Ergebnisse. Jede Konkurrenz hat eine eigene Seite mit Meldungen, Gruppen mit Tabellen, KO-Baum und Platzierungen. Alles aktualisiert sich live.
+- **Nachvollziehbare Wertung:** Jede Konkurrenzseite erklärt unter **Spielmodus und Wertung** den Ablauf, die Spielregeln, alle Kriterien der Tabelle in ihrer Reihenfolge, wer ins KO kommt, die Paarungen der ersten KO-Runde (z. B. A1 – B2) und welche Plätze ausgespielt oder geteilt werden. Unter jeder Gruppentabelle zeigt **So entsteht die Reihenfolge** jeden Gleichstand Schritt für Schritt mit den Zahlen: welches Kriterium angewendet wurde, mit welchen Werten, und wer danach vorn liegt.
 - **Zugangscode:** Neue Veranstaltungen starten mit öffentlichen Ansichten hinter einem sechsstelligen Code aus Buchstaben und Ziffern. Ein Aushang mit QR-Code wird gedruckt und in der Halle aufgehängt; wer ihn scannt, ist drin und bleibt bis zum Tag nach der Veranstaltung angemeldet. Der Code lässt sich erneuern (meldet alle ab) oder abschalten.
 - **Datenschutz:** Öffentliche Seiten zeigen nur Name und Verein. Wertungszahlen nur, wenn freigegeben, auf Wunsch Kurznamen („Max M.“). Suchmaschinen werden angewiesen, die Seiten nicht aufzunehmen.
 - **Impressum und Datenschutz:** im Fuß jeder öffentlichen Seite verlinkt, dazu ein optionaler Hinweis (z. B. „Namen und Ergebnisse dieser Veranstaltung werden hier veröffentlicht“). Jede Veranstaltung kann eigene Links setzen, sonst gelten die Vorgaben der Installation.

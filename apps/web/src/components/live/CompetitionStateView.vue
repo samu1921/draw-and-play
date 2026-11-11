@@ -6,6 +6,7 @@ import { useCompetitionText } from '../../composables/useCompetitionText.js';
 import type { CompetitionStateInfo } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { mainBracketRounds } from '../../lib/displaySlides.js';
+import GroupTieBreaks from './GroupTieBreaks.vue';
 
 const props = defineProps<{
   state: CompetitionStateInfo;
@@ -54,6 +55,7 @@ const placementMatches = computed(() => props.state.matches.filter((m) => m.phas
             </tbody>
           </table>
         </div>
+        <GroupTieBreaks :state="state" :group="g.group" />
       </section>
     </div>
 

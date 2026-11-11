@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
+import CompetitionRules from '../../components/live/CompetitionRules.vue';
 import CompetitionStateView from '../../components/live/CompetitionStateView.vue';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionStateInfo } from '../../lib/api.js';
@@ -32,5 +33,9 @@ const tableName = (id: string) => live.overview.value?.tables.find((t) => t.id =
   <section v-if="state" class="card">
     <h2>{{ state.competition.name }}</h2>
     <CompetitionStateView :state="state" :table-name="tableName" />
+  </section>
+  <section v-if="state" class="card">
+    <h2>{{ t('rules.title') }}</h2>
+    <CompetitionRules :state="state" />
   </section>
 </template>

@@ -1,4 +1,4 @@
-import type { CompetitionFormat, MatchResult, MatchRules, Placement, StandingsRow } from '@draw-and-play/domain';
+import type { CompetitionFormat, MatchResult, MatchRules, Placement, StandingsRow, TieBreak } from '@draw-and-play/domain';
 import type { Branding } from './branding.js';
 import type { CertificateTemplate } from './certificate.js';
 
@@ -161,7 +161,14 @@ export interface CompetitionStateInfo {
   competition: CompetitionInfo;
   drawSeed?: string | null;
   entries: EntryInfo[];
-  groups: { group: number; entries: string[]; standings: StandingsRow[]; complete: boolean }[];
+  groups: {
+    group: number;
+    entries: string[];
+    standings: StandingsRow[];
+    /** How entries level on wins were separated (missing from older servers) */
+    tieBreaks?: TieBreak[];
+    complete: boolean;
+  }[];
   matches: MatchInfo[];
   placements: Placement[];
   finished: boolean;
