@@ -29,5 +29,10 @@
     "playwright-core": "^1.64.1",
     "typescript": "~6.0.3",
     "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.12"
+    }
   }
 }
