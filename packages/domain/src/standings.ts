@@ -1,4 +1,5 @@
-import type { GameScore, RankingCriterion, Side } from './sport/types.js';
+import { createRng, shuffle, type Seed } from './rng.js';
+import type { GameScore, Ranking, RankingCriterion, Side } from './sport/types.js';
 
 export type EntryId = string;
 
@@ -26,9 +27,11 @@ export interface StandingsRow {
   gamesLost: number;
   pointsWon: number;
   pointsLost: number;
+  /** Withdrew or did not turn up: all group matches are annulled and the entry is ranked last */
+  withdrawn?: true;
 }
 
-type Stats = Omit<StandingsRow, 'rank'>;
+type Stats = Omit<StandingsRow, 'rank' | 'withdrawn'>;
 
 /** A score as "for:against": wins:losses, games won:lost or points won:lost, depending on the criterion */
 export type ScorePair = readonly [number, number];
@@ -51,7 +54,9 @@ export type TieBreakStep =
   /** Head-to-head: the next steps (with `among`) look only at the matches among `entries`. Skipped if those are all matches. */
   | { type: 'headToHead'; entries: EntryId[]; skipped: boolean }
   /** Level on every criterion: the order of the draw (the group's seeding order) decides */
-  | { type: 'drawOrder'; entries: EntryId[] };
+  | { type: 'drawOrder'; entries: EntryId[] }
+  /** Level on every criterion: lots decide (drawn reproducibly from the lot seed) */
+  | { type: 'lot'; entries: EntryId[] };
 
 /** Entries level on the first criterion and how they were separated */
 export interface TieBreak {
@@ -67,16 +72,29 @@ export interface StandingsExplanation {
   tieBreaks: TieBreak[];
 }
 
+/** A ranking, or just its criteria (head-to-head then uses the other criteria, the draw order is the last resort) */
+export type RankingInput = Ranking | readonly RankingCriterion[];
+
+export function toRanking(input: RankingInput): Ranking {
+  return 'criteria' in input ? input : { criteria: [...input] };
+}
+
+export interface StandingsOptions {
+  /** Seed for drawing lots when the ranking's last resort is `lot`; without it the draw order decides */
+  lotSeed?: Seed;
+}
+
 /**
- * Group standings. `entries` is the draw order, which decides when entries are tied on every criterion.
- * Pass finished matches only.
+ * Group standings. `entries` is the draw order, which decides when entries are tied on every criterion
+ * (unless the ranking draws lots). Pass finished matches only.
  */
 export function computeStandings(
   entries: readonly EntryId[],
   matches: readonly StandingsMatch[],
-  criteria: readonly RankingCriterion[],
+  ranking: RankingInput,
+  options: StandingsOptions = {},
 ): StandingsRow[] {
-  return explainStandings(entries, matches, criteria).rows;
+  return explainStandings(entries, matches, ranking, options).rows;
 }
 
 /**
@@ -86,13 +104,23 @@ export function computeStandings(
 export function explainStandings(
   entries: readonly EntryId[],
   matches: readonly StandingsMatch[],
-  criteria: readonly RankingCriterion[],
+  rankingInput: RankingInput,
+  options: StandingsOptions = {},
 ): StandingsExplanation {
+  const ranking = toRanking(rankingInput);
   const stats = tally(entries, matches);
   const tieBreaks: TieBreak[] = [];
+  // One lot for the whole group, drawn up front: restricted to any tied subset it is still a fair lot.
+  const lot =
+    ranking.lastResort === 'lot' && options.lotSeed !== undefined
+      ? new Map(shuffle(entries, createRng(String(options.lotSeed))).map((id, i) => [id, i]))
+      : null;
+  const context: Context = {
+    miniTable: ranking.headToHead ?? ranking.criteria.filter((c) => c !== 'headToHead'),
+    lot,
+  };
   // Ties are opened from the top of the table down, so `tieBreaks` is in table order.
-  const miniTable = criteria.filter((c) => c !== 'headToHead');
-  const ordered = rankIds([...entries], matches, criteria, stats, { root: tieBreaks }, miniTable).flat();
+  const ordered = rankIds([...entries], matches, ranking.criteria, stats, { root: tieBreaks }, context).flat();
   return { rows: ordered.map((id, i) => ({ ...stats.get(id)!, rank: i + 1 })), tieBreaks };
 }
 
@@ -135,6 +163,13 @@ function tally(entries: readonly EntryId[], matches: readonly StandingsMatch[]):
  */
 type Trace = { root: TieBreak[] } | { steps: TieBreakStep[]; among?: EntryId[] };
 
+interface Context {
+  /** Criteria of the head-to-head mini table */
+  miniTable: readonly RankingCriterion[];
+  /** Lot position per entry; null = the draw order decides */
+  lot: Map<EntryId, number> | null;
+}
+
 /** Orders `ids` into tie classes; entries within a class cannot be separated by the criteria. */
 function rankIds(
   ids: EntryId[],
@@ -142,15 +177,18 @@ function rankIds(
   criteria: readonly RankingCriterion[],
   stats: Map<EntryId, Stats>,
   trace: Trace,
-  /** Criteria of the head-to-head mini table: all criteria of the sport except head-to-head itself */
-  miniTable: readonly RankingCriterion[],
+  context: Context,
 ): EntryId[][] {
   const [criterion, ...rest] = criteria;
   if (ids.length <= 1) return [ids];
   if (criterion === undefined) {
-    // Level on everything: the draw order stands. Inside a head-to-head the outer criteria still follow.
-    if ('steps' in trace && !trace.among) trace.steps.push({ type: 'drawOrder', entries: ids });
-    return [ids];
+    // Inside a head-to-head the outer criteria still follow.
+    if ('steps' in trace && trace.among) return [ids];
+    // Level on everything: lots decide, or the draw order stands.
+    const { lot } = context;
+    const order = lot ? [...ids].sort((a, b) => lot.get(a)! - lot.get(b)!) : ids;
+    if ('steps' in trace) trace.steps.push({ type: lot ? 'lot' : 'drawOrder', entries: order });
+    return [order];
   }
 
   if (criterion === 'headToHead') {
@@ -161,11 +199,11 @@ function rankIds(
     const step: TieBreakStep = { type: 'headToHead', entries: ids, skipped };
     if ('steps' in trace) trace.steps.push(step);
     const result = skipped
-      ? rankIds(ids, matches, rest, stats, trace, miniTable)
+      ? rankIds(ids, matches, rest, stats, trace, context)
       : (() => {
           const steps = 'steps' in trace ? trace.steps : [];
-          const classes = rankIds(ids, among, miniTable, tally(ids, among), { steps, among: ids }, miniTable);
-          return classes.flatMap((cls) => rankIds(cls, matches, rest, stats, 'steps' in trace ? { steps } : trace, miniTable));
+          const classes = rankIds(ids, among, context.miniTable, tally(ids, among), { steps, among: ids }, context);
+          return classes.flatMap((cls) => rankIds(cls, matches, rest, stats, 'steps' in trace ? { steps } : trace, context));
         })();
     step.entries = result.flat();
     return result;
@@ -185,7 +223,7 @@ function rankIds(
       if (group.length <= 1) return [group];
       const tie: TieBreak = { criterion, entries: group, scores: [], steps: [] };
       trace.root.push(tie);
-      const result = rankIds(group, matches, rest, stats, { steps: tie.steps }, miniTable);
+      const result = rankIds(group, matches, rest, stats, { steps: tie.steps }, context);
       tie.entries = result.flat();
       tie.scores = tie.entries.map(score);
       return result;
@@ -201,7 +239,7 @@ function rankIds(
     ...(trace.among && { among: trace.among }),
   };
   trace.steps.push(step);
-  const results = classes.map((group) => rankIds(group, matches, rest, stats, trace, miniTable));
+  const results = classes.map((group) => rankIds(group, matches, rest, stats, trace, context));
   // Within each class, list the entries in the order the later steps put them in.
   step.classes = results.map((r) => r.flat());
   step.entries = step.classes.flat();
@@ -212,6 +250,8 @@ function rankIds(
 function scoreOf(criterion: Exclude<RankingCriterion, 'headToHead'>, s: Stats): ScorePair {
   switch (criterion) {
     case 'matchPoints':
+    case 'record':
+    case 'matchDiff':
       return [s.won, s.lost];
     case 'gameDiff':
     case 'gameRatio':
@@ -225,6 +265,11 @@ function criterionValue(criterion: Exclude<RankingCriterion, 'headToHead'>, s: S
   switch (criterion) {
     case 'matchPoints':
       return s.matchPoints;
+    case 'record':
+      // More wins first; with equal wins, fewer losses. Losses stay far below the factor.
+      return s.won * 1_000_000 - s.lost;
+    case 'matchDiff':
+      return s.won - s.lost;
     case 'gameDiff':
       return s.gamesWon - s.gamesLost;
     case 'gameRatio':

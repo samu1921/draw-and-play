@@ -155,7 +155,7 @@ describe('resolveCompetition', () => {
     expect(final.placements.slice(0, 2).map((p) => p.entryId)).toEqual(['S1', 'S2']);
   });
 
-  it('withdrawal in a group: the remaining matches are walkovers, played matches stay', () => {
+  it('withdrawal in a group: remaining matches are walkovers, all its matches are annulled, it is ranked last', () => {
     const structure = buildStructure(roundRobin, 4);
     const draw: Draw = { type: 'groups', groups: [['A', 'B', 'C', 'D']] };
     // D played one match (and lost to A) before withdrawing
@@ -173,7 +173,45 @@ describe('resolveCompetition', () => {
     expect([kept.loser, kept.withdrawal, kept.result?.walkover, kept.result?.games.length]).toEqual(['D', undefined, undefined, 3]);
     // The others still play each other
     expect(state.matches.filter((m) => m.status === 'ready')).toHaveLength(3);
-    expect(state.groups[0]!.standings.find((r) => r.entryId === 'D')).toMatchObject({ won: 0, lost: 3 });
+    // DTTB WO D 7.9: the played match against D is annulled as well, D is last
+    const standings = state.groups[0]!.standings;
+    expect(standings.at(-1)).toMatchObject({ entryId: 'D', rank: 4, played: 0, withdrawn: true });
+    expect(standings.find((r) => r.entryId === 'A')).toMatchObject({ played: 0, won: 0 });
+  });
+
+  it('not turning up to a group match counts as withdrawing: the same as a withdrawal', () => {
+    const structure = buildStructure(roundRobin, 4);
+    const draw: Draw = { type: 'groups', groups: [['A', 'B', 'C', 'D']] };
+    const open = resolveCompetition(structure, draw, new Map(), ranking).matches;
+    const bc = open.find((m) => m.sides.includes('B') && m.sides.includes('C'))!;
+    const ab = open.find((m) => m.sides.includes('A') && m.sides.includes('B'))!;
+    // B beat C, then did not turn up against A
+    const results = new Map([
+      [bc.id, win(bc.sides[0] === 'B' ? 0 : 1)],
+      [ab.id, { winner: ab.sides[0] === 'A' ? 0 : 1, games: [], walkover: true } as MatchResult],
+    ]);
+    const state = resolveCompetition(structure, draw, results, ranking);
+    expect(state.matches.filter((m) => m.sides.includes('B') && m.withdrawal)).toHaveLength(1);
+    const standings = state.groups[0]!.standings;
+    expect(standings.at(-1)).toMatchObject({ entryId: 'B', withdrawn: true });
+    expect(standings.find((r) => r.entryId === 'C')).toMatchObject({ played: 0, lost: 0 });
+  });
+
+  it('draws lots in a finished group when entries are level on everything, not while it runs', () => {
+    const structure = buildStructure(roundRobin, 3);
+    const draw: Draw = { type: 'groups', groups: [['A', 'B', 'C']] };
+    const standings = (results: Map<string, MatchResult>, lotSeed: number) =>
+      resolveCompetition(structure, draw, results, ranking, { lotSeed }).groups[0]!.standings.map((r) => r.entryId).join();
+    // Before any result: the draw order, whatever the seed
+    expect(new Set(Array.from({ length: 12 }, (_, seed) => standings(new Map(), seed)))).toEqual(new Set(['A,B,C']));
+    // Cyclic with identical scores: level on everything once finished
+    const results = new Map<string, MatchResult>();
+    for (const m of resolveCompetition(structure, draw, results, ranking).matches) {
+      const [a, b] = m.sides as [string, string];
+      const winnerIsFirst = (a === 'A' && b === 'B') || (a === 'B' && b === 'C') || (a === 'C' && b === 'A');
+      results.set(m.id, win(winnerIsFirst ? 0 : 1));
+    }
+    expect(new Set(Array.from({ length: 12 }, (_, seed) => standings(results, seed))).size).toBeGreaterThan(1);
   });
 
   it('withdrawal in the knockout: every later opponent goes through without playing', () => {
