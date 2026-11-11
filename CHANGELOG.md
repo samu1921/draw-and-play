@@ -2,6 +2,12 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.2.1] – 2026-11-11
+
+### Bug fixes
+
+- **deps:** Update glob and minimatch through @fastify/static, and the esbuild of drizzle-kit
+
 ## [0.2.0] – 2026-11-11
 
 ### Features
