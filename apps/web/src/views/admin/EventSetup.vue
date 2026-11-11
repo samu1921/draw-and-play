@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Award, CalendarDays, DatabaseBackup, Palette, Globe, KeyRound, Scale, Smartphone, Table2 } from '@lucide/vue';
+import { Award, CalendarDays, DatabaseBackup, Palette, Globe, KeyRound, Scale, Smartphone, Table2, Trash2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { useLegalDefaults } from '../../composables/useLegal.js';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api } from '../../lib/api.js';
@@ -142,6 +143,25 @@ const saveLegal = () => run(() => api('PATCH', `/api/events/${event.value.id}`, 
 
 const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
   run(() => api('PATCH', `/api/events/${event.value.id}`, { settings: { [key]: value } }));
+
+// --- Delete the whole event, e.g. after a dress rehearsal ---
+const router = useRouter();
+async function deleteEvent() {
+  const { id, name } = event.value;
+  const typed = prompt(t('admin.setup.deletePrompt', { name }));
+  if (typed === null) return;
+  if (typed.trim() !== name.trim()) {
+    message.value = '';
+    error.value = t('admin.setup.deleteMismatch');
+    return;
+  }
+  try {
+    await api('DELETE', `/api/events/${id}`);
+    await router.replace({ name: 'admin' });
+  } catch (e) {
+    error.value = errorText(t, te, e);
+  }
+}
 </script>
 
 <template>
@@ -280,6 +300,12 @@ const setSetting = (key: 'shortNames' | 'publicRatings', value: boolean) =>
       <h2 id="backup-title"><DatabaseBackup aria-hidden="true" />{{ t('admin.setup.backupTitle') }}</h2>
       <p class="muted">{{ t('admin.setup.backupHint') }}</p>
       <div><a class="button secondary" :href="`/api/events/${event.id}/export`" download>{{ t('admin.setup.export') }}</a></div>
+    </section>
+
+    <section class="card" aria-labelledby="delete-title">
+      <h2 id="delete-title"><Trash2 aria-hidden="true" />{{ t('admin.setup.deleteTitle') }}</h2>
+      <p class="muted">{{ t('admin.setup.deleteHint') }}</p>
+      <div><button type="button" class="button secondary" @click="deleteEvent">{{ t('admin.setup.deleteEvent') }}</button></div>
     </section>
 
     <p v-if="message" class="muted" role="status">{{ message }}</p>

@@ -263,6 +263,11 @@ const de: typeof en = {
       backupTitle: 'Datensicherung',
       backupHint: 'Sichert die ganze Veranstaltung als Datei: Spieler, Konkurrenzen, Auslosungen und Ergebnisse. Unter Veranstaltungen lässt sie sich wieder importieren, auch auf einer anderen Installation.',
       export: 'Export herunterladen',
+      deleteTitle: 'Veranstaltung löschen',
+      deleteHint: 'Löscht die Veranstaltung endgültig, mit allen Spielern, Konkurrenzen, Auslosungen, Ergebnissen und Anzeigen. Zum Beispiel nach der Generalprobe. Vorher am besten den Export herunterladen.',
+      deleteEvent: 'Veranstaltung löschen …',
+      deletePrompt: 'Wirklich alles löschen? Zum Bestätigen den Namen der Veranstaltung eingeben: {name}',
+      deleteMismatch: 'Der Name stimmt nicht überein, es wurde nichts gelöscht.',
     },
     persons: {
       add: 'Spieler hinzufügen',

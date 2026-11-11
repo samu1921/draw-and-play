@@ -154,7 +154,7 @@ docker compose logs backup       # Backups
 - [ ] Veranstaltung, Tische und Konkurrenzen anlegen (Planer nutzen, um den Modus zu wählen).
 - [ ] Spielerliste als CSV vorbereiten (Vorlage unter **Spieler → Vorlage herunterladen**) und einmal probeweise importieren.
 - [ ] Impressum, Datenschutz und Hinweistext unter **Einstellungen** prüfen.
-- [ ] Generalprobe auf dem echten Server: Testveranstaltung anlegen, mit zwei Handys PIN eingeben, Ergebnisse eintragen, Beamer-Link öffnen, danach die Testveranstaltung löschen.
+- [ ] Generalprobe auf dem echten Server: Testveranstaltung anlegen, mit zwei Handys PIN eingeben, Ergebnisse eintragen, Beamer-Link öffnen, danach die Testveranstaltung löschen (**Einstellungen → Veranstaltung löschen**).
 
 **Am Vortag**
 - [ ] `BACKUP_INTERVAL_MINUTES=15` in der `.env` setzen und `docker compose up -d backup` ausführen.

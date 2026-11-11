@@ -154,7 +154,7 @@ docker compose logs backup       # backups
 - [ ] Create the event, tables and competitions (use the planner to choose the format).
 - [ ] Prepare the player list as CSV (template under **Players → Download template**) and try the import once.
 - [ ] Check the legal notice, privacy link and note under **Settings**.
-- [ ] Dress rehearsal on the real server: create a test event, enter the PIN on two phones, enter results, open the projector link, then delete the test event.
+- [ ] Dress rehearsal on the real server: create a test event, enter the PIN on two phones, enter results, open the projector link, then delete the test event (**Settings → Delete event**).
 
 **The day before**
 - [ ] Set `BACKUP_INTERVAL_MINUTES=15` in `.env` and run `docker compose up -d backup`.
