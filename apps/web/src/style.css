@@ -1937,6 +1937,96 @@ textarea {
   color: var(--accent);
 }
 
+.d-tie-notes {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 20px;
+  color: var(--fg-secondary);
+}
+
+.d-tie-notes li + li {
+  margin-top: 4px;
+}
+
+/* Ties and format */
+
+.d-ties {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px 48px;
+  align-items: start;
+  font-size: 26px;
+}
+
+.d-ties.single {
+  grid-template-columns: minmax(0, 1fr);
+  font-size: 32px;
+}
+
+.d-ties.single .d-tie h3 {
+  font-size: 40px;
+}
+
+.d-tie h3 {
+  margin: 0 0 6px;
+  font-size: 30px;
+}
+
+.d-tie-level {
+  margin: 0 0 10px;
+  color: var(--fg-secondary);
+}
+
+.d-tie ol,
+.d-rules ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.d-tie li + li,
+.d-rules li + li {
+  margin-top: 8px;
+}
+
+.d-rules {
+  column-count: 2;
+  column-gap: 64px;
+  font-size: 26px;
+  line-height: 1.35;
+}
+
+.d-rules-section {
+  break-inside: avoid;
+  margin-bottom: 28px;
+}
+
+.d-rules-section h3 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  color: var(--accent);
+}
+
+.d-rules-section p {
+  margin: 0 0 8px;
+}
+
+.d-rules-items {
+  margin: 0;
+  padding-left: 1.2em;
+  font-variant-numeric: tabular-nums;
+}
+
+.d-rules-items.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 32px;
+}
+
+.d-rules-items.grid li + li {
+  margin-top: 0;
+}
+
 /* Bracket */
 
 .d-bracket {

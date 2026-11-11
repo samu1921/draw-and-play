@@ -8,6 +8,8 @@ import { useRoute } from 'vue-router';
 import DisplayBracket from '../../components/display/DisplayBracket.vue';
 import DisplayEntries from '../../components/display/DisplayEntries.vue';
 import DisplayGroups from '../../components/display/DisplayGroups.vue';
+import DisplayRules from '../../components/display/DisplayRules.vue';
+import DisplayTies from '../../components/display/DisplayTies.vue';
 import DisplayStage from '../../components/display/DisplayStage.vue';
 import FitBox from '../../components/display/FitBox.vue';
 import StreamBadge from '../../components/live/StreamBadge.vue';
@@ -300,6 +302,10 @@ const heading = computed(() => {
       return { competitionId: s.competitionId, sub: t('public.knockout') + pageSuffix(s) };
     case 'placements':
       return { competitionId: s.competitionId, sub: t('public.placements') };
+    case 'ties':
+      return { competitionId: s.competitionId, sub: t('display.ties') + pageSuffix(s) };
+    case 'rules':
+      return { competitionId: s.competitionId, sub: t('rules.title') };
     case 'entries':
       return { competitionId: s.competitionId, sub: t('display.entries', { n: stateOf(s.competitionId)?.entries.filter((e) => e.status !== 'withdrawn').length ?? 0 }) + pageSuffix(s) };
   }
@@ -383,6 +389,19 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
             :state="stateOf(current.competitionId)!"
             :groups="current.groups"
             :columns="current.columns"
+            :tie-notes="settings.rules"
+          />
+
+          <DisplayTies
+            v-else-if="current.kind === 'ties' && stateOf(current.competitionId)"
+            :state="stateOf(current.competitionId)!"
+            :ties="current.ties"
+          />
+
+          <DisplayRules
+            v-else-if="current.kind === 'rules' && stateOf(current.competitionId)"
+            :state="stateOf(current.competitionId)!"
+            :ranking="live.sport.value.ranking"
           />
 
           <DisplayBracket

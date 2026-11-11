@@ -115,7 +115,7 @@ const reset = () => {
   if (selected.value) draft.value = JSON.parse(pristine.value);
 };
 
-const slideOptions = ['tables', 'next', 'entries', 'liveDraw', 'todayOnly'] as const;
+const slideOptions = ['tables', 'next', 'entries', 'rules', 'liveDraw', 'todayOnly'] as const;
 </script>
 
 <template>

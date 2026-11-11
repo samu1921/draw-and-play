@@ -1,33 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useCompetitionText } from '../../composables/useCompetitionText.js';
 import type { CompetitionStateInfo } from '../../lib/api.js';
 import type { Translate } from '../../lib/describe.js';
-import { tieBreakText } from '../../lib/rules.js';
+import { groupTieTexts } from '../../lib/rules.js';
 
 const props = defineProps<{ state: CompetitionStateInfo; group: number }>();
 const { t } = useI18n();
-const { name, score } = useCompetitionText(() => props.state);
 
 const info = computed(() => props.state.groups.find((g) => g.group === props.group));
 const played = computed(() => props.state.matches.some((m) => m.phase === 'group' && m.group === props.group && m.status === 'finished'));
-
-const ties = computed(() => {
-  const g = info.value;
-  if (!g?.tieBreaks) return [];
-  const rank = new Map(g.standings.map((r) => [r.entryId, r.rank]));
-  const duels = (ids: string[]) => {
-    const members = new Set(ids);
-    return props.state.matches
-      .filter((m) => m.phase === 'group' && m.group === props.group && m.status === 'finished')
-      .filter((m) => m.sides.every((s) => s !== null && members.has(s)))
-      .map((m) => `${name(m.sides[0])} – ${name(m.sides[1])} ${score(m)}`);
-  };
-  return g.tieBreaks.map((tie) =>
-    tieBreakText(t as Translate, tie, { name: (id) => name(id), rankOf: (id) => rank.get(id) ?? 0, duels }),
-  );
-});
+const ties = computed(() => groupTieTexts(t as Translate, props.state, props.group));
 </script>
 
 <template>

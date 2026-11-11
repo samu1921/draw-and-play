@@ -75,8 +75,10 @@ describe('buildSlides', () => {
       'tables:1',
       'next',
       'groups:singles:0',
+      'rules:singles',
       'bracket:ko:0',
       'bracket:ko:1',
+      'rules:ko',
       'entries:open:0',
       'entries:open:1',
     ]);
@@ -90,13 +92,27 @@ describe('buildSlides', () => {
       states: new Map(['a', 'b', 'c', 'd', 'e'].map((id) => [id, state([3])])),
       tableIds,
     });
-    expect(slides.map((s) => s.key)).toEqual(['groups:a:0', 'groups:c:0']);
+    expect(slides.map((s) => s.key)).toEqual(['groups:a:0', 'rules:a', 'groups:c:0', 'rules:c']);
   });
 
   it('adds the placements once a competition is finished', () => {
     const finished = state([3], { finished: true, placements: [{ entryId: 'x', place: 1, placeTo: 1 }] });
     const slides = buildSlides({ settings: defaultDisplaySettings, today: '', competitions: [competition('a')], states: new Map([['a', finished]]), tableIds: [] });
-    expect(slides.map((s) => s.key)).toEqual(['next', 'groups:a:0', 'placements:a']);
+    expect(slides.map((s) => s.key)).toEqual(['next', 'groups:a:0', 'placements:a', 'rules:a']);
+  });
+
+  it('explains the ties of finished groups after the tables, and leaves the format out when switched off', () => {
+    const tie = { criterion: 'matchPoints', entries: [], scores: [], steps: [] };
+    const groups = state([4, 4, 4]).groups.map((g, i) => ({ ...g, complete: i !== 1, tieBreaks: i === 2 ? Array(5).fill(tie) : [tie] }));
+    const source = { today: '', competitions: [competition('a')], states: new Map([['a', state([], { groups })]]), tableIds: [] };
+    const slides = buildSlides({ ...source, settings: { ...defaultDisplaySettings, next: false } });
+    expect(slides.map((s) => s.key)).toEqual(['groups:a:0', 'ties:a:0', 'ties:a:1', 'rules:a']);
+    // Group B is still running: its tie is left out
+    const ties = slides.flatMap((s) => (s.kind === 'ties' ? s.ties : []));
+    expect(ties).toHaveLength(6);
+    expect(ties.some((t) => t.group === 1)).toBe(false);
+    const off = buildSlides({ ...source, settings: { ...defaultDisplaySettings, next: false, rules: false } });
+    expect(off.map((s) => s.key)).toEqual(['groups:a:0']);
   });
 });
 

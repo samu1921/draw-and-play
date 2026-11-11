@@ -10,6 +10,8 @@ export const NEXT_MATCHES = 14;
 export const ENTRIES_PER_PAGE = 36;
 /** Matches of a bracket column per page: larger brackets are shown in halves, quarters, … */
 export const BRACKET_MATCHES_PER_PAGE = 8;
+/** Explained ties per page, in two columns */
+export const TIES_PER_PAGE = 4;
 /** Groups up to this size fit two rows high */
 const TWO_ROW_GROUP_SIZE = 7;
 
@@ -27,6 +29,10 @@ export type Slide =
   /** `from`/`to`: part of the bracket on this page, as a fraction (0–1) of its height */
   | (Paged & { kind: 'bracket'; competitionId: string; from: number; to: number })
   | (Paged & { kind: 'placements'; competitionId: string })
+  /** How ties in finished groups were broken: tie `index` of `group` */
+  | (Paged & { kind: 'ties'; competitionId: string; ties: { group: number; index: number }[] })
+  /** Format and ranking rules of the competition */
+  | (Paged & { kind: 'rules'; competitionId: string })
   | (Paged & { kind: 'entries'; competitionId: string; entryIds: string[] });
 
 export interface SlideSource {
@@ -126,6 +132,12 @@ export function buildSlides({ settings, today, competitions, states, tableIds }:
       slides.push({ key: `groups:${c.id}:${page}`, kind: 'groups', competitionId: c.id, groups, columns: layout.columns[page]!, page, pages: layout.pages.length }),
     );
 
+    if (settings.rules) {
+      // Only finished groups: while a group runs, its ties change with every result.
+      const ties = state.groups.filter((g) => g.complete).flatMap((g) => (g.tieBreaks ?? []).map((_, index) => ({ group: g.group, index })));
+      pushPages(paginate(ties, TIES_PER_PAGE), (items, page, pages) => ({ key: `ties:${c.id}:${page}`, kind: 'ties', competitionId: c.id, ties: items, page, pages }));
+    }
+
     const tallest = Math.max(0, ...mainBracketRounds(state.matches).map((round) => round.length));
     const bracketPages = Math.ceil(tallest / BRACKET_MATCHES_PER_PAGE);
     for (let page = 0; page < bracketPages; page++) {
@@ -135,6 +147,7 @@ export function buildSlides({ settings, today, competitions, states, tableIds }:
     if (state.finished && state.placements.length > 0) {
       slides.push({ key: `placements:${c.id}`, kind: 'placements', competitionId: c.id, page: 0, pages: 1 });
     }
+    if (settings.rules) slides.push({ key: `rules:${c.id}`, kind: 'rules', competitionId: c.id, page: 0, pages: 1 });
   }
   return slides;
 }
