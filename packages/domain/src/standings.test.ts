@@ -3,6 +3,7 @@ import { tableTennis } from './sport/tableTennis.js';
 import { computeStandings, explainStandings, type StandingsMatch } from './standings.js';
 import type { GameScore } from './sport/types.js';
 
+/** Table tennis after DTTB WO D 7.5; without a lot seed the draw order stands in for the lot */
 const tt = tableTennis.ranking;
 
 /** Match with games from a's point of view, e.g. m('A', 'B', '4 5 6') */
@@ -13,6 +14,41 @@ function m(a: string, b: string, notation: string): StandingsMatch {
 }
 
 const order = (rows: { entryId: string }[]) => rows.map((r) => r.entryId);
+
+// A, B, C: one win each. Games A 5:3, B 3:4, C 4:5. Points B 37:47 and C 49:59 (both −10). B beat C.
+const gamesThenDuel = [m('A', 'B', '1 1 1'), m('B', 'C', '1 1 -1 1'), m('C', 'A', '1 1 -1 -1 1')];
+
+// A and B: 2 wins, games 6:3 each; A has the better points (+60 against +6), B won the duel.
+// C and D: 1 win, games 3:6 each; D has the better points (−6 against −60), C won the duel.
+const pointsBeforeDuel = [
+  m('B', 'A', '9 9 9'),
+  m('A', 'C', '0 0 0'),
+  m('A', 'D', '0 0 0'),
+  m('C', 'B', '9 9 9'),
+  m('B', 'D', '9 9 9'),
+  m('D', 'C', '0 0 0'),
+];
+
+// A and B: record 2:1, games 6:4 and 7:5 (+2), points 81:86 and 104:109 (−5): only the duel is left.
+// A won it 3:1, but with fewer points in it (33:38).
+const duelOnly = [
+  m('A', 'B', '9 9 -0 9'),
+  m('A', 'C', '5 5 5'),
+  m('D', 'A', '5 5 5'),
+  m('B', 'C', '9 9 9'),
+  m('B', 'D', '9 9 -0 -0 9'),
+  m('C', 'D', '1 1 1'),
+];
+
+// B, C and D: one win each, every game 11:1, cyclic duels: level on everything, also among themselves.
+const allLevel = [
+  m('A', 'B', '1 1 1'),
+  m('A', 'C', '1 1 1'),
+  m('A', 'D', '1 1 1'),
+  m('C', 'B', '1 1 1'),
+  m('B', 'D', '1 1 1'),
+  m('D', 'C', '1 1 1'),
+];
 
 describe('computeStandings', () => {
   it('counts matches, games and points', () => {
@@ -41,70 +77,29 @@ describe('computeStandings', () => {
     expect(order(rows)).toEqual(['B', 'C', 'A']);
   });
 
-  it('game difference breaks a tie on wins', () => {
+  it('with equal wins, fewer losses are ahead (group still running)', () => {
+    // A 2:0, B 2:1 – B has the better game difference, but one loss more
     const rows = computeStandings(
-      ['A', 'B', 'C'],
-      [m('A', 'B', '1 1 1'), m('B', 'C', '1 1 -1 1'), m('C', 'A', '1 1 -1 -1 1')],
-      tt,
-    );
-    // A: 3:0 and 2:3 → 5:3 (+2); B: 0:3 and 3:1 → 3:4 (−1); C: 1:3 and 3:2 → 4:5 (−1)
-    // B and C level (−1), head-to-head B–C: B wins
-    expect(order(rows)).toEqual(['A', 'B', 'C']);
-  });
-
-  it('head-to-head comes before points when wins and games are level', () => {
-    // A and B: 2 wins each, games 6:3. A has the better point difference, B won the duel.
-    // C and D: 1 win each, games 3:6. D won the duel.
-    const rows = computeStandings(
-      ['A', 'B', 'C', 'D'],
-      [
-        m('B', 'A', '9 9 9'),
-        m('A', 'C', '0 0 0'),
-        m('A', 'D', '0 0 0'),
-        m('C', 'B', '9 9 9'),
-        m('B', 'D', '9 9 9'),
-        m('D', 'C', '0 0 0'),
-      ],
-      tt,
-    );
-    expect(order(rows)).toEqual(['B', 'A', 'D', 'C']);
-  });
-
-  it('falls back to the draw order when everything is level', () => {
-    const rows = computeStandings(
-      ['A', 'B', 'C', 'D'],
-      [
-        m('A', 'B', '1 1 1'),
-        m('A', 'C', '1 1 1'),
-        m('A', 'D', '1 1 1'),
-        m('C', 'B', '1 1 1'),
-        m('B', 'D', '1 1 1'),
-        m('D', 'C', '1 1 1'),
-      ],
-      tt,
-    );
-    // B, C, D: 1 win each, games 3:6, cyclic duels, every game 11:1 → identical points too
-    expect(order(rows)).toEqual(['A', 'B', 'C', 'D']);
-  });
-
-  it('head-to-head: the winner of the duel is ahead even with fewer points in it', () => {
-    // A and B: 2 wins each, games 6:4 and 7:5 (+2 each). A won the duel 3:1, but with fewer points in it (33:38).
-    const rows = computeStandings(
-      ['B', 'A', 'C', 'D'],
-      [
-        m('A', 'B', '9 9 -0 9'),
-        m('A', 'C', '1 1 1'),
-        m('D', 'A', '1 1 1'),
-        m('B', 'C', '1 1 1'),
-        m('B', 'D', '1 1 -1 -1 1'),
-        m('C', 'D', '1 1 1'),
-      ],
+      ['B', 'A', 'C', 'D', 'E'],
+      [m('A', 'C', '9 9 9'), m('A', 'D', '9 9 9'), m('B', 'C', '1 1 1'), m('B', 'D', '1 1 1'), m('E', 'B', '9 9 9')],
       tt,
     );
     expect(order(rows).slice(0, 2)).toEqual(['A', 'B']);
   });
 
-  it('three-way tie with cyclic duels: points among the tied entries decide', () => {
+  it('game difference of all matches, then point difference, then the duel', () => {
+    expect(order(computeStandings(['A', 'B', 'C'], gamesThenDuel, tt))).toEqual(['A', 'B', 'C']);
+  });
+
+  it('point difference of all matches comes before the duel', () => {
+    expect(order(computeStandings(['A', 'B', 'C', 'D'], pointsBeforeDuel, tt))).toEqual(['A', 'B', 'D', 'C']);
+  });
+
+  it('the duel is decided by its winner first, not by the points in it', () => {
+    expect(order(computeStandings(['B', 'A', 'C', 'D'], duelOnly, tt)).slice(0, 2)).toEqual(['A', 'B']);
+  });
+
+  it('three-way tie with cyclic duels: the point difference of all matches decides', () => {
     const rows = computeStandings(
       ['A', 'B', 'C', 'D'],
       [
@@ -117,9 +112,21 @@ describe('computeStandings', () => {
       ],
       tt,
     );
-    // B, C, D: 1 win each and 3:6 games → mini table cyclic (B>C, C>D, D>B) → points in the mini table
-    // B–C 33:27, D–B 33:27, C–D 33:3: C: 27+33=60:36, D: 3+33=36:60, B: 33+27=60:60
+    // B 63:93 (−30), C 63:69 (−6), D 39:93 (−54)
     expect(order(rows)).toEqual(['A', 'C', 'B', 'D']);
+  });
+
+  it('falls back to the draw order without a lot seed', () => {
+    expect(order(computeStandings(['A', 'B', 'C', 'D'], allLevel, tt))).toEqual(['A', 'B', 'C', 'D']);
+  });
+
+  it('draws lots reproducibly when everything is level', () => {
+    const orders = Array.from({ length: 20 }, (_, seed) => order(computeStandings(['A', 'B', 'C', 'D'], allLevel, tt, { lotSeed: seed })));
+    // Same seed, same lot
+    expect(order(computeStandings(['A', 'B', 'C', 'D'], allLevel, tt, { lotSeed: 3 }))).toEqual(orders[3]);
+    // A is ahead on wins regardless of the lot; B, C and D are drawn
+    expect(orders.every((o) => o[0] === 'A' && [...o.slice(1)].sort().join() === 'B,C,D')).toBe(true);
+    expect(new Set(orders.map((o) => o.join())).size).toBeGreaterThan(1);
   });
 
   it('counts a walkover as a win without games and points', () => {
@@ -136,7 +143,7 @@ describe('computeStandings', () => {
     expect(order(computeStandings(['C', 'A', 'B'], [], tt))).toEqual(['C', 'A', 'B']);
   });
 
-  it('supports game ratio for other sports', () => {
+  it('supports plain criteria lists and game ratio for other sports', () => {
     // Group in progress, 2 wins each. A: games 6:2 (+4, ratio 3.0); B: games 8:3 (+5, ratio 2.67)
     const matches = [
       m('A', 'X', '1 1 -1 1'),
@@ -157,89 +164,65 @@ describe('explainStandings', () => {
     expect(tieBreaks).toEqual([]);
   });
 
-  it('shows game difference first, then the duel of the entries still level', () => {
-    const matches = [m('A', 'B', '1 1 1'), m('B', 'C', '1 1 -1 1'), m('C', 'A', '1 1 -1 -1 1')];
-    const { rows, tieBreaks } = explainStandings(['A', 'B', 'C'], matches, tt);
+  it('shows game difference, point difference and then the duel of those still level', () => {
+    const { rows, tieBreaks } = explainStandings(['A', 'B', 'C'], gamesThenDuel, tt);
     expect(order(rows)).toEqual(['A', 'B', 'C']);
     expect(tieBreaks).toEqual([
       {
-        criterion: 'matchPoints',
+        criterion: 'record',
         entries: ['A', 'B', 'C'],
         scores: [[1, 1], [1, 1], [1, 1]],
         steps: [
           { type: 'criterion', criterion: 'gameDiff', entries: ['A', 'B', 'C'], scores: [[5, 3], [3, 4], [4, 5]], classes: [['A'], ['B', 'C']] },
+          { type: 'criterion', criterion: 'pointDiff', entries: ['B', 'C'], scores: [[37, 47], [49, 59]], classes: [['B', 'C']] },
           { type: 'headToHead', entries: ['B', 'C'], skipped: false },
-          { type: 'criterion', criterion: 'matchPoints', entries: ['B', 'C'], scores: [[1, 0], [0, 1]], classes: [['B'], ['C']], among: ['B', 'C'] },
+          { type: 'criterion', criterion: 'matchDiff', entries: ['B', 'C'], scores: [[1, 0], [0, 1]], classes: [['B'], ['C']], among: ['B', 'C'] },
         ],
       },
     ]);
   });
 
-  it('skips the duel when the tied entries are the whole group', () => {
-    // Cyclic: everyone 1:1 wins and 3:3 games, points decide
-    // A 45:36, B 36:39, C 39:45
-    const matches = [m('A', 'B', '1 1 1'), m('B', 'C', '2 2 2'), m('C', 'A', '4 4 4')];
-    const { rows, tieBreaks } = explainStandings(['A', 'B', 'C'], matches, tt);
-    const steps = tieBreaks[0]!.steps;
-    expect(steps.map((s) => s.type)).toEqual(['criterion', 'headToHead', 'criterion']);
-    expect(steps[1]).toEqual({ type: 'headToHead', entries: order(rows), skipped: true });
-    expect(steps[2]).toMatchObject({ criterion: 'pointDiff', entries: order(rows) });
-  });
-
-  it('separates in the mini table by points when the duels are cyclic', () => {
-    const matches = [
-      m('A', 'B', '1 1 1'),
-      m('A', 'C', '1 1 1'),
-      m('A', 'D', '1 1 1'),
-      m('B', 'C', '9 9 9'),
-      m('D', 'B', '9 9 9'),
-      m('C', 'D', '1 1 1'),
-    ];
-    const { tieBreaks } = explainStandings(['A', 'B', 'C', 'D'], matches, tt);
-    expect(tieBreaks).toHaveLength(1);
-    expect(tieBreaks[0]!.entries).toEqual(['C', 'B', 'D']);
+  it('the duel comes last and counts its winner before its points', () => {
+    const { tieBreaks } = explainStandings(['B', 'A', 'C', 'D'], duelOnly, tt);
     expect(tieBreaks[0]!.steps).toEqual([
-      { type: 'criterion', criterion: 'gameDiff', entries: ['C', 'B', 'D'], scores: [[3, 6], [3, 6], [3, 6]], classes: [['C', 'B', 'D']] },
-      { type: 'headToHead', entries: ['C', 'B', 'D'], skipped: false },
-      { type: 'criterion', criterion: 'matchPoints', entries: ['C', 'B', 'D'], scores: [[1, 1], [1, 1], [1, 1]], classes: [['C', 'B', 'D']], among: ['B', 'C', 'D'] },
-      { type: 'criterion', criterion: 'gameDiff', entries: ['C', 'B', 'D'], scores: [[3, 3], [3, 3], [3, 3]], classes: [['C', 'B', 'D']], among: ['B', 'C', 'D'] },
-      {
-        type: 'criterion',
-        criterion: 'pointDiff',
-        entries: ['C', 'B', 'D'],
-        scores: [[60, 36], [60, 60], [36, 60]],
-        classes: [['C'], ['B'], ['D']],
-        among: ['B', 'C', 'D'],
-      },
+      { type: 'criterion', criterion: 'gameDiff', entries: ['A', 'B'], scores: [[6, 4], [7, 5]], classes: [['A', 'B']] },
+      { type: 'criterion', criterion: 'pointDiff', entries: ['A', 'B'], scores: [[81, 86], [104, 109]], classes: [['A', 'B']] },
+      { type: 'headToHead', entries: ['A', 'B'], skipped: false },
+      { type: 'criterion', criterion: 'matchDiff', entries: ['A', 'B'], scores: [[1, 0], [0, 1]], classes: [['A'], ['B']], among: ['B', 'A'] },
     ]);
   });
 
-  it('ends with the draw order when nothing separates', () => {
-    const matches = [
-      m('A', 'B', '1 1 1'),
-      m('A', 'C', '1 1 1'),
-      m('A', 'D', '1 1 1'),
-      m('C', 'B', '1 1 1'),
-      m('B', 'D', '1 1 1'),
-      m('D', 'C', '1 1 1'),
-    ];
-    const { tieBreaks } = explainStandings(['A', 'B', 'C', 'D'], matches, tt);
-    expect(tieBreaks[0]!.steps.at(-1)).toEqual({ type: 'drawOrder', entries: ['B', 'C', 'D'] });
+  it('skips the duel when the tied entries are the whole group', () => {
+    // Cyclic, every game 11:1: everyone 1:1 wins, 3:3 games, 36:36 points
+    const matches = [m('A', 'B', '1 1 1'), m('B', 'C', '1 1 1'), m('C', 'A', '1 1 1')];
+    const steps = explainStandings(['A', 'B', 'C'], matches, tt).tieBreaks[0]!.steps;
+    expect(steps.map((s) => s.type)).toEqual(['criterion', 'criterion', 'headToHead', 'drawOrder']);
+    expect(steps[2]).toEqual({ type: 'headToHead', entries: ['A', 'B', 'C'], skipped: true });
+  });
+
+  it('ends with the draw order, or with the lot when there is a seed', () => {
+    const plain = explainStandings(['A', 'B', 'C', 'D'], allLevel, tt).tieBreaks[0]!;
+    expect(plain.steps.map((s) => (s.type === 'criterion' ? `${s.criterion}${s.among ? '*' : ''}` : s.type))).toEqual([
+      'gameDiff',
+      'pointDiff',
+      'headToHead',
+      'matchDiff*',
+      'gameDiff*',
+      'pointDiff*',
+      'drawOrder',
+    ]);
+    expect(plain.steps.at(-1)).toEqual({ type: 'drawOrder', entries: ['B', 'C', 'D'] });
+
+    const drawn = explainStandings(['A', 'B', 'C', 'D'], allLevel, tt, { lotSeed: 'x' });
+    const lot = drawn.tieBreaks[0]!.steps.at(-1)!;
+    expect(lot.type).toBe('lot');
+    expect(lot.entries).toEqual(order(drawn.rows).slice(1));
   });
 
   it('lists several ties from the top of the table down', () => {
-    // A, B: 2 wins; C, D: 1 win (same data as the head-to-head test above)
-    const matches = [
-      m('B', 'A', '9 9 9'),
-      m('A', 'C', '0 0 0'),
-      m('A', 'D', '0 0 0'),
-      m('C', 'B', '9 9 9'),
-      m('B', 'D', '9 9 9'),
-      m('D', 'C', '0 0 0'),
-    ];
-    const { tieBreaks } = explainStandings(['A', 'B', 'C', 'D'], matches, tt);
+    const { tieBreaks } = explainStandings(['A', 'B', 'C', 'D'], pointsBeforeDuel, tt);
     expect(tieBreaks.map((t) => t.entries)).toEqual([
-      ['B', 'A'],
+      ['A', 'B'],
       ['D', 'C'],
     ]);
   });
@@ -250,9 +233,8 @@ describe('explainStandings', () => {
     const pairs = entries.flatMap((a, i) => entries.slice(i + 1).map((b) => [a, b] as const));
     for (let seed = 0; seed < 50; seed++) {
       const matches = pairs.map(([a, b], i) => m(a, b, notations[(i * 7 + seed * 3 + (seed >> 2)) % notations.length]!));
-      const { rows } = explainStandings(entries, matches, tt);
-      expect(rows).toEqual(computeStandings(entries, matches, tt));
-      const { tieBreaks } = explainStandings(entries, matches, tt);
+      const { rows, tieBreaks } = explainStandings(entries, matches, tt, { lotSeed: seed });
+      expect(rows).toEqual(computeStandings(entries, matches, tt, { lotSeed: seed }));
       for (const tie of tieBreaks) {
         const ranks = tie.entries.map((id) => order(rows).indexOf(id));
         expect(ranks).toEqual([...ranks].sort((x, y) => x - y));

@@ -3,8 +3,9 @@ import type { CompetitionStructure, SeatRef, StructureMatch } from './format.js'
 import { drawGroups, rankForSeeding, type DrawEntry, type SeedPlacement } from './groupDraw.js';
 import { knockoutPlacements, resolveKnockout, type Placement } from './knockout.js';
 import type { Rng } from './rng.js';
-import type { RankingCriterion, Side } from './sport/types.js';
-import { explainStandings, type EntryId, type MatchResult, type StandingsMatch, type StandingsRow, type TieBreak } from './standings.js';
+import type { Seed } from './rng.js';
+import type { Side } from './sport/types.js';
+import { explainStandings, type EntryId, type MatchResult, type RankingInput, type StandingsMatch, type StandingsRow, type TieBreak } from './standings.js';
 
 /** Result of the draw: entries per group position, or per knockout position (`null` = bye) */
 export type Draw =
@@ -108,10 +109,14 @@ export interface CompetitionState {
 export interface ResolveOptions {
   /**
    * Entries that withdrew after the draw. Each of their matches without a recorded result is a walkover for the
-   * opponent as soon as both sides are known, in the groups and in every later knockout round. Recorded results
-   * stay as they are. If both sides withdrew, the first side goes through, so the bracket can still be resolved.
+   * opponent as soon as both sides are known, in the groups and in every later knockout round. If both sides
+   * withdrew, the first side goes through, so the bracket can still be resolved.
+   * Losing a match by a recorded walkover (not turning up) counts as withdrawing from then on.
+   * In the group table, all matches of a withdrawn entry are annulled and it is ranked last (DTTB WO D 7.9).
    */
   withdrawn?: ReadonlySet<EntryId>;
+  /** Seed for drawing lots in finished groups, see `StandingsOptions` (e.g. the seed of the draw) */
+  lotSeed?: Seed;
 }
 
 /**
@@ -122,10 +127,23 @@ export function resolveCompetition(
   structure: CompetitionStructure,
   draw: Draw,
   results: ReadonlyMap<string, MatchResult>,
-  ranking: readonly RankingCriterion[],
+  ranking: RankingInput,
   options: ResolveOptions = {},
 ): CompetitionState {
-  const withdrawn = options.withdrawn ?? new Set<EntryId>();
+  const withdrawn = new Set<EntryId>(options.withdrawn ?? []);
+  // Not turning up to a group match ends the competition for that entry, including its earlier and later group
+  // matches; the group sides are known from the draw alone, so these are found up front.
+  if (draw.type === 'groups') {
+    for (const m of structure.matches) {
+      const recorded = results.get(m.id);
+      if (m.phase !== 'group' || !recorded?.walkover) continue;
+      const loser = m.sides[(1 - recorded.winner) as Side]!;
+      if (loser.type === 'groupSeat') {
+        const id = draw.groups[loser.group]?.[loser.position];
+        if (id) withdrawn.add(id);
+      }
+    }
+  }
   const resolved = new Map<string, ResolvedMatch>();
   const groupStates: GroupState[] = [];
 
@@ -152,7 +170,11 @@ export function resolveCompetition(
     const recorded = results.get(m.id);
     let match: ResolvedMatch;
     if (sides[0] === null || sides[1] === null) match = { ...base, status: 'pending' };
-    else if (recorded) match = { ...base, status: 'finished', result: recorded, winner: sides[recorded.winner]!, loser: sides[(1 - recorded.winner) as Side]! };
+    else if (recorded) {
+      match = { ...base, status: 'finished', result: recorded, winner: sides[recorded.winner]!, loser: sides[(1 - recorded.winner) as Side]! };
+      // A knockout walkover: the loser plays no further matches, e.g. no match for third place
+      if (recorded.walkover) withdrawn.add(match.loser!);
+    }
     else if (withdrawn.has(sides[0]) || withdrawn.has(sides[1])) {
       const winner: Side = withdrawn.has(sides[0]) && !withdrawn.has(sides[1]) ? 1 : 0;
       const result: MatchResult = { winner, games: [], walkover: true };
@@ -167,11 +189,18 @@ export function resolveCompetition(
   structure.groupSizes.forEach((_, group) => {
     const entries = draw.type === 'groups' ? (draw.groups[group] ?? []) : [];
     const own = groupMatches.filter((m) => m.group === group);
+    // Matches of withdrawn entries are annulled for the table; the withdrawn are ranked last, in draw order.
     const finished: StandingsMatch[] = own
-      .filter((m) => m.status === 'finished')
+      .filter((m) => m.status === 'finished' && !withdrawn.has(m.sides[0]!) && !withdrawn.has(m.sides[1]!))
       .map((m) => ({ a: m.sides[0]!, b: m.sides[1]!, result: m.result! }));
-    const { rows, tieBreaks } = explainStandings(entries, finished, ranking);
-    groupStates.push({ group, entries, standings: rows, tieBreaks, complete: own.every((m) => m.status === 'finished') });
+    const active = entries.filter((id) => !withdrawn.has(id));
+    const out = entries.filter((id) => withdrawn.has(id));
+    const complete = own.every((m) => m.status === 'finished');
+    // Lots decide the final order only: while the group runs, the draw order stands in provisionally.
+    const lotSeed = options.lotSeed !== undefined && complete ? { lotSeed: `${options.lotSeed}:${group}` } : {};
+    const { rows, tieBreaks } = explainStandings(active, finished, ranking, lotSeed);
+    const last = explainStandings(out, [], ranking).rows.map((r, i) => ({ ...r, rank: rows.length + i + 1, withdrawn: true as const }));
+    groupStates.push({ group, entries, standings: [...rows, ...last], tieBreaks, complete });
   });
   const knockoutMatches = structure.matches.filter((m) => m.phase === 'knockout').map(resolveMatch);
   const matches = [...groupMatches, ...knockoutMatches];

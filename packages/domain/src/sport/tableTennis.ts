@@ -39,7 +39,13 @@ function parseToken(token: string, rules: MatchRules): GameScore | null {
 export const tableTennis: SportProfile = {
   id: 'table-tennis',
   defaultMatchRules: { gamesToWin: 3, pointsPerGame: 11, winBy: 2 },
-  ranking: ['matchPoints', 'gameDiff', 'headToHead', 'pointDiff'],
+  // DTTB Wettspielordnung D 7.5: Plus- then Minuspunkte, set and ball difference of all matches, then the matches
+  // among the level players (match, set and ball difference), then lots.
+  ranking: {
+    criteria: ['record', 'gameDiff', 'pointDiff', 'headToHead'],
+    headToHead: ['matchDiff', 'gameDiff', 'pointDiff'],
+    lastResort: 'lot',
+  },
   ratingName: 'QTTR',
   parseResult: parseShortNotation,
   // Rule of thumb: about 10 minutes per game needed to win, including warm-up and changeover.

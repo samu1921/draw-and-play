@@ -43,21 +43,35 @@ export type ParseResult =
 export type RankingCriterion =
   /** Match points (wins) */
   | 'matchPoints'
+  /** Record: more wins, and with equal wins fewer losses (table tennis: Plus- and Minuspunkte) */
+  | 'record'
+  /** Wins minus losses */
+  | 'matchDiff'
   /** Game difference */
   | 'gameDiff'
   /** Game ratio */
   | 'gameRatio'
   /** Point difference */
   | 'pointDiff'
-  /** Head-to-head: re-apply the criteria to the matches among the tied entries only */
+  /** Head-to-head: the mini table of the matches among the tied entries, ranked by `Ranking.headToHead` */
   | 'headToHead';
+
+/** How a group table is ordered */
+export interface Ranking {
+  /** Applied one after the other, each only to the entries still level */
+  criteria: RankingCriterion[];
+  /** Criteria of the head-to-head mini table; default: `criteria` without head-to-head */
+  headToHead?: RankingCriterion[];
+  /** When nothing separates: drawing lots, or the order of the draw (default) */
+  lastResort?: 'lot' | 'drawOrder';
+}
 
 export interface SportProfile {
   /** Stable id; also the i18n key prefix for sport-specific terms (game, point, …) */
   id: string;
   defaultMatchRules: MatchRules;
   /** Group standings order */
-  ranking: RankingCriterion[];
+  ranking: Ranking;
   /** Rating used for seeding (table tennis: QTTR) */
   ratingName: string;
   /** Parses quick result entry (table tennis: click-TT short notation) */
