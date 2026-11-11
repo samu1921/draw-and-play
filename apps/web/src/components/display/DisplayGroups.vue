@@ -4,6 +4,8 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCompetitionText } from '../../composables/useCompetitionText.js';
 import type { CompetitionStateInfo } from '../../lib/api.js';
+import type { Translate } from '../../lib/describe.js';
+import { tieSummary } from '../../lib/rules.js';
 
 const props = defineProps<{
   state: CompetitionStateInfo;
@@ -14,11 +16,18 @@ const props = defineProps<{
   revealed?: ReadonlySet<string>;
   /** The entry revealed last, highlighted */
   latest?: string | null;
+  /** Below finished groups, one line per tie saying what decided it */
+  tieNotes?: boolean;
 }>();
 const { t } = useI18n();
 const { name } = useCompetitionText(() => props.state);
 
 const shown = computed(() => props.groups.map((g) => props.state.groups[g]!));
+const notes = (g: CompetitionStateInfo['groups'][number]) => {
+  if (!props.tieNotes || props.revealed || !g.complete || !g.tieBreaks) return [];
+  const rank = new Map(g.standings.map((r) => [r.entryId, r.rank]));
+  return g.tieBreaks.map((tie) => tieSummary(t as Translate, tie, (id) => rank.get(id) ?? 0));
+};
 </script>
 
 <template>
@@ -57,6 +66,9 @@ const shown = computed(() => props.groups.map((g) => props.state.groups[g]!));
           </tr>
         </tbody>
       </table>
+      <ul v-if="notes(g).length > 0" class="d-tie-notes">
+        <li v-for="(note, i) in notes(g)" :key="i">{{ note }}</li>
+      </ul>
     </section>
   </div>
 </template>

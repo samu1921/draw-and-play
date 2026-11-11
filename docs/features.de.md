@@ -105,6 +105,7 @@ Ergebnisse werden in der aus dem Tischtennis bekannten Kurznotation eingegeben: 
 
 - Unter **Anzeigen** legt jeder Admin **Anzeige-Profile** an, eines pro Bildschirm (Beamer in der Halle, TV am Eingang), jedes mit eigenem Link.
 - Ein Profil wählt die Folien: Tische, nächste Spiele, Gruppen, KO-Bäume, Meldelisten noch nicht ausgeloster Konkurrenzen und eine **Live-Auslosung**, die Auslosungen und Doppelpaare Schritt für Schritt aufdeckt. Außerdem lassen sich die Konkurrenzen eingrenzen, nur der heutige Tag zeigen und die Sekunden pro Folie einstellen.
+- **Spielmodus und Gleichstände erklären** (im Profil, standardmäßig an): Jede Konkurrenz bekommt eine Folie **Spielmodus und Wertung** mit Ablauf, Spielregeln, Tabellenkriterien, Weiterkommen mit den Paarungen der ersten KO-Runde und den Platzierungen. Sobald eine Gruppe fertig ist, steht unter ihrer Tabelle je Gleichstand eine Zeile wie „Platz 2–3: gleich viele Siege, entschieden durch Direkter Vergleich“, und eine Folie **Gleichstände** zeigt die Rechnung Schritt für Schritt. So können die Spieler in der Halle nachvollziehen, wer warum weiterkommt.
 - Die Anzeige ist eine 16:9-Bühne, die nie scrollt. Pfeiltasten oder ein Presenter wechseln die Folie, Leertaste pausiert, F schaltet Vollbild um. Änderungen am Profil erscheinen sofort auf jedem Bildschirm.
 - Fällt das Netz aus, zeigt die Anzeige weiter den letzten Stand.
 

@@ -221,6 +221,8 @@ export interface DisplaySettings {
   todayOnly: boolean;
   /** Show draws live, step by step */
   liveDraw: boolean;
+  /** Format of each competition and the ties of finished groups */
+  rules: boolean;
 }
 
 export interface DisplayProfile {
@@ -241,4 +243,5 @@ export const defaultDisplaySettings: DisplaySettings = {
   competitionIds: null,
   todayOnly: false,
   liveDraw: true,
+  rules: true,
 };
