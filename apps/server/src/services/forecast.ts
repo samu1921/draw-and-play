@@ -85,6 +85,11 @@ export async function eventForecast(ex: Executor, event: EventRow, requestedDay?
           participants.set(m.id, [...(personsOf.get(m.sides[0]) ?? []), ...(personsOf.get(m.sides[1]) ?? [])]);
         }
       }
+      // Swiss system: boards that stay empty after withdrawals are never played.
+      const resolved = new Set(loaded.state.matches.map((m) => m.id));
+      for (const m of structure?.matches ?? []) {
+        if (!resolved.has(m.id)) fixed.set(m.id, { table: firstTable, start: startMin - matchMinutes, end: startMin });
+      }
     }
 
     plans.push({

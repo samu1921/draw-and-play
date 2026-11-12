@@ -1,5 +1,6 @@
 import {
   buildStructure,
+  drawnEntries,
   getSportProfile,
   resolveCompetition,
   type CompetitionState,
@@ -60,8 +61,7 @@ export function expectedEntryCount(competition: CompetitionRow, list: readonly E
 export function structureFor(competition: CompetitionRow): CompetitionStructure | null {
   const draw = competition.draw;
   if (!draw) return null;
-  const count = draw.type === 'groups' ? draw.groups.flat().length : draw.seats.filter((s) => s !== null).length;
-  return buildStructure(competition.format, count);
+  return buildStructure(competition.format, drawnEntries(draw).length);
 }
 
 /** Seeding input: singles use the player's rating, doubles the average; club only if both share it. */
@@ -93,6 +93,18 @@ export interface LoadedCompetition {
   state: CompetitionState | null;
 }
 
+/** What the live state is resolved from: recorded results, withdrawals and the seed for drawing lots */
+export function resolveInput(competition: CompetitionRow, entryList: readonly EntryWithMembers[], matchRows: readonly MatchRow[], sport: SportProfile) {
+  const results = new Map<string, MatchResult>(
+    matchRows.flatMap((m) => (m.status === 'finished' && m.result ? [[m.matchKey, m.result] as const] : [])),
+  );
+  // Entries that withdrew after the draw lose their remaining matches by walkover.
+  const withdrawn = new Set(entryList.filter((e) => e.status === 'withdrawn').map((e) => e.id));
+  // Lots in finished groups are drawn from the draw's seed: random, but the same on every load and reproducible.
+  const lotSeed = competition.drawSeed ?? competition.id;
+  return { results, options: { withdrawn, lotSeed, swissRanking: sport.swissRanking } };
+}
+
 export async function loadCompetitionState(ex: Executor, competitionId: string): Promise<LoadedCompetition> {
   const competition = await loadCompetition(ex, competitionId);
   const [entryList, matchRows, sport] = await Promise.all([
@@ -103,14 +115,8 @@ export async function loadCompetitionState(ex: Executor, competitionId: string):
   const structure = structureFor(competition);
   let state: CompetitionState | null = null;
   if (structure && competition.draw) {
-    const results = new Map<string, MatchResult>(
-      matchRows.flatMap((m) => (m.status === 'finished' && m.result ? [[m.matchKey, m.result] as const] : [])),
-    );
-    // Entries that withdrew after the draw lose their remaining matches by walkover.
-    const withdrawn = new Set(entryList.filter((e) => e.status === 'withdrawn').map((e) => e.id));
-    // Lots in finished groups are drawn from the draw's seed: random, but the same on every load and reproducible.
-    const lotSeed = competition.drawSeed ?? competition.id;
-    state = resolveCompetition(structure, competition.draw, results, sport.ranking, { withdrawn, lotSeed });
+    const { results, options } = resolveInput(competition, entryList, matchRows, sport);
+    state = resolveCompetition(structure, competition.draw, results, sport.ranking, options);
   }
   return { competition, sport, entries: entryList, matchRows, structure, state };
 }
@@ -179,9 +185,19 @@ export function competitionView(loaded: LoadedCompetition, settings: EventSettin
     switch (seat.type) {
       case 'qualifier':
         return { type: 'qualifier' as const, group: seat.group, rank: seat.rank };
+      case 'bestNext':
+        // Seated away from their own group, so which of them comes here stays open.
+        return {
+          type: 'bestNext' as const,
+          rank: seat.rank,
+          advancing: seat.rank === state?.nextRanked?.rank && seat.index < state.nextRanked.advancing,
+          index: seat.index,
+        };
       case 'winner':
       case 'loser':
         return { type: seat.type, matchKey: seat.match };
+      case 'swissSeat':
+        return { type: 'swiss' as const };
       default:
         return { type: 'draw' as const };
     }
@@ -202,13 +218,15 @@ export function competitionView(loaded: LoadedCompetition, settings: EventSettin
       state?.matches.map((m) => {
         const row = rowByKey.get(m.id);
         const structureMatch = structureOf.get(m.id);
-        const places = structureMatch?.bracketMatch?.places;
+        const places = structureMatch?.places;
         return {
           id: row?.id ?? null,
           key: m.id,
           phase: m.phase,
           group: m.group ?? null,
           round: m.round,
+          /** `KO` for the main bracket, `C1`, `C2`, … for consolation brackets and consolation fields of three */
+          stage: structureMatch?.stage ?? null,
           places: places ?? null,
           sides: m.sides,
           sources: structureMatch ? [sourceOf(structureMatch.sides[0]), sourceOf(structureMatch.sides[1])] : null,
@@ -220,6 +238,17 @@ export function competitionView(loaded: LoadedCompetition, settings: EventSettin
           version: row?.version ?? 0,
         };
       }) ?? [],
+    /** The group rank compared across the groups when its best entries fill the knockout */
+    nextRanked: state?.nextRanked ?? null,
+    /** Further group ranks compared across the groups: they seed consolation brackets, the best get the byes */
+    seeding: state?.seeding ?? [],
+    /** Consolation fields of three that play everybody against everybody, with their tables */
+    placementGroups: state?.placementGroups ?? [],
+    /** Swiss system: the rounds paired so far, with who sits out */
+    swiss:
+      structure?.swiss && competition.draw?.type === 'swiss'
+        ? { rounds: structure.swiss.rounds, paired: competition.draw.rounds.map((r, i) => ({ round: i + 1, bye: r.bye ?? null })) }
+        : null,
     placements: state?.placements ?? [],
     finished: state?.finished ?? false,
   };
