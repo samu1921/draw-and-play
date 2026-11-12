@@ -53,6 +53,10 @@ export type RankingCriterion =
   | 'gameRatio'
   /** Point difference */
   | 'pointDiff'
+  /** Swiss system: the sum of the opponents' wins, so wins against stronger opponents weigh more */
+  | 'buchholz'
+  /** Swiss system: the sum of the opponents' Buchholz scores */
+  | 'fineBuchholz'
   /** Head-to-head: the mini table of the matches among the tied entries, ranked by `Ranking.headToHead` */
   | 'headToHead';
 
@@ -72,6 +76,8 @@ export interface SportProfile {
   defaultMatchRules: MatchRules;
   /** Group standings order */
   ranking: Ranking;
+  /** Order of the table in a Swiss system */
+  swissRanking: Ranking;
   /** Rating used for seeding (table tennis: QTTR) */
   ratingName: string;
   /** Parses quick result entry (table tennis: click-TT short notation) */

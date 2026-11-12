@@ -1,12 +1,16 @@
 import {
+  bestNextCount,
   buildStructure,
+  validateFormat,
   type CompetitionFormat,
+  type ConsolationMode,
   type PlacementMode,
   type SeatRef,
   type StructureMatch,
   type StructureOptions,
 } from './format.js';
 import { groupSizes } from './groupDraw.js';
+import { swissRoundRange } from './swiss.js';
 import { scheduleTasks, type ScheduledMatch, type ScheduleTask } from './scheduler.js';
 
 export interface CompetitionPlan {
@@ -55,7 +59,7 @@ export interface CompetitionForecast {
   knockoutSize?: number;
   byes: number;
   start: number;
-  /** End of the group stage, if there is one */
+  /** End of the group stage or the Swiss rounds, if there are any */
   groupStageEnd?: number;
   end: number;
   /** End including the buffer */
@@ -89,8 +93,14 @@ function seatToken(competitionId: string, seat: SeatRef): string | undefined {
       return `${competitionId}/G${seat.group}.${seat.position}`;
     case 'drawSeat':
       return `${competitionId}/S${seat.position}`;
+    // Whoever takes a seat after the groups can play several matches of a consolation field that are not
+    // ordered by dependencies.
+    case 'qualifier':
+      return `${competitionId}/Q${seat.group}.${seat.rank}`;
+    case 'bestNext':
+      return `${competitionId}/B${seat.rank}.${seat.index}`;
     default:
-      // Qualifiers and winners/losers are ordered through dependencies instead.
+      // Winners and losers are ordered through dependencies instead.
       return undefined;
   }
 }
@@ -129,14 +139,18 @@ export function simulatePlan(input: PlanInput): PlanResult {
   const competitions = built.map(({ plan, structure }): CompetitionForecast => {
     const slot = (matchId: string) => byTask.get(taskId(plan.id, matchId));
     const placed = structure.matches.flatMap((m) => slot(m.id) ?? []);
-    const groupEnds = structure.matches.filter((m) => m.phase === 'group').flatMap((m) => slot(m.id)?.end ?? []);
+    const preliminary = structure.matches.filter((m) => m.phase === 'group' || m.phase === 'swiss');
+    const groupEnds = preliminary.flatMap((m) => slot(m.id)?.end ?? []);
+    const endOf = (matches: readonly StructureMatch[]) => matches.flatMap((m) => slot(m.id)?.end ?? []);
     const start = Math.min(...placed.map((m) => m.start));
     const end = Math.max(...placed.map((m) => m.end));
 
-    // Breaks: between consecutive matches of a placeholder person, and from a qualifying group or
-    // preceding knockout match to the next knockout match.
+    // Breaks: between consecutive matches of a placeholder person, from a qualifying group or preceding
+    // knockout match to the next knockout match, and between two Swiss rounds.
     const waits: number[] = [];
     const timesOf = new Map<string, ScheduledMatch[]>();
+    /** Seats that already waited for the end of their group */
+    const arrived = new Set<string>();
     for (const m of structure.matches) {
       const s = slot(m.id);
       if (!s) continue;
@@ -147,11 +161,19 @@ export function simulatePlan(input: PlanInput): PlanResult {
           const prior = byTask.get(taskId(plan.id, seat.match));
           if (prior) waits.push(s.start - prior.end);
         }
-        if (seat.type === 'qualifier') {
-          const groupEnd = Math.max(
-            ...structure.matches.filter((g) => g.group === seat.group && g.phase === 'group').flatMap((g) => slot(g.id)?.end ?? []),
-          );
-          waits.push(s.start - groupEnd);
+        // In a consolation field everybody plays several matches: only the first one follows the groups.
+        const first = token === undefined || m.phase !== 'placement' || !arrived.has(token);
+        if (token && m.phase === 'placement') arrived.add(token);
+        if (seat.type === 'qualifier' && first) {
+          // After a Swiss system or without a group of its own the whole stage counts.
+          const own = preliminary.filter((g) => g.phase === 'swiss' || g.group === seat.group);
+          waits.push(s.start - Math.max(...endOf(own)));
+        }
+        if (seat.type === 'bestNext' && first) waits.push(s.start - Math.max(...groupEnds));
+        if (seat.type === 'swissSeat' && seat.round > 1) {
+          // Whoever finished the round before first waits longest.
+          const before = endOf(preliminary.filter((g) => g.round === seat.round - 1));
+          if (before.length > 0) waits.push(s.start - Math.min(...before));
         }
       }
     }
@@ -191,18 +213,67 @@ export function simulatePlan(input: PlanInput): PlanResult {
   };
 }
 
-/** A candidate format with a stable id: `rr`, `rr-top2`, `g3-top2`, `ko`, … */
+/** A candidate format with a stable id: `rr`, `rr-top2`, `g3-top2`, `swiss`, `swiss-top4`, `ko`, … */
 export interface FormatVariant {
   id: string;
   format: CompetitionFormat;
 }
 
-export interface VariantOptions {
-  placements?: PlacementMode;
+/** Settings that apply to several formats; each format takes those that fit it */
+export interface FormatSettings {
+  placements?: PlacementMode | undefined;
+  /** Formats with several groups and a knockout: the eliminated entries play on */
+  consolation?: ConsolationMode | undefined;
+  /** Formats whose knockout would have byes: the best of the next group rank advance as well */
+  fillByes?: boolean | undefined;
+  /** Rounds of a Swiss system (default: the recommended number for the entries) */
+  swissRounds?: number | undefined;
+}
+
+export interface VariantOptions extends FormatSettings {
   /** Largest single round robin to offer (default 12) */
   maxRoundRobin?: number;
   /** Largest group in a group stage (default 8) */
   maxGroupSize?: number;
+}
+
+/** Which settings a format can take, so that a form only offers what has an effect */
+export interface FormatCapabilities {
+  placements: boolean;
+  consolation: boolean;
+  fillByes: boolean;
+  swissRounds: { min: number; recommended: number; max: number } | null;
+}
+
+export function formatCapabilities(format: CompetitionFormat, entryCount: number): FormatCapabilities {
+  const { groups, knockout } = format;
+  const k = knockout?.qualifiersPerGroup ?? 0;
+  const filled: CompetitionFormat = { ...format, ...(knockout && { knockout: { ...knockout, fillByes: true } }) };
+  const fillByes = bestNextCount(filled) > 0 && validateFormat(filled, entryCount) === null;
+  return {
+    placements: knockout !== undefined,
+    fillByes,
+    // Someone has to be left over: with one group the table already gives every place.
+    consolation: groups !== undefined && knockout !== undefined && groups.groupCount > 1 && entryCount > groups.groupCount * k + (fillByes && knockout.fillByes ? bestNextCount(filled) : 0),
+    swissRounds: format.swiss ? swissRoundRange(entryCount) : null,
+  };
+}
+
+/** The format with the settings that fit it; settings without an effect are left out */
+export function applyFormatSettings(format: CompetitionFormat, entryCount: number, settings: FormatSettings): CompetitionFormat {
+  const range = format.swiss ? swissRoundRange(entryCount) : null;
+  const swiss = range && { rounds: Math.max(1, Math.min(Math.round(settings.swissRounds ?? range.recommended) || range.recommended, range.max)) };
+  if (!format.knockout) return { ...format, ...(swiss && { swiss }) };
+  const { qualifiersPerGroup } = format.knockout;
+  const base: CompetitionFormat = {
+    ...format,
+    ...(swiss && { swiss }),
+    knockout: { ...(qualifiersPerGroup !== undefined && { qualifiersPerGroup }), placements: settings.placements ?? format.knockout.placements },
+  };
+  const fillByes = settings.fillByes === true && formatCapabilities(base, entryCount).fillByes;
+  const filled: CompetitionFormat = { ...base, knockout: { ...base.knockout!, ...(fillByes && { fillByes }) } };
+  const consolation = settings.consolation !== undefined && formatCapabilities(filled, entryCount).consolation;
+  return { ...filled, knockout: { ...filled.knockout!, ...(consolation && { consolation: settings.consolation }) } };
 }
 
 /** All sensible formats for a number of entries, for the planner's comparison table. */
@@ -233,8 +304,17 @@ export function generateVariants(entryCount: number, options: VariantOptions = {
     }
   }
 
+  // A Swiss system only differs from a round robin when not everybody can meet everybody.
+  if (n >= 6) {
+    const rounds = swissRoundRange(n).recommended;
+    variants.push({ id: 'swiss', format: { swiss: { rounds } } });
+    for (const k of [4, 8]) {
+      if (n >= k * 2) variants.push({ id: `swiss-top${k}`, format: { swiss: { rounds }, knockout: { qualifiersPerGroup: k, placements } } });
+    }
+  }
+
   if (n >= 3) variants.push({ id: 'ko', format: { knockout: { placements } } });
-  return variants;
+  return variants.map((v) => ({ id: v.id, format: applyFormatSettings(v.format, n, options) }));
 }
 
 export interface VariantComparison {

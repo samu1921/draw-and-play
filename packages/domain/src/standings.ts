@@ -27,11 +27,20 @@ export interface StandingsRow {
   gamesLost: number;
   pointsWon: number;
   pointsLost: number;
-  /** Withdrew or did not turn up: all group matches are annulled and the entry is ranked last */
+  /** Swiss system only: sum of the opponents' wins */
+  buchholz?: number;
+  /** Swiss system only: sum of the opponents' Buchholz scores */
+  fineBuchholz?: number;
+  /**
+   * Withdrew or did not turn up. In a group all matches of the entry are annulled and it is ranked last;
+   * in a Swiss system it keeps its wins and its place in the table.
+   */
   withdrawn?: true;
 }
 
-type Stats = Omit<StandingsRow, 'rank' | 'withdrawn'>;
+/** The numbers of one entry that a table is ordered by */
+export type StandingsStats = Omit<StandingsRow, 'rank' | 'withdrawn'>;
+type Stats = StandingsStats;
 
 /** A score as "for:against": wins:losses, games won:lost or points won:lost, depending on the criterion */
 export type ScorePair = readonly [number, number];
@@ -107,8 +116,21 @@ export function explainStandings(
   rankingInput: RankingInput,
   options: StandingsOptions = {},
 ): StandingsExplanation {
+  return rankStandings(entries, matches, rankingInput, tallyStandings(entries, matches), options);
+}
+
+/**
+ * Orders `entries` by prepared `stats`, e.g. with byes and Buchholz scores in a Swiss system. `matches` is only
+ * used for the head-to-head comparison.
+ */
+export function rankStandings(
+  entries: readonly EntryId[],
+  matches: readonly StandingsMatch[],
+  rankingInput: RankingInput,
+  stats: Map<EntryId, StandingsStats>,
+  options: StandingsOptions = {},
+): StandingsExplanation {
   const ranking = toRanking(rankingInput);
-  const stats = tally(entries, matches);
   const tieBreaks: TieBreak[] = [];
   // One lot for the whole group, drawn up front: restricted to any tied subset it is still a fair lot.
   const lot =
@@ -124,7 +146,8 @@ export function explainStandings(
   return { rows: ordered.map((id, i) => ({ ...stats.get(id)!, rank: i + 1 })), tieBreaks };
 }
 
-function tally(entries: readonly EntryId[], matches: readonly StandingsMatch[]): Map<EntryId, Stats> {
+/** Matches, games and points per entry from finished matches */
+export function tallyStandings(entries: readonly EntryId[], matches: readonly StandingsMatch[]): Map<EntryId, Stats> {
   const stats = new Map<EntryId, Stats>(
     entries.map((entryId) => [
       entryId,
@@ -202,7 +225,7 @@ function rankIds(
       ? rankIds(ids, matches, rest, stats, trace, context)
       : (() => {
           const steps = 'steps' in trace ? trace.steps : [];
-          const classes = rankIds(ids, among, context.miniTable, tally(ids, among), { steps, among: ids }, context);
+          const classes = rankIds(ids, among, context.miniTable, tallyStandings(ids, among), { steps, among: ids }, context);
           return classes.flatMap((cls) => rankIds(cls, matches, rest, stats, 'steps' in trace ? { steps } : trace, context));
         })();
     step.entries = result.flat();
@@ -258,6 +281,11 @@ function scoreOf(criterion: Exclude<RankingCriterion, 'headToHead'>, s: Stats): 
       return [s.gamesWon, s.gamesLost];
     case 'pointDiff':
       return [s.pointsWon, s.pointsLost];
+    // A single number rather than a pair: the second value is unused
+    case 'buchholz':
+      return [s.buchholz ?? 0, 0];
+    case 'fineBuchholz':
+      return [s.fineBuchholz ?? 0, 0];
   }
 }
 
@@ -276,5 +304,9 @@ function criterionValue(criterion: Exclude<RankingCriterion, 'headToHead'>, s: S
       return s.gamesLost === 0 ? (s.gamesWon === 0 ? 0 : Number.POSITIVE_INFINITY) : s.gamesWon / s.gamesLost;
     case 'pointDiff':
       return s.pointsWon - s.pointsLost;
+    case 'buchholz':
+      return s.buchholz ?? 0;
+    case 'fineBuchholz':
+      return s.fineBuchholz ?? 0;
   }
 }
