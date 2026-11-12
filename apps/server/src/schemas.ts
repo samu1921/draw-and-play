@@ -2,19 +2,23 @@ import { z } from 'zod';
 
 // Validation schemas shared by several routes (and the event import), kept free of route imports.
 
-/** Stages of a competition: groups, knockout or both */
+/** Stages of a competition: groups or a Swiss system, a knockout, or both in a row */
 export const formatSchema = z
   .object({
     groups: z.object({ groupCount: z.int().min(1).max(64), double: z.boolean().optional() }).optional(),
+    swiss: z.object({ rounds: z.int().min(1).max(64) }).optional(),
     knockout: z
       .object({
         qualifiersPerGroup: z.int().min(1).max(16).optional(),
         placements: z.enum(['none', 'thirdPlace', 'all']),
+        fillByes: z.boolean().optional(),
+        consolation: z.enum(['bracket', 'perRank']).optional(),
       })
       .optional(),
   })
-  .refine((f) => f.groups !== undefined || f.knockout !== undefined, { message: 'noStages' })
-  .refine((f) => !(f.groups && f.knockout) || f.knockout.qualifiersPerGroup !== undefined, { message: 'missingQualifiers' });
+  .refine((f) => f.groups !== undefined || f.swiss !== undefined || f.knockout !== undefined, { message: 'noStages' })
+  .refine((f) => !(f.groups && f.swiss), { message: 'conflictingStages' })
+  .refine((f) => !((f.groups || f.swiss) && f.knockout) || f.knockout.qualifiersPerGroup !== undefined, { message: 'missingQualifiers' });
 
 /** Settings of a display profile; every field is optional and falls back to `displayDefaults` */
 export const displaySettingsSchema = z

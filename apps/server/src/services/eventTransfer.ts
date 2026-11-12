@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { buildStructure, DOMAIN_VERSION, SPORT_IDS, validateDraw, type Draw } from '@draw-and-play/domain';
+import { buildStructure, DOMAIN_VERSION, drawnEntries, SPORT_IDS, validateDraw, type Draw } from '@draw-and-play/domain';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { generateViewerCode } from '../auth/viewers.js';
@@ -25,6 +25,11 @@ const nullableTimestamp = timestamp.nullable();
 const drawSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('groups'), groups: z.array(z.array(id)) }),
   z.object({ type: z.literal('knockout'), seats: z.array(id.nullable()) }),
+  z.object({
+    type: z.literal('swiss'),
+    order: z.array(id),
+    rounds: z.array(z.object({ pairs: z.array(z.tuple([id, id])), bye: id.optional() })),
+  }),
 ]);
 
 const matchRulesSchema = z.object({
@@ -277,7 +282,7 @@ export function checkEventExport(doc: EventExport): void {
   for (const c of doc.competitions) {
     if (!c.draw) continue;
     const own = entriesOf.get(c.id) ?? new Set<string>();
-    const drawn = c.draw.type === 'groups' ? c.draw.groups.flat() : c.draw.seats.filter((s): s is string => s !== null);
+    const drawn = drawnEntries(c.draw as Draw);
     if (drawn.some((e) => !own.has(e))) throw invalid('unknownReference', `competitions:${c.id}:draw`);
     let keys: Set<string>;
     try {
@@ -445,7 +450,18 @@ export async function importEvent(tx: Executor, doc: EventExport, slug: string):
 
 function remapDraw(draw: EventExport['competitions'][number]['draw'], map: (old: string) => string): Draw | null {
   if (draw === null) return null;
-  return draw.type === 'groups' ? { type: 'groups', groups: draw.groups.map((g) => g.map(map)) } : { type: 'knockout', seats: draw.seats.map((s) => (s === null ? null : map(s))) };
+  switch (draw.type) {
+    case 'groups':
+      return { type: 'groups', groups: draw.groups.map((g) => g.map(map)) };
+    case 'knockout':
+      return { type: 'knockout', seats: draw.seats.map((s) => (s === null ? null : map(s))) };
+    case 'swiss':
+      return {
+        type: 'swiss',
+        order: draw.order.map(map),
+        rounds: draw.rounds.map((r) => ({ pairs: r.pairs.map(([a, b]): [string, string] => [map(a), map(b)]), ...(r.bye !== undefined && { bye: map(r.bye) }) })),
+      };
+  }
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   dependentMatches,
   drawForStructure,
   drawPairs,
+  syncSwissRounds,
   validateFormat,
   type CompetitionDrawOptions,
   type MatchResult,
@@ -18,7 +19,7 @@ import type { Db, Tx } from '../db/client.js';
 import { auditLog, competitions, entries, entryMembers, eventTables, matches } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound } from '../errors.js';
 import type { Broadcaster } from '../realtime/broadcaster.js';
-import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, sportOfEvent, toDrawEntry } from './competitions.js';
+import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, resolveInput, sportOfEvent, toDrawEntry } from './competitions.js';
 
 export interface CommandContext {
   db: Db;
@@ -43,6 +44,27 @@ const isUniqueViolation = (error: unknown) =>
   typeof error === 'object' && error !== null && 'cause' in error
     ? (error.cause as { code?: string })?.code === '23505'
     : (error as { code?: string })?.code === '23505';
+
+/**
+ * Swiss system: pairs the next round once the one before is finished, and pairs a round again that nobody has
+ * started when a result or a withdrawal changes what it builds on. Runs inside the transaction of the command
+ * that caused the change. Returns whether the pairings changed.
+ */
+async function syncSwiss(tx: Tx, ctx: CommandContext, eventId: string, competitionId: string): Promise<boolean> {
+  const loaded = await loadCompetitionState(tx, competitionId);
+  const { competition, structure } = loaded;
+  if (!structure?.swiss || competition.draw?.type !== 'swiss') return false;
+  const { results, options } = resolveInput(competition, loaded.entries, loaded.matchRows, loaded.sport);
+  const started = new Set(loaded.matchRows.filter((m) => m.status !== 'scheduled').map((m) => m.matchKey));
+  const draw = syncSwissRounds(structure, competition.draw, results, loaded.sport.ranking, { ...options, started });
+  if (draw === competition.draw || draw.type !== 'swiss') return false;
+  await tx
+    .update(competitions)
+    .set({ draw, version: competition.version + 1 })
+    .where(eq(competitions.id, competitionId));
+  await audit(tx, ctx, eventId, 'pairRounds', 'competition', competitionId, { rounds: draw.rounds });
+  return true;
+}
 
 // --- Draw ---
 
@@ -125,6 +147,7 @@ export async function withdrawEntry(ctx: CommandContext, entryId: string) {
     const called = loaded.matchRows.find((m) => m.status === 'called' && (m.sideA === entryId || m.sideB === entryId));
     if (called) throw conflict('matchCalled', { matchId: called.id });
     await tx.update(entries).set({ status: 'withdrawn' }).where(eq(entries.id, entryId));
+    await syncSwiss(tx, ctx, eventId, competitionId);
     const after = await loadCompetitionState(tx, competitionId);
     const count = after.state?.matches.filter((m) => m.withdrawal && m.sides.includes(entryId)).length ?? 0;
     await audit(tx, ctx, eventId, 'withdraw', 'entry', entryId, { walkovers: count });
@@ -151,6 +174,7 @@ export async function reinstateEntry(ctx: CommandContext, entryId: string) {
     }
     await tx.update(entries).set({ status: 'present' }).where(eq(entries.id, entryId));
     await audit(tx, ctx, eventId, 'reinstate', 'entry', entryId);
+    await syncSwiss(tx, ctx, eventId, competitionId);
   });
   ctx.broadcaster.publish({ eventId, type: 'competition', id: competitionId });
 }
@@ -344,6 +368,7 @@ function sameResult(a: MatchResult, b: MatchResult): boolean {
 export async function recordResult(ctx: CommandContext, matchId: string, input: ResultInput) {
   const eventId = await eventOfMatch(ctx.db, matchId);
   let unchanged = false;
+  let paired: string | null = null;
   const updated = await withEventLock(ctx.db, eventId, async (tx) => {
     // A request that is sent again (e.g. by a phone whose first answer got lost in a dead spot) must not fail:
     // if the match already holds exactly this result, nothing changes, whatever version the request names.
@@ -396,8 +421,11 @@ export async function recordResult(ctx: CommandContext, matchId: string, input: 
       result,
       previous: row.result,
     });
+    paired = await syncSwiss(tx, ctx, eventId, row.competitionId) ? row.competitionId : null;
     return saved!;
   });
   if (!unchanged) ctx.broadcaster.publish({ eventId, type: 'match', id: matchId });
+  // A new Swiss round changes the whole competition, not just this match.
+  if (paired) ctx.broadcaster.publish({ eventId, type: 'competition', id: paired });
   return updated;
 }
