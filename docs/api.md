@@ -96,8 +96,8 @@ Images nothing refers to any more are deleted when a branding is saved (after ha
 
 | Method | Path | Access | Body / result |
 |---|---|---|---|
-| POST | `/api/events/:id/competitions` | admin | `{ name, kind?, format, gamesToWin?, matchMinutes?, day?, earliestStart?, startAfterId?, tableIds?, color?, sortOrder? }` |
-| PATCH | `/api/competitions/:id` | admin | same fields + `version`; `format` and `kind` only before the draw |
+| POST | `/api/events/:id/competitions` | admin | `{ name, kind?, format, gamesToWin?, matchMinutes?, day?, earliestStart?, startAfterId?, tableIds?, color?, sortOrder? }`; `kind` is `singles` (default), `doubles` or `rotation` (doubles with rotating partners, entered as single players). `rotation` takes the format `{ "rotation": {} }` and nothing else, the other kinds cannot use it (`formatKindMismatch`) |
+| PATCH | `/api/competitions/:id` | admin | same fields + `version`; `format` and `kind` only before the draw; a kind other than doubles needs the pairs split first (`pairsEntered`) |
 | DELETE | `/api/competitions/:id` | admin | only while no match was called or played |
 | GET | `/api/competitions/:id/state` | public | live state, see below; admins also get seeds and the draw seed |
 | POST | `/api/competitions/:id/entries` | staff | `{ personIds: [id] or [id, id], seed?, status? }`; in doubles a single player waits for the pair draw |
@@ -118,9 +118,12 @@ Pair draw: `mode: 'seeded'` (default) gives each player of the upper half of the
 - `groups` (`groupCount`, `double?`) or `swiss` (`rounds`) is the preliminary stage; the two exclude each other.
 - `knockout.qualifiersPerGroup` is required after a preliminary stage: the top *k* of every group, or of the Swiss table.
 - `knockout.fillByes: true` lets the best entries of the next group rank fill the bracket (rejected with `cannotFillByes` at the draw if there are too few groups).
-- `knockout.consolation` is `"bracket"` (one bracket for everybody eliminated in the groups) or `"perRank"` (one bracket per group rank). A field of exactly three entries is played everybody against everybody instead of a bracket.
+- `rotation: {}` stands alone (4–32 players, `tooFewEntries` / `tooManyEntries` otherwise): every match is two against two, everybody partners everybody once.
+- `knockout.consolation` is `"bracket" (one bracket for everybody eliminated in the groups) or `"perRank"` (one bracket per group rank). A field of exactly three entries is played everybody against everybody instead of a bracket.
 
 In the state, a Swiss system has one table (`groups[0]`, rows with `buchholz`), matches with `phase: "swiss"` and keys `SW-<round>-<board>`, and `swiss: { rounds, paired: [{ round, bye }] }`. The next round is paired by the server when the last result of the round before is recorded. Knockout matches carry `stage` (`KO`, or `C1`, `C2`, … for consolation brackets). Consolation fields of three have matches with `phase: "placement"`, a `stage` like the brackets and keys `C1-<round>-<match>`; their tables are in `placementGroups: [{ stage, places, entries, standings, tieBreaks, complete }]`. `nextRanked` holds the comparison of the group rank whose best entries fill the bracket; `seeding` holds the same comparison for every further group rank that seeds a consolation bracket with byes (`advancing: 0`). If the groups differ in size, it carries `comparedSize` and its rows only count the matches against the first `comparedSize` entries of the own group. A side that is still open can have the sources `{ "type": "bestNext", "rank", "advancing", "index" }` and `{ "type": "swiss" }`.
+
+With rotating partners the draw is `{ "type": "rotation", "order": [entryId, …] }`, the state has one table (`groups[0]`) with a row per player, and the matches have `phase: "rotation"`, keys `RT-<round>-<match>` and `partners: [entryId, entryId]` next to `sides`: side A is `sides[0]` with `partners[0]`. Matches annulled by a withdrawal carry `withdrawal: true`. Stored matches have `partnerA`/`partnerB` next to `sideA`/`sideB` (also in the event export); in the operations view a side already joins both players (`name: "A / B"`, both `personIds`).
 
 ### Competition state
 

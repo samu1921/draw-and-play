@@ -63,6 +63,7 @@ A competition has a name, a type (singles or doubles), a colour, scoring (games 
 | Round robin | single or double round robin |
 | Groups + knockout | number of groups, top *k* of each group advance; optionally the best of the next group rank advance too, and the eliminated entries play a consolation round |
 | Swiss system | number of rounds; on its own (the table is the final ranking) or as a preliminary stage, after which the top *k* of the table go into a knockout |
+| Rotating partners | a kind of competition of its own for 4–32 players: doubles in which everybody partners everybody once; every player has their own row in the table |
 | Knockout | bracket size is the next power of two, byes go to the best seeds |
 
 Placement matches in the knockout: **none**, **3rd place** or **all places**. Group standings follow the sport profile; in table tennis the German federation's rules (DTTB Wettspielordnung D 7.5): more wins, then fewer losses, then game and point difference over all matches, then the matches among those still level (match, game and point difference), and finally lots. Lots are only drawn once the group is finished, automatically with the random key of the draw; until then the order of the draw applies provisionally. The crossover from the groups into the knockout keeps entries of the same group apart for as long as possible.
@@ -108,6 +109,18 @@ The format and type can be changed until the draw. Scoring, match duration, star
 - **Reproducible:** every draw has a seed value. The same seed and options give the same draw, so a draw can be checked or repeated.
 - **Doubles pair draw:** *seeded* (each player of the upper half of the seeding list gets a partner drawn from the lower half) or *free*. Pairs can be split again before the draw.
 - **Undo:** a draw can be undone as long as no match has been called; entries and format can then be changed again.
+
+
+### Doubles with rotating partners
+
+A kind of competition of its own next to singles and doubles. Players enter alone, but every match is a doubles match, scheduled so that **everybody partners everybody once**. Everybody plays for themselves: a win counts for both players of the winning pair, and all players share one table. Whoever wins the most matches in total wins the competition.
+
+- **Schedule:** fixed by the draw, which only draws the order of the players (nobody is seeded). It is split into rounds; nobody plays twice in a round, and the opponents are spread as evenly as possible.
+- **Matches per player:** with 4, 5, 8, 9, 12, 13, … players it adds up exactly: everybody partners every other player once, so players − 1 matches (with an odd number everybody sits out once). With the other numbers it does not add up; everybody still plays equally often, each time with another partner, but one or two possible partners are left out (6 players: 4 matches, 10 players: 8). Who sits out a round is listed with the round.
+- **Table:** like the sport's group table, but without head-to-head, since two players never play each other alone; whatever is still level is decided by lot (after the last match).
+- **Withdrawal:** every match the player is in is annulled, including those already played; they then do not count for their partners and opponents either. The player is ranked last. A match recorded as a walkover, on the other hand, counts as a win or loss for all four players.
+- **Match operations:** calling a match keeps all four players off other tables; table cards, phone entry, projector and print show both players of a side ("A / B").
+- **Planner:** the format is in the list of formats of every competition and can be compared with all others; the number of entries is then the number of players. As a match has four players, at most players ÷ 4 matches run at the same time.
 
 ### Withdrawals
 

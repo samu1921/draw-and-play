@@ -76,7 +76,7 @@ Daraus folgt für die Planung:
 | F8 | KO mit automatischer Feldgröße, Freilosen für die Besten und wählbaren Platzierungsspielen: keine, Spiel um Platz 3, alle Plätze. | ✅ | [Spielsysteme](features.de.md#4-konkurrenzen-und-spielsysteme) |
 | F9 | Übergang von den Gruppen ins KO über Kreuz (A1–B2, B1–A2 …), wobei Spieler derselben Gruppe in den ersten Runden getrennt bleiben. | ✅ | [Spielsysteme](features.de.md#4-konkurrenzen-und-spielsysteme) |
 | F10 | Zulassungsregeln je Konkurrenz (Geschlecht, Jahrgang, Wertungsbereich), Mixed als Doppel mit Geschlechtsregel. | 💡 | |
-| F11 | Weitere Bausteine: beste Gruppendritte, Trostrunde, Doppel-KO, Schweizer System, Mannschaftskampf, Vorgabe. | 🟡 | beste Gruppendritte, Trostrunde und Schweizer System ✅; Doppel-KO, Mannschaftskampf und Vorgabe 💡 |
+| F11 | Weitere Bausteine: beste Gruppendritte, Trostrunde, Doppel-KO, Schweizer System, Doppel mit wechselnden Partnern, Mannschaftskampf, Vorgabe. | 🟡 | beste Gruppendritte, Trostrunde, Schweizer System und Doppel mit wechselnden Partnern ✅; Doppel-KO, Mannschaftskampf und Vorgabe 💡 |
 
 ### 5.3 Planer und Prognose
 

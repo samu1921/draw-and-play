@@ -64,6 +64,7 @@ Eine Konkurrenz hat einen Namen, eine Art (Einzel oder Doppel), eine Farbe, eine
 | Gruppen + KO | Anzahl Gruppen, Top *k* jeder Gruppe kommen weiter; optional rücken die besten Nächstplatzierten nach, und die Ausgeschiedenen spielen eine Trostrunde |
 | Schweizer System | Anzahl Runden; allein (die Tabelle ist die Platzierung) oder als Vorrunde, nach der die besten *k* der Tabelle ins KO gehen |
 | KO | Feldgröße ist die nächste Zweierpotenz, Freilose gehen an die Besten der Setzliste |
+| Wechselnde Partner | eigene Art von Konkurrenz für 4–32 Spieler: Doppel, in denen jeder mit jedem einmal zusammenspielt; jeder Spieler hat eine eigene Zeile in der Tabelle |
 
 Platzierungsspiele im KO: **keine**, **Spiel um Platz 3** oder **alle Plätze**. Die Gruppentabelle folgt dem Sport-Profil, im Tischtennis der Wettspielordnung des DTTB (WO D 7.5): mehr Pluspunkte, dann weniger Minuspunkte, dann Satz- und Balldifferenz aus allen Spielen, dann die Spiele der noch Gleichen untereinander (Spiel-, Satz- und Balldifferenz), zuletzt das Los. Das Los wird erst gezogen, wenn die Gruppe beendet ist, automatisch mit dem Zufallsschlüssel der Auslosung; bis dahin gilt vorläufig die Reihenfolge der Auslosung. Der Übergang von den Gruppen ins KO hält Spieler derselben Gruppe so lange wie möglich auseinander.
 
@@ -96,6 +97,17 @@ Im Schweizer System scheidet niemand aus: Jeder spielt in jeder Runde gegen eine
 - **Freilos:** Bei ungerader Teilnehmerzahl setzt in jeder Runde ein anderer Spieler aus, das zählt als Sieg. Es geht an den am weitesten hinten Platzierten, der noch keines hatte.
 - **Tabelle:** Siege, dann Buchholzzahl (Summe der Siege aller bisherigen Gegner; ein Freilos zählt mit den Siegen des Tabellenletzten), dann der direkte Vergleich, zuletzt das Los.
 - **Danach:** Ohne KO ist der Tabellenplatz die Platzierung. Mit KO gehen die besten *k* ins Feld, die Tabelle ist die Setzliste; alle anderen behalten ihren Tabellenplatz.
+
+### Doppel mit wechselnden Partnern
+
+Eine eigene Art von Konkurrenz neben Einzel und Doppel. Gemeldet werden einzelne Spieler, gespielt wird aber jedes Spiel als Doppel, und zwar so, dass **jeder mit jedem einmal zusammenspielt**. Jeder kämpft für sich: Ein Sieg zählt für beide Spieler des siegreichen Doppels, und alle stehen in einer gemeinsamen Tabelle. Wer in Summe die meisten Spiele gewinnt, gewinnt die Konkurrenz.
+
+- **Spielplan:** steht mit der Auslosung fest, gelost wird nur die Reihenfolge der Spieler (niemand ist gesetzt). Er ist in Runden eingeteilt; niemand spielt zweimal in einer Runde, und die Gegner sind möglichst gleichmäßig verteilt.
+- **Spiele pro Spieler:** Bei 4, 5, 8, 9, 12, 13, … Spielern geht es genau auf: Jeder spielt mit jedem anderen einmal zusammen, also Spielerzahl − 1 Spiele (bei ungerader Zahl setzt jeder einmal aus). Bei den übrigen Zahlen geht es nicht ganz auf; dann spielt jeder gleich oft, jedes Mal mit einem anderen Partner, aber ein bis zwei mögliche Partner fehlen (bei 6 Spielern 4 Spiele, bei 10 Spielern 8). Wer in einer Runde aussetzt, steht bei der Runde dabei.
+- **Tabelle:** wie die Gruppentabelle des Sports, aber ohne direkten Vergleich, weil nie zwei Spieler allein gegeneinander spielen; was dann noch gleich ist, entscheidet das Los (nach dem letzten Spiel).
+- **Rückzug:** Alle Spiele, in denen der Spieler steht, werden gestrichen, auch die schon gespielten; sie zählen dann auch für seine Partner und Gegner nicht. Er wird Tabellenletzter. Ein kampflos eingetragenes Spiel zählt dagegen für alle vier Spieler als Sieg bzw. Niederlage.
+- **Spielbetrieb:** Beim Aufruf werden alle vier Spieler für andere Tische gesperrt; Tischkarten, Handy-Eingabe, Beamer und Druck zeigen beide Spieler einer Seite („A / B“).
+- **Planer:** Der Modus steht in der Liste der Modi jeder Konkurrenz und lässt sich mit allen anderen vergleichen; die Teilnehmerzahl sind dann die Spieler. Weil in einem Spiel vier Spieler stehen, laufen höchstens Spielerzahl ÷ 4 Spiele gleichzeitig.
 
 Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startzeit, Abhängigkeit und Tische lassen sich jederzeit ändern (Tag, Startzeit, Abhängigkeit, Minuten pro Spiel und Tische auf der Seite der Konkurrenz unter **Zeitplan**); sie gelten für noch nicht aufgerufene Spiele, und die Prognose zieht sofort nach.
 
