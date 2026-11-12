@@ -21,6 +21,8 @@ export interface KnockoutMatch {
 export interface Knockout {
   size: number;
   playOutPlaces: number;
+  /** Places taken before this bracket: 0 for the main bracket, 8 for a consolation bracket playing from place 9 */
+  placeOffset: number;
   matches: KnockoutMatch[];
 }
 
@@ -29,11 +31,14 @@ export interface KnockoutOptions {
    * Places played out: 2 = final only, 4 = with match for 3rd place, 8 = places 1–8, bracket size = all places.
    */
   playOutPlaces: number;
+  /** The bracket plays for the places after this one (default 0); `playOutPlaces` counts within the bracket */
+  placeOffset?: number;
 }
 
 /** Knockout bracket of `size` (power of two). Losers continue in sub-brackets for the lower places. */
 export function buildKnockout(size: number, options: KnockoutOptions): Knockout {
   const built: Omit<KnockoutMatch, 'number'>[] = [];
+  const placeOffset = options.placeOffset ?? 0;
 
   const build = (sources: SlotSource[], from: number, round: number) => {
     if (sources.length < 2) return;
@@ -48,12 +53,12 @@ export function buildKnockout(size: number, options: KnockoutOptions): Knockout 
     }
     build(winners, from, round + 1);
     const loserFrom = from + sources.length / 2;
-    if (loserFrom <= options.playOutPlaces) build(losers, loserFrom, round + 1);
+    if (loserFrom - placeOffset <= options.playOutPlaces) build(losers, loserFrom, round + 1);
   };
 
   build(
     Array.from({ length: size }, (_, index): SlotSource => ({ type: 'seat', index })),
-    1,
+    placeOffset + 1,
     1,
   );
 
@@ -61,7 +66,7 @@ export function buildKnockout(size: number, options: KnockoutOptions): Knockout 
     .map((m, index) => ({ m, index }))
     .sort((a, b) => a.m.round - b.m.round || a.m.places[0] - b.m.places[0] || a.index - b.index)
     .map(({ m }, i) => ({ ...m, number: i + 1 }));
-  return { size, playOutPlaces: options.playOutPlaces, matches };
+  return { size, playOutPlaces: options.playOutPlaces, placeOffset, matches };
 }
 
 /** Language-neutral round name; the UI turns it into "Final", "Halbfinale", "Match for 3rd place" … */
@@ -75,7 +80,7 @@ export type KnockoutRoundName =
 
 export function knockoutRoundName(match: Pick<KnockoutMatch, 'places'>): KnockoutRoundName {
   const [from, to] = match.places;
-  const size = to - from + 1;
+  const size = Math.max(2, to - from + 1);
   if (from === 1) return { type: 'main', size };
   return size === 2 ? { type: 'placementMatch', place: from } : { type: 'placementRound', from, to };
 }

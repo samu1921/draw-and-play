@@ -24,10 +24,11 @@ export function qualifierOrder(groupCount: number, perGroup: number): Qualifier[
 /**
  * Places the qualifiers (in seeding order) into the knockout bracket.
  * The best take the seed positions and receive the byes. Every further qualifier goes to the open position where it
- * would meet an entry from its own group as late as possible (cross-over schema).
+ * would meet an entry from its own group as late as possible (cross-over schema). A qualifier whose group is not
+ * known yet (one of the best third-placed entries) takes the open position closest to its seed position.
  * Result: index into `qualifiers` per bracket position, `null` = bye.
  */
-export function placeQualifiers(qualifiers: readonly Qualifier[]): (number | null)[] {
+export function placeQualifiers(qualifiers: readonly { group?: number | undefined }[]): (number | null)[] {
   const n = qualifiers.length;
   const size = bracketSize(n);
   const positions = seedPositions(size);
@@ -37,7 +38,7 @@ export function placeQualifiers(qualifiers: readonly Qualifier[]): (number | nul
   qualifiers.forEach((q, i) => {
     const preferred = positions[i]!;
     const sameGroup = seats.flatMap((seat, pos) =>
-      seat !== undefined && seat !== null && qualifiers[seat]!.group === q.group ? [pos] : [],
+      seat !== undefined && seat !== null && q.group !== undefined && qualifiers[seat]!.group === q.group ? [pos] : [],
     );
     let bestPos = -1;
     let bestScore = -1;
@@ -69,4 +70,64 @@ export function compareAcrossGroups(a: StandingsRow, b: StandingsRow): number {
     perMatch(b.gamesWon - b.gamesLost, b) - perMatch(a.gamesWon - a.gamesLost, a) ||
     perMatch(b.pointsWon - b.pointsLost, b) - perMatch(a.pointsWon - a.pointsLost, a)
   );
+}
+
+/** An entry of one group rank compared with the same rank of the other groups */
+export interface CrossGroupRow {
+  group: number;
+  row: StandingsRow;
+}
+
+/**
+ * Orders the entries of one rank across all groups, best first, e.g. all third-placed entries. Entries that
+ * withdrew come last. `lot` settles what `compareAcrossGroups` cannot separate (lower = better); without it the
+ * group order stands.
+ */
+export function rankAcrossGroups(rows: readonly CrossGroupRow[], lot?: (group: number) => number): CrossGroupRow[] {
+  return [...rows].sort(
+    (a, b) =>
+      Number(a.row.withdrawn ?? false) - Number(b.row.withdrawn ?? false) ||
+      compareAcrossGroups(a.row, b.row) ||
+      (lot ? lot(a.group) - lot(b.group) : 0) ||
+      a.group - b.group,
+  );
+}
+
+/**
+ * Seats the best next-ranked entries on their bracket positions so that each meets the qualifiers of its own
+ * group as late as possible. `groups[i]` is the group of the i-th best entry, `positions` are the open bracket
+ * positions (best seed first) and `seated` the bracket positions of the qualifiers per group.
+ * Result: index into `positions` per entry. Among equally good solutions the best entry keeps the best position.
+ */
+export function assignBestNext(groups: readonly number[], positions: readonly number[], seated: ReadonlyMap<number, readonly number[]>): number[] {
+  const n = Math.min(groups.length, positions.length);
+  const identity = Array.from({ length: n }, (_, i) => i);
+  // Beyond 8 entries the search space gets large; the natural order is a fair fallback.
+  if (n > 8) return identity;
+  const distance = (entry: number, slot: number) =>
+    Math.min(Number.MAX_SAFE_INTEGER, ...(seated.get(groups[entry]!) ?? []).map((pos) => meetingRound(positions[slot]!, pos)));
+
+  let best = identity;
+  let bestScore: [number, number] = [-1, -1];
+  const current: number[] = [];
+  const used = new Set<number>();
+  const search = (entry: number, min: number, sum: number) => {
+    if (entry === n) {
+      if (min > bestScore[0] || (min === bestScore[0] && sum > bestScore[1])) {
+        best = [...current];
+        bestScore = [min, sum];
+      }
+      return;
+    }
+    for (let slot = 0; slot < n; slot++) {
+      if (used.has(slot)) continue;
+      const d = Math.min(distance(entry, slot), 64);
+      used.add(slot);
+      current[entry] = slot;
+      search(entry + 1, Math.min(min, d), sum + d);
+      used.delete(slot);
+    }
+  };
+  search(0, 64, 0);
+  return best;
 }

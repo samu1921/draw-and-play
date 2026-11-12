@@ -46,6 +46,12 @@ export const tableTennis: SportProfile = {
     headToHead: ['matchDiff', 'gameDiff', 'pointDiff'],
     lastResort: 'lot',
   },
+  // DTTB Wettspielordnung D 7.6: wins, then the Buchholz score, then the matches among the level players, then lots.
+  swissRanking: {
+    criteria: ['matchPoints', 'buchholz', 'headToHead'],
+    headToHead: ['matchPoints'],
+    lastResort: 'lot',
+  },
   ratingName: 'QTTR',
   parseResult: parseShortNotation,
   // Rule of thumb: about 10 minutes per game needed to win, including warm-up and changeover.
