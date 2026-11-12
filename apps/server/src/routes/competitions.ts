@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { competitions, entries, entryMembers, eventTables, events, matches, persons } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound, parse } from '../errors.js';
-import { formatSchema } from '../schemas.js';
+import { competitionKindSchema, fitsKind, formatSchema } from '../schemas.js';
 import {
   callMatch,
   drawCompetition,
@@ -29,7 +29,7 @@ const uuid = z.uuid();
 
 const competitionFields = {
   name: z.string().trim().min(1).max(80),
-  kind: z.enum(['singles', 'doubles']),
+  kind: competitionKindSchema,
   day: z.iso.date().nullable(),
   gamesToWin: z.int().min(1).max(7),
   matchMinutes: z.int().min(5).max(240),
@@ -113,6 +113,7 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     const body = parse(createCompetitionBody, request.body);
     const [event] = await db.select({ sport: events.sport }).from(events).where(eq(events.id, eventId)).limit(1);
     if (!event) throw notFound('event');
+    if (!fitsKind(body.kind, body.format)) throw badRequest('formatKindMismatch');
     await checkReferences(eventId, body);
     const sport = getSportProfile(event.sport);
     const matchRules = { ...sport.defaultMatchRules, gamesToWin: body.gamesToWin };
@@ -149,6 +150,18 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     const current = await loadCompetition(db, id);
     if (current.version !== body.version) throw conflict('versionConflict', { current: current.version });
     if (current.draw && (body.format !== undefined || body.kind !== undefined)) throw conflict('alreadyDrawn');
+    const kind = body.kind ?? current.kind;
+    if (!fitsKind(kind, body.format ?? current.format)) throw badRequest('formatKindMismatch');
+    if (kind !== 'doubles' && kind !== current.kind) {
+      // Pairs only exist in doubles; they have to be split before the competition becomes something else.
+      const [pair] = await db
+        .select({ entryId: entryMembers.entryId })
+        .from(entryMembers)
+        .innerJoin(entries, eq(entries.id, entryMembers.entryId))
+        .where(and(eq(entries.competitionId, id), eq(entryMembers.position, 1)))
+        .limit(1);
+      if (pair) throw conflict('pairsEntered');
+    }
     await checkReferences(current.eventId, body, id);
     const { version, gamesToWin, ...fields } = body;
     const [updated] = await db
@@ -194,7 +207,8 @@ export async function competitionRoutes(app: FastifyInstance, { db, broadcaster 
     const body = parse(entryBody, request.body);
     const competition = await loadCompetition(db, id);
     if (competition.draw) throw conflict('alreadyDrawn');
-    // Doubles take a pair, or a single player who gets a partner in the pair draw.
+    // Doubles take a pair, or a single player who gets a partner in the pair draw. With rotating partners
+    // everybody enters alone.
     const allowed = competition.kind === 'doubles' ? [1, 2] : [1];
     const count = new Set(body.personIds).size;
     if (count !== body.personIds.length || !allowed.includes(count)) throw badRequest('wrongMemberCount', { expected: allowed.at(-1) });

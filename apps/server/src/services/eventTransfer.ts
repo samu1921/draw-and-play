@@ -7,7 +7,7 @@ import type { Executor } from '../db/client.js';
 import { assets, competitions, displayProfiles, entries, entryMembers, eventTables, events, matches, persons, type EventSettings } from '../db/schema.js';
 import { badRequest, parse } from '../errors.js';
 import { ASSET_KINDS, MAX_ASSET_BYTES, sniffImage } from './assets.js';
-import { displaySettingsSchema, eventSettingsSchema, formatSchema } from '../schemas.js';
+import { competitionKindSchema, displaySettingsSchema, eventSettingsSchema, fitsKind, formatSchema } from '../schemas.js';
 
 /**
  * Export and import of a whole event as one JSON document: a backup of a single event, and the way to move an
@@ -30,6 +30,7 @@ const drawSchema = z.discriminatedUnion('type', [
     order: z.array(id),
     rounds: z.array(z.object({ pairs: z.array(z.tuple([id, id])), bye: id.optional() })),
   }),
+  z.object({ type: z.literal('rotation'), order: z.array(id) }),
 ]);
 
 const matchRulesSchema = z.object({
@@ -83,7 +84,7 @@ export const eventExportSchema = z.object({
       z.object({
         id,
         name: z.string().trim().min(1).max(80),
-        kind: z.enum(['singles', 'doubles']),
+        kind: competitionKindSchema,
         day: z.iso.date().nullable(),
         matchRules: matchRulesSchema,
         matchMinutes: z.int().min(5).max(240),
@@ -124,6 +125,9 @@ export const eventExportSchema = z.object({
         result: resultSchema.nullable(),
         sideA: id.nullable(),
         sideB: id.nullable(),
+        /** Rotating partners only; missing in files from before they existed */
+        partnerA: id.nullable().optional(),
+        partnerB: id.nullable().optional(),
         updatedAt: timestamp,
       }),
     )
@@ -230,6 +234,7 @@ export async function exportEvent(ex: Executor, eventId: string): Promise<EventE
       result: m.result,
       sideA: m.sideA,
       sideB: m.sideB,
+      ...((m.partnerA !== null || m.partnerB !== null) && { partnerA: m.partnerA, partnerB: m.partnerB }),
       updatedAt: m.updatedAt.toISOString(),
     })),
     displayProfiles: profileRows.map((p) => ({ name: p.name, settings: p.settings })),
@@ -260,13 +265,14 @@ export function checkEventExport(doc: EventExport): void {
   for (const c of doc.competitions) {
     if (c.startAfterId !== null && (c.startAfterId === c.id || !competitionIds.has(c.startAfterId))) throw invalid('unknownReference', `competitions:${c.id}:startAfterId`);
     if (c.tableIds?.some((t) => !tableIds.has(t))) throw invalid('unknownReference', `competitions:${c.id}:tableIds`);
+    if (!fitsKind(c.kind, c.format)) throw invalid('formatKindMismatch', `competitions:${c.id}`);
   }
 
   const entriesOf = new Map<string, Set<string>>();
   for (const e of doc.entries) {
     const competition = doc.competitions.find((c) => c.id === e.competitionId);
     if (!competition) throw invalid('unknownReference', `entries:${e.id}:competitionId`);
-    if (competition.kind === 'singles' && e.members.length !== 1) throw invalid('wrongMemberCount', `entries:${e.id}`);
+    if (competition.kind !== 'doubles' && e.members.length !== 1) throw invalid('wrongMemberCount', `entries:${e.id}`);
     if (new Set(e.members).size !== e.members.length) throw invalid('duplicateMember', `entries:${e.id}`);
     for (const p of e.members) if (!personIds.has(p)) throw invalid('unknownReference', `entries:${e.id}:members`);
     const set = entriesOf.get(e.competitionId) ?? new Set<string>();
@@ -306,7 +312,7 @@ export function checkEventExport(doc: EventExport): void {
     seenMatches.add(`${m.competitionId}/${m.matchKey}`);
     if (m.tableId !== null && !tableIds.has(m.tableId)) throw invalid('unknownReference', `${at}:tableId`);
     const own = entriesOf.get(m.competitionId)!;
-    for (const side of [m.sideA, m.sideB]) if (side !== null && !own.has(side)) throw invalid('unknownReference', `${at}:sides`);
+    for (const side of [m.sideA, m.sideB, m.partnerA ?? null, m.partnerB ?? null]) if (side !== null && !own.has(side)) throw invalid('unknownReference', `${at}:sides`);
     if (m.status === 'finished' && m.result === null) throw invalid('missingResult', at);
     if (m.status === 'called') {
       if (m.tableId === null) throw invalid('missingTable', at);
@@ -430,6 +436,8 @@ export async function importEvent(tx: Executor, doc: EventExport, slug: string):
         result: m.result,
         sideA: mapNullable(m.sideA),
         sideB: mapNullable(m.sideB),
+        partnerA: mapNullable(m.partnerA ?? null),
+        partnerB: mapNullable(m.partnerB ?? null),
         updatedAt: new Date(m.updatedAt),
       })),
     );
@@ -461,6 +469,8 @@ function remapDraw(draw: EventExport['competitions'][number]['draw'], map: (old:
         order: draw.order.map(map),
         rounds: draw.rounds.map((r) => ({ pairs: r.pairs.map(([a, b]): [string, string] => [map(a), map(b)]), ...(r.bye !== undefined && { bye: map(r.bye) }) })),
       };
+    case 'rotation':
+      return { type: 'rotation', order: draw.order.map(map) };
   }
 }
 

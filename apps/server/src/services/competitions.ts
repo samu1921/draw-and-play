@@ -49,6 +49,11 @@ export async function loadEntries(ex: Executor, competitionId: string): Promise<
   return [...byId.values()];
 }
 
+/** Every entry playing in a match: both sides, and with rotating partners their partners */
+export function playersOf(m: { sides: readonly (string | null)[]; partners?: readonly (string | null)[] | undefined }): string[] {
+  return [...m.sides, ...(m.partners ?? [])].filter((id): id is string => id !== null);
+}
+
 /** Entries the draw will have: in doubles, players still waiting for a partner count as half a pair each. */
 export function expectedEntryCount(competition: CompetitionRow, list: readonly EntryWithMembers[]): number {
   const active = list.filter((e) => e.status !== 'withdrawn');
@@ -229,12 +234,16 @@ export function competitionView(loaded: LoadedCompetition, settings: EventSettin
           stage: structureMatch?.stage ?? null,
           places: places ?? null,
           sides: m.sides,
+          /** Rotating partners: the partner of the player on each side */
+          partners: m.partners ?? null,
           sources: structureMatch ? [sourceOf(structureMatch.sides[0]), sourceOf(structureMatch.sides[1])] : null,
           status: m.status === 'finished' ? 'finished' : row?.status === 'called' ? 'called' : m.status,
           tableId: row?.status === 'called' ? row.tableId : null,
           calledAt: row?.calledAt ?? null,
           finishedAt: row?.finishedAt ?? null,
           result: m.result ?? null,
+          /** Decided because a player withdrew; with rotating partners such a match does not count for anybody */
+          ...(m.withdrawal && { withdrawal: true as const }),
           version: row?.version ?? 0,
         };
       }) ?? [],

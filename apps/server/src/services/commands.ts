@@ -19,7 +19,7 @@ import type { Db, Tx } from '../db/client.js';
 import { auditLog, competitions, entries, entryMembers, eventTables, matches } from '../db/schema.js';
 import { ApiError, badRequest, conflict, notFound } from '../errors.js';
 import type { Broadcaster } from '../realtime/broadcaster.js';
-import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, resolveInput, sportOfEvent, toDrawEntry } from './competitions.js';
+import { loadCompetition, loadCompetitionState, loadEntries, personsOfEntries, playersOf, resolveInput, sportOfEvent, toDrawEntry } from './competitions.js';
 
 export interface CommandContext {
   db: Db;
@@ -144,12 +144,12 @@ export async function withdrawEntry(ctx: CommandContext, entryId: string) {
     if (!loaded.competition.draw) throw conflict('notDrawn');
     const entry = loaded.entries.find((e) => e.id === entryId)!;
     if (entry.status === 'withdrawn') throw conflict('alreadyWithdrawn');
-    const called = loaded.matchRows.find((m) => m.status === 'called' && (m.sideA === entryId || m.sideB === entryId));
+    const called = loaded.matchRows.find((m) => m.status === 'called' && [m.sideA, m.sideB, m.partnerA, m.partnerB].includes(entryId));
     if (called) throw conflict('matchCalled', { matchId: called.id });
     await tx.update(entries).set({ status: 'withdrawn' }).where(eq(entries.id, entryId));
     await syncSwiss(tx, ctx, eventId, competitionId);
     const after = await loadCompetitionState(tx, competitionId);
-    const count = after.state?.matches.filter((m) => m.withdrawal && m.sides.includes(entryId)).length ?? 0;
+    const count = after.state?.matches.filter((m) => m.withdrawal && playersOf(m).includes(entryId)).length ?? 0;
     await audit(tx, ctx, eventId, 'withdraw', 'entry', entryId, { walkovers: count });
     return count;
   });
@@ -167,7 +167,7 @@ export async function reinstateEntry(ctx: CommandContext, entryId: string) {
     if (entry.status !== 'withdrawn') throw conflict('notWithdrawn');
     if (loaded.structure && loaded.state) {
       const started = new Set(loaded.matchRows.filter((m) => m.status !== 'scheduled').map((m) => m.matchKey));
-      for (const m of loaded.state.matches.filter((x) => x.withdrawal && x.sides.includes(entryId))) {
+      for (const m of loaded.state.matches.filter((x) => x.withdrawal && playersOf(x).includes(entryId))) {
         const blocking = dependentMatches(loaded.structure, m.id).find((key) => started.has(key));
         if (blocking) throw conflict('dependentMatchStarted', { matchKey: blocking });
       }
@@ -265,11 +265,11 @@ async function matchContext(tx: Tx, matchId: string, version: number) {
 /** Persons of the entries playing in currently called matches of the event */
 async function busyPersons(tx: Tx, eventId: string, exceptMatchId: string): Promise<Set<string>> {
   const called = await tx
-    .select({ sideA: matches.sideA, sideB: matches.sideB })
+    .select({ sideA: matches.sideA, sideB: matches.sideB, partnerA: matches.partnerA, partnerB: matches.partnerB })
     .from(matches)
     .innerJoin(competitions, eq(competitions.id, matches.competitionId))
     .where(and(eq(competitions.eventId, eventId), eq(matches.status, 'called'), ne(matches.id, exceptMatchId)));
-  const entryIds = called.flatMap((m) => [m.sideA, m.sideB]).filter((id): id is string => id !== null);
+  const entryIds = called.flatMap((m) => [m.sideA, m.sideB, m.partnerA, m.partnerB]).filter((id): id is string => id !== null);
   return new Set([...(await personsOfEntries(tx, entryIds)).values()].flat());
 }
 
@@ -297,7 +297,8 @@ export async function callMatch(ctx: CommandContext, matchId: string, input: { t
     if (occupied) throw conflict('tableBusy', { matchId: occupied.id });
 
     const [sideA, sideB] = resolved.sides as [string, string];
-    const own = await personsOfEntries(tx, [sideA, sideB]);
+    const [partnerA, partnerB] = resolved.partners ?? [null, null];
+    const own = await personsOfEntries(tx, playersOf(resolved));
     const busy = await busyPersons(tx, eventId, matchId);
     const clashing = [...own.values()].flat().filter((p) => busy.has(p));
     if (clashing.length > 0) throw conflict('playerBusy', { personIds: clashing });
@@ -305,7 +306,7 @@ export async function callMatch(ctx: CommandContext, matchId: string, input: { t
     try {
       const [result] = await tx
         .update(matches)
-        .set({ status: 'called', tableId: table.id, calledAt: new Date(), sideA, sideB, version: row.version + 1, updatedAt: new Date() })
+        .set({ status: 'called', tableId: table.id, calledAt: new Date(), sideA, sideB, partnerA, partnerB, version: row.version + 1, updatedAt: new Date() })
         .where(and(eq(matches.id, matchId), eq(matches.version, row.version)))
         .returning();
       if (!result) throw conflict('versionConflict');
@@ -412,9 +413,10 @@ export async function recordResult(ctx: CommandContext, matchId: string, input: 
     }
 
     const [sideA, sideB] = resolved.sides as [string, string];
+    const [partnerA, partnerB] = resolved.partners ?? [null, null];
     const [saved] = await tx
       .update(matches)
-      .set({ status: 'finished', result, finishedAt: new Date(), tableId: null, sideA, sideB, version: row.version + 1, updatedAt: new Date() })
+      .set({ status: 'finished', result, finishedAt: new Date(), tableId: null, sideA, sideB, partnerA, partnerB, version: row.version + 1, updatedAt: new Date() })
       .where(eq(matches.id, matchId))
       .returning();
     await audit(tx, ctx, eventId, row.status === 'finished' ? 'correctResult' : 'result', 'match', matchId, {

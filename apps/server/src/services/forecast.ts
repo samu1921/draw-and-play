@@ -2,7 +2,7 @@ import { simulatePlan, validateFormat, type CompetitionPlan } from '@draw-and-pl
 import { asc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/client.js';
 import { competitions, eventTables, events } from '../db/schema.js';
-import { expectedEntryCount, loadCompetitionState, personsOfEntries, structureFor } from './competitions.js';
+import { expectedEntryCount, loadCompetitionState, personsOfEntries, playersOf, structureFor } from './competitions.js';
 
 /** Safety margin of the forecast, shown as a range */
 const BUFFER_PERCENT = 10;
@@ -70,7 +70,7 @@ export async function eventForecast(ex: Executor, event: EventRow, requestedDay?
     const fixed = new Map<string, { table: string; start: number; end: number }>();
     const participants = new Map<string, string[]>();
     if (loaded.state) {
-      const entryIds = loaded.state.matches.flatMap((m) => m.sides.filter((s): s is string => s !== null));
+      const entryIds = loaded.state.matches.flatMap(playersOf);
       const personsOf = await personsOfEntries(ex, [...new Set(entryIds)]);
       for (const m of loaded.state.matches) {
         const row = rowByKey.get(m.id);
@@ -81,8 +81,8 @@ export async function eventForecast(ex: Executor, event: EventRow, requestedDay?
           const start = row.calledAt ? Math.min(startMin, minutesOf(row.calledAt)) : startMin;
           // A match running longer than expected is assumed to finish shortly.
           fixed.set(m.id, { table: row.tableId, start, end: Math.max(start + matchMinutes, startMin + 5) });
-        } else if (m.sides[0] && m.sides[1]) {
-          participants.set(m.id, [...(personsOf.get(m.sides[0]) ?? []), ...(personsOf.get(m.sides[1]) ?? [])]);
+        } else if (m.status === 'ready') {
+          participants.set(m.id, playersOf(m).flatMap((id) => personsOf.get(id) ?? []));
         }
       }
       // Swiss system: boards that stay empty after withdrawals are never played.

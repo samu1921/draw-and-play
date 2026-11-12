@@ -235,6 +235,8 @@ export const displayProfiles = pgTable(
 
 // --- Competitions ---
 
+export type CompetitionKind = 'singles' | 'doubles' | 'rotation';
+
 export const competitions = pgTable(
   'competitions',
   {
@@ -243,7 +245,8 @@ export const competitions = pgTable(
       .notNull()
       .references(() => events.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    kind: text('kind').$type<'singles' | 'doubles'>().notNull().default('singles'),
+    /** rotation: doubles with rotating partners; the entries are single players, every match is two against two */
+    kind: text('kind').$type<CompetitionKind>().notNull().default('singles'),
     day: date('day'),
     matchRules: jsonb('match_rules').$type<MatchRules>().notNull(),
     matchMinutes: integer('match_minutes').notNull(),
@@ -314,6 +317,9 @@ export const matches = pgTable(
     /** Entries at the time of calling/finishing, so a result stays bound to who actually played */
     sideA: uuid('side_a').references(() => entries.id, { onDelete: 'set null' }),
     sideB: uuid('side_b').references(() => entries.id, { onDelete: 'set null' }),
+    /** Rotating partners: the partner of the player on each side */
+    partnerA: uuid('partner_a').references(() => entries.id, { onDelete: 'set null' }),
+    partnerB: uuid('partner_b').references(() => entries.id, { onDelete: 'set null' }),
     /** Optimistic locking: commands must name the version they saw */
     version: integer('version').notNull().default(1),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

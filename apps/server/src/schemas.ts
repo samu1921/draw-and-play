@@ -2,11 +2,12 @@ import { z } from 'zod';
 
 // Validation schemas shared by several routes (and the event import), kept free of route imports.
 
-/** Stages of a competition: groups or a Swiss system, a knockout, or both in a row */
+/** Stages of a competition: groups or a Swiss system, a knockout, or both in a row; or rotating partners alone */
 export const formatSchema = z
   .object({
     groups: z.object({ groupCount: z.int().min(1).max(64), double: z.boolean().optional() }).optional(),
     swiss: z.object({ rounds: z.int().min(1).max(64) }).optional(),
+    rotation: z.object({}).strict().optional(),
     knockout: z
       .object({
         qualifiersPerGroup: z.int().min(1).max(16).optional(),
@@ -16,9 +17,17 @@ export const formatSchema = z
       })
       .optional(),
   })
-  .refine((f) => f.groups !== undefined || f.swiss !== undefined || f.knockout !== undefined, { message: 'noStages' })
+  .refine((f) => f.groups !== undefined || f.swiss !== undefined || f.knockout !== undefined || f.rotation !== undefined, { message: 'noStages' })
   .refine((f) => !(f.groups && f.swiss), { message: 'conflictingStages' })
+  .refine((f) => !(f.rotation && (f.groups || f.swiss || f.knockout)), { message: 'conflictingStages' })
   .refine((f) => !((f.groups || f.swiss) && f.knockout) || f.knockout.qualifiersPerGroup !== undefined, { message: 'missingQualifiers' });
+
+/** Kinds of competition; `rotation` = doubles with rotating partners, entered as single players */
+export const competitionKindSchema = z.enum(['singles', 'doubles', 'rotation']);
+
+/** Doubles with rotating partners use their own format and no other; the other kinds cannot use it */
+export const fitsKind = (kind: z.infer<typeof competitionKindSchema>, format: { rotation?: object | undefined }) =>
+  (kind === 'rotation') === (format.rotation !== undefined);
 
 /** Settings of a display profile; every field is optional and falls back to `displayDefaults` */
 export const displaySettingsSchema = z

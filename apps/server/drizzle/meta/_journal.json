@@ -57,6 +57,13 @@
       "when": 1793880899875,
       "tag": "0007_branding",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794513937626,
+      "tag": "0008_rotating_partners",
+      "breakpoints": true
     }
   ]
 }

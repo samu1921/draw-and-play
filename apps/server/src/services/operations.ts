@@ -76,11 +76,24 @@ export async function eventOperations(ex: Executor, eventId: string, settings: E
         } satisfies SideView,
       ]),
     );
+    /** A side: the entry, with rotating partners together with the partner, e.g. "Max Muster / Erika Beispiel" */
+    const side = (entryId: string | null, partnerId: string | null | undefined): SideView | null => {
+      const own = entryId ? sideOf.get(entryId) : undefined;
+      if (!own) return null;
+      const partner = partnerId ? sideOf.get(partnerId) : undefined;
+      if (!partner) return own;
+      return {
+        entryId: own.entryId,
+        name: `${own.name} / ${partner.name}`,
+        clubs: [...new Set([...own.clubs, ...partner.clubs])],
+        personIds: [...own.personIds, ...partner.personIds],
+      };
+    };
     for (const m of view.matches) {
       all.push({
         ...m,
         competitionId: competition.id,
-        sides: [m.sides[0] ? (sideOf.get(m.sides[0]) ?? null) : null, m.sides[1] ? (sideOf.get(m.sides[1]) ?? null) : null],
+        sides: [side(m.sides[0], m.partners?.[0]), side(m.sides[1], m.partners?.[1])],
       });
     }
   }
