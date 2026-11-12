@@ -2,6 +2,18 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.3.0] – 2026-11-12
+
+### Features
+
+- **domain:** Swiss system, best next-ranked entries and consolation rounds
+- **server:** Store and serve Swiss rounds, best thirds and consolation fields
+- **web:** Set up and show Swiss system, best thirds and consolation rounds
+
+### Documentation
+
+- Describe Swiss system, best thirds and consolation rounds
+
 ## [0.2.1] – 2026-11-11
 
 ### Bug fixes
