@@ -1,4 +1,4 @@
-import type { CompetitionFormat, MatchResult, MatchRules, Placement, StandingsRow, TieBreak } from '@draw-and-play/domain';
+import type { CompetitionFormat, MatchResult, MatchRules, NextRankedState, Placement, PlacementGroupState, StandingsRow, TieBreak } from '@draw-and-play/domain';
 import type { Branding } from './branding.js';
 import type { CertificateTemplate } from './certificate.js';
 
@@ -137,15 +137,22 @@ export type MatchStatus = 'pending' | 'ready' | 'called' | 'finished';
 
 export type SideSource =
   | { type: 'draw' }
+  /** Swiss system: known once the round is paired */
+  | { type: 'swiss' }
   | { type: 'qualifier'; group: number; rank: number }
+  /** One of the entries with this group rank: `advancing` = one of the best, who fill the main bracket */
+  | { type: 'bestNext'; rank: number; advancing: boolean; index: number }
   | { type: 'winner' | 'loser'; matchKey: string };
 
 export interface MatchInfo {
   id: string | null;
   key: string;
-  phase: 'group' | 'knockout';
+  /** `placement`: a consolation field of three that plays everybody against everybody */
+  phase: 'group' | 'swiss' | 'knockout' | 'placement';
   group: number | null;
   round: number;
+  /** `KO` for the main bracket, `C1`, `C2`, … for consolation brackets and fields (missing from older servers) */
+  stage?: string | null;
   places: [number, number] | null;
   sides: [string | null, string | null];
   sources: [SideSource, SideSource] | null;
@@ -170,6 +177,14 @@ export interface CompetitionStateInfo {
     complete: boolean;
   }[];
   matches: MatchInfo[];
+  /** The group rank compared across the groups when its best entries fill the knockout */
+  nextRanked?: NextRankedState | null;
+  /** Further group ranks compared across the groups, to seed the consolation brackets */
+  seeding?: NextRankedState[];
+  /** Consolation fields of three with their tables */
+  placementGroups?: PlacementGroupState[];
+  /** Swiss system: the rounds paired so far, with who sits out */
+  swiss?: { rounds: number; paired: { round: number; bye: string | null }[] } | null;
   placements: Placement[];
   finished: boolean;
 }

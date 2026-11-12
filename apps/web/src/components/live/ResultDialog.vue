@@ -38,9 +38,15 @@ watch(
   (match) => {
     notation.value = match?.result && !match.result.walkover ? match.result.games.map(([a, b]) => (a > b ? `${b}` : `-${a}`)).join(' ') : '';
     error.value = '';
-    if (match) dialog.value?.showModal();
-    else dialog.value?.close();
+    if (!match) return dialog.value?.close();
+    if (!dialog.value?.open) dialog.value?.showModal();
+    // Straight into the result field, so the desk can type and confirm with Enter without the mouse
+    const input = dialog.value?.querySelector<HTMLInputElement>('.result-input');
+    input?.focus();
+    input?.setSelectionRange(input.value.length, input.value.length);
   },
+  // After the render: the form only exists once there is a match
+  { flush: 'post' },
 );
 
 /** A player leaves the tournament: take the match off the table if needed, then withdraw the entry */

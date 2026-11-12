@@ -23,7 +23,16 @@ export function competitionText(t: Translate, state: CompetitionStateInfo) {
     const id = m.sides[side];
     if (id) return name(id);
     const source = m.sources?.[side];
-    if (source?.type === 'qualifier') return t('public.qualifier', { rank: source.rank, group: groupLetter(source.group) });
+    if (source?.type === 'qualifier') {
+      // A Swiss system has one table, so the rank needs no group
+      return state.competition.format.swiss ? t('public.tableRank', { rank: source.rank }) : t('public.qualifier', { rank: source.rank, group: groupLetter(source.group) });
+    }
+    if (source?.type === 'bestNext') {
+      // "Another" only next to those of the same rank that advance to the main bracket
+      const key = source.advancing ? 'public.bestNext' : state.nextRanked?.rank === source.rank ? 'public.otherNext' : 'public.anyNext';
+      return t(key, { rank: source.rank });
+    }
+    if (source?.type === 'swiss') return t('public.notPaired');
     if (source?.type === 'winner') return t('public.winnerOf', { match: numberedLabel(source.matchKey) });
     if (source?.type === 'loser') return t('public.loserOf', { match: numberedLabel(source.matchKey) });
     return '—';

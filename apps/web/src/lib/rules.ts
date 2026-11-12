@@ -1,10 +1,15 @@
 import {
+  bestNextCount,
   buildStructure,
+  DEFAULT_SWISS_RANKING,
   groupLetter,
   groupStagePlaces,
   knockoutRoundName,
+  type BracketStage,
   type CompetitionFormat,
   type CompetitionStructure,
+  type SeatRef,
+  type StandingsRow,
   type MatchRules,
   type Ranking,
   type RankingCriterion,
@@ -12,7 +17,7 @@ import {
   type TieBreak,
   type TieBreakStep,
 } from '@draw-and-play/domain';
-import type { CompetitionStateInfo } from './api.js';
+import type { CompetitionStateInfo, MatchInfo } from './api.js';
 import { competitionText } from './competitionText.js';
 import { describeFormat, roundName, type Translate } from './describe.js';
 
@@ -29,6 +34,9 @@ export function criterionValueText(criterion: RankingCriterion, [own, other]: Sc
     case 'matchPoints':
     case 'record':
       return `${own}:${other}`;
+    case 'buchholz':
+    case 'fineBuchholz':
+      return String(own);
     case 'gameRatio': {
       const ratio = other === 0 ? (own === 0 ? '0' : '∞') : (own / other).toFixed(2);
       return `${ratio} (${own}:${other})`;
@@ -51,6 +59,8 @@ export interface TieBreakContext {
   duels: (entryIds: string[]) => string[];
   /** The group is still running: a draw-order step is only provisional, lots decide at the end */
   provisional?: boolean;
+  /** A Swiss table: the wording speaks of rounds instead of a group */
+  swiss?: boolean;
 }
 
 export interface TieBreakText {
@@ -81,33 +91,53 @@ function stepText(t: Translate, step: TieBreakStep, ctx: TieBreakContext): strin
       return `${label}: ${values} → ${outcome}`;
     }
     case 'headToHead': {
-      if (step.skipped) return t('rules.tie.headToHeadSkipped');
+      if (step.skipped) return t(ctx.swiss ? 'rules.tie.headToHeadSkippedSwiss' : 'rules.tie.headToHeadSkipped');
       const names = step.entries.map(ctx.name).join(', ');
       const duels = ctx.duels(step.entries);
       const intro = t('rules.tie.headToHead', { names });
       return duels.length > 0 ? `${intro} ${duels.join(', ')}` : `${intro} ${t('rules.tie.noDuels')}`;
     }
     case 'drawOrder':
-      return `${t(ctx.provisional ? 'rules.tie.drawOrderProvisional' : 'rules.tie.drawOrder')} ${order(step.entries.map((id) => [id]))}`;
+      return `${t(ctx.provisional ? (ctx.swiss ? 'rules.tie.drawOrderProvisionalSwiss' : 'rules.tie.drawOrderProvisional') : 'rules.tie.drawOrder')} ${order(step.entries.map((id) => [id]))}`;
     case 'lot':
       return `${t('rules.tie.lot')} ${order(step.entries.map((id) => [id]))}`;
   }
 }
 
+/** Whether a match counts for the table of `group`; a Swiss system has a single table */
+export function inTable(m: { phase: string; group: number | null }, group: number): boolean {
+  return m.phase === 'swiss' || (m.phase === 'group' && m.group === group);
+}
+
 /** The ties of one group in words, with names and the duels among the tied entries taken from the state */
 export function groupTieTexts(t: Translate, state: CompetitionStateInfo, group: number): TieBreakText[] {
   const g = state.groups.find((x) => x.group === group);
-  if (!g?.tieBreaks) return [];
+  return g ? tableTieTexts(t, state, g, (m) => inTable(m, group)) : [];
+}
+
+/** The ties of a consolation field that plays everybody against everybody */
+export function placementTieTexts(t: Translate, state: CompetitionStateInfo, stage: string): TieBreakText[] {
+  const g = state.placementGroups?.find((x) => x.stage === stage);
+  return g ? tableTieTexts(t, state, g, (m) => m.phase === 'placement' && m.stage === stage) : [];
+}
+
+function tableTieTexts(
+  t: Translate,
+  state: CompetitionStateInfo,
+  g: { standings: StandingsRow[]; tieBreaks?: TieBreak[]; complete: boolean },
+  counts: (m: MatchInfo) => boolean,
+): TieBreakText[] {
+  if (!g.tieBreaks) return [];
   const { name, score } = competitionText(t, state);
   const rank = new Map(g.standings.map((r) => [r.entryId, r.rank]));
-  const finished = state.matches.filter((m) => m.phase === 'group' && m.group === group && m.status === 'finished');
+  const finished = state.matches.filter((m) => counts(m) && m.status === 'finished');
   const duels = (ids: string[]) => {
     const members = new Set(ids);
     return finished
       .filter((m) => m.sides.every((side) => side !== null && members.has(side)))
       .map((m) => `${name(m.sides[0])} – ${name(m.sides[1])} ${score(m)}`);
   };
-  return g.tieBreaks.map((tie) => tieBreakText(t, tie, { name, rankOf: (id) => rank.get(id) ?? 0, duels, provisional: !g.complete }));
+  return g.tieBreaks.map((tie) => tieBreakText(t, tie, { name, rankOf: (id) => rank.get(id) ?? 0, duels, provisional: !g.complete, swiss: state.competition.format.swiss !== undefined }));
 }
 
 /** One line per tie for the projector's group tables: "Place 2–3: same number of wins, decided by head-to-head" */
@@ -141,6 +171,8 @@ export interface RulesInput {
   matchRules: MatchRules;
   /** The sport's standings order */
   ranking: Ranking;
+  /** The sport's order of a Swiss table */
+  swissRanking?: Ranking;
   /** The rulebook the ranking follows, e.g. "DTTB Wettspielordnung D 7.5" */
   reference?: string;
   entryCount: number;
@@ -149,10 +181,22 @@ export interface RulesInput {
   compact?: boolean;
 }
 
+/** The criteria of a table as a numbered list, each with a short explanation */
+function criteriaList(t: Translate, ranking: Ranking, compact: boolean, swiss: boolean): string[] {
+  const hints = compact ? 'rules.short' : 'rules.hint';
+  const miniTable = (ranking.headToHead ?? ranking.criteria.filter((c) => c !== 'headToHead')).map((c) => t(`rules.criterion.${c}`));
+  return [...ranking.criteria, ranking.lastResort ?? ('drawOrder' as const)].map((c) => {
+    // In a Swiss system the level entries have often not all met; the wording for groups would not fit.
+    const key = c === 'headToHead' && swiss ? 'headToHeadSwiss' : c === 'drawOrder' && swiss ? 'drawOrderSwiss' : c;
+    const hint = c === 'headToHead' ? t(`${hints}.${key}`, { criteria: miniTable.join(', ') }) : t(`${hints}.${key}`);
+    return `${t(`rules.criterion.${c}`)}: ${hint}`;
+  });
+}
+
 /** The format of a competition in words: matches, group order with every tie-break, who advances, places. */
 export function competitionRules(t: Translate, input: RulesInput): RulesSection[] {
   const { format, matchRules, ranking } = input;
-  const criteria: readonly RankingCriterion[] = ranking.criteria;
+  const compact = input.compact ?? false;
   let structure: CompetitionStructure | null = null;
   try {
     structure = buildStructure(format, input.entryCount);
@@ -174,21 +218,30 @@ export function competitionRules(t: Translate, input: RulesInput): RulesSection[
   sections.push({ title: t('rules.matches'), paragraphs: [games.join(' ')] });
 
   if (format.groups) {
-    const miniTable = (ranking.headToHead ?? criteria.filter((c) => c !== 'headToHead')).map((c) => t(`rules.criterion.${c}`));
-    const hints = input.compact ? 'rules.short' : 'rules.hint';
-    const ordered = [...criteria, ranking.lastResort ?? ('drawOrder' as const)].map((c) => {
-      const hint = c === 'headToHead' ? t(`${hints}.headToHead`, { criteria: miniTable.join(', ') }) : t(`${hints}.${c}`);
-      return `${t(`rules.criterion.${c}`)}: ${hint}`;
-    });
     sections.push({
       title: t('rules.groupStage'),
       paragraphs: [
         t(format.groups.double ? 'rules.roundRobinDouble' : 'rules.roundRobin'),
-        t(input.compact ? 'rules.short.orderIntro' : 'rules.orderIntro'),
+        t(compact ? 'rules.short.orderIntro' : 'rules.orderIntro'),
       ],
-      ordered,
+      ordered: criteriaList(t, ranking, compact, false),
     });
-    const notes = input.compact ? [t('rules.short.withdrawal')] : [t('rules.withdrawal'), ...(ranking.lastResort === 'lot' ? [t('rules.lotNote')] : []), t('rules.provisional')];
+    const notes = compact ? [t('rules.short.withdrawal')] : [t('rules.withdrawal'), ...(ranking.lastResort === 'lot' ? [t('rules.lotNote')] : []), t('rules.provisional')];
+    if (input.reference) notes.push(input.reference);
+    sections.push({ title: t('rules.notes'), paragraphs: notes });
+  }
+
+  if (format.swiss) {
+    const swissRanking = input.swissRanking ?? DEFAULT_SWISS_RANKING;
+    const { rounds } = format.swiss;
+    sections.push({
+      title: t('rules.swissStage'),
+      paragraphs: compact
+        ? [t('rules.short.swiss', rounds, { named: { rounds } }), t('rules.short.orderIntro')]
+        : [t('rules.swissRounds', rounds, { named: { rounds } }), t('rules.swissPairing'), t('rules.swissBye'), t('rules.orderIntro')],
+      ordered: criteriaList(t, swissRanking, compact, true),
+    });
+    const notes = compact ? [t('rules.short.swissWithdrawal')] : [t('rules.swissWithdrawal'), ...(swissRanking.lastResort === 'lot' ? [t('rules.swissLotNote')] : [])];
     if (input.reference) notes.push(input.reference);
     sections.push({ title: t('rules.notes'), paragraphs: notes });
   }
@@ -197,30 +250,43 @@ export function competitionRules(t: Translate, input: RulesInput): RulesSection[
   if (ko) {
     const paragraphs: string[] = [];
     let items: string[] | undefined;
-    if (format.groups) {
-      paragraphs.push(t('rules.advanceTop', ko.qualifiersPerGroup ?? 1, { named: { k: ko.qualifiersPerGroup } }));
-      paragraphs.push(t(input.compact ? 'rules.short.seeding' : 'rules.seeding'));
+    if (format.groups || format.swiss) {
+      const k = ko.qualifiersPerGroup ?? 1;
+      const best = bestNextCount(format);
+      if (format.swiss) {
+        paragraphs.push(t('rules.advanceSwiss', { k }));
+        paragraphs.push(t(compact ? 'rules.short.seedingSwiss' : 'rules.seedingSwiss'));
+      } else {
+        paragraphs.push(t('rules.advanceTop', k, { named: { k } }));
+        if (best > 0) {
+          paragraphs.push(t('rules.advanceBest', best, { named: { n: best, rank: k + 1 } }));
+          if (!compact) paragraphs.push(t('rules.bestCompare', { rank: k + 1 }));
+        }
+        paragraphs.push(t(compact ? 'rules.short.seeding' : 'rules.seeding'));
+      }
       if (structure?.knockout) {
         const { bracket, seats } = structure.knockout;
-        const seat = (index: number) => {
-          const s = seats[index];
-          return s?.type === 'qualifier' ? `${groupLetter(s.group)}${s.rank}` : null;
-        };
         items = bracket.matches
           .filter((m) => m.round === 1)
           .map((m) => {
             // The player first, so a bye reads "A1 – bye"
-            const sides = m.sides.map((side) => (side.type === 'seat' ? seat(side.index) : null));
+            const sides = m.sides.map((side) => (side.type === 'seat' ? seatText(t, seats[side.index] ?? null, format) : null));
             const named = sides.filter((s): s is string => s !== null);
             return [...named, ...sides.filter((s) => s === null).map(() => t('rules.bye'))].join(' – ');
           });
-        paragraphs.push(t('rules.firstRound'));
+        paragraphs.push(t(format.swiss ? 'rules.firstRoundSwiss' : 'rules.firstRound'));
       }
     } else {
       paragraphs.push(t('rules.knockoutDraw'));
     }
     sections.push({ title: t('rules.advance'), paragraphs, ...(items && { items }) });
-    if (!input.compact) sections.push({ title: t('rules.knockout'), paragraphs: [t(`rules.knockoutMode.${ko.placements}`)] });
+    if (!compact) {
+      const mode = [t(`rules.knockoutMode.${ko.placements}`)];
+      if (structure?.consolation) mode.push(...consolationTexts(t, structure, ko.consolation ?? 'bracket', ko.placements));
+      sections.push({ title: t('rules.knockout'), paragraphs: mode });
+    } else if (structure?.consolation) {
+      sections.push({ title: t('rules.knockout'), paragraphs: [t(`rules.consolation.${ko.consolation}`)] });
+    }
   }
 
   if (structure) {
@@ -230,34 +296,64 @@ export function competitionRules(t: Translate, input: RulesInput): RulesSection[
   return sections;
 }
 
-/** Places decided in the knockout: played out, or shared by the losers of a round that is not played on */
+/** How the eliminated entries play on: the mode, then what follows from the sizes of the fields */
+function consolationTexts(t: Translate, structure: CompetitionStructure, mode: 'bracket' | 'perRank', placements: string): string[] {
+  const { brackets, groups } = structure.consolation!;
+  const texts = [t(`rules.consolation.${mode}`)];
+  if (groups.length > 0) texts.push(t(brackets.length > 0 ? 'rules.consolationThree' : 'rules.consolationThreeOnly'));
+  if (brackets.length > 0) texts.push(t(`rules.consolationMode.${placements}`));
+  if (brackets.some((b) => b.byes > 0)) texts.push(t(brackets.some((b) => b.seeded) ? 'rules.consolationByesCompared' : 'rules.consolationByes'));
+  return texts;
+}
+
+/** A bracket seat before the names are known: "A1", "3." (Swiss table) or "best 3." */
+function seatText(t: Translate, seat: SeatRef | null, format: CompetitionFormat): string | null {
+  if (seat?.type === 'qualifier') return format.swiss ? `${seat.rank}.` : `${groupLetter(seat.group)}${seat.rank}`;
+  if (seat?.type === 'bestNext') {
+    const best = bestNextCount(format);
+    if (seat.rank !== (format.knockout?.qualifiersPerGroup ?? 0) + 1 || best === 0) return t('rules.anySeat', { rank: seat.rank });
+    return t(seat.index < best ? 'rules.bestSeat' : 'rules.otherSeat', { rank: seat.rank });
+  }
+  return null;
+}
+
+/** Places decided in the brackets: played out, or shared by the losers of a round that is not played on */
 function knockoutPlaces(t: Translate, structure: CompetitionStructure): string[] {
-  const bracket = structure.knockout?.bracket;
-  if (!bracket) return [];
-  const feeds = new Set(bracket.matches.flatMap((m) => m.sides.flatMap((s) => (s.type === 'seat' ? [] : [`${s.type}:${s.match}`]))));
+  const stages: BracketStage[] = [...(structure.knockout ? [structure.knockout] : []), ...(structure.consolation?.brackets ?? [])];
   const lines: { place: number; text: string }[] = [];
-  const shared = new Map<number, { round: string; count: number }>();
-  // Real matches only: a bye leaves no loser to place.
-  for (const { bracketMatch: m } of structure.matches) {
-    if (!m) continue;
-    const [from, to] = m.places;
-    const half = (to - from + 1) / 2;
-    const round = roundName(t, knockoutRoundName(m));
-    if (feeds.has(`loser:${m.id}`)) continue;
-    if (!feeds.has(`winner:${m.id}`)) {
-      lines.push({ place: from, text: t('rules.placeMatch', { round, winner: from, loser: from + 1 }) });
-    } else {
-      const loserFrom = from + half;
-      const entry = shared.get(loserFrom) ?? { round, count: 0 };
-      entry.count++;
-      shared.set(loserFrom, entry);
+  for (const stage of stages) {
+    const feeds = new Set(stage.bracket.matches.flatMap((m) => m.sides.flatMap((s) => (s.type === 'seat' ? [] : [`${s.type}:${s.match}`]))));
+    const shared = new Map<number, { round: string; count: number }>();
+    // Real matches only: a bye leaves no loser to place.
+    for (const match of structure.matches) {
+      const m = match.bracketMatch;
+      if (!m || match.stage !== stage.id) continue;
+      const [from, to] = m.places;
+      const half = (to - from + 1) / 2;
+      const round = roundName(t, knockoutRoundName({ places: match.places ?? m.places }));
+      if (feeds.has(`loser:${m.id}`)) continue;
+      if (!feeds.has(`winner:${m.id}`)) {
+        lines.push({ place: from, text: t('rules.placeMatch', { round, winner: from, loser: from + 1 }) });
+      } else {
+        const loserFrom = from + half;
+        const entry = shared.get(loserFrom) ?? { round, count: 0 };
+        entry.count++;
+        shared.set(loserFrom, entry);
+      }
+    }
+    for (const [place, { round, count }] of shared) {
+      lines.push({
+        place,
+        text: count === 1 ? t('rules.placeLoser', { round, place }) : t('rules.placeShared', { round, places: placesText(place, place + count - 1) }),
+      });
     }
   }
-  for (const [place, { round, count }] of shared) {
-    lines.push({
-      place,
-      text: count === 1 ? t('rules.placeLoser', { round, place }) : t('rules.placeShared', { round, places: placesText(place, place + count - 1) }),
-    });
+  for (const field of structure.consolation?.groups ?? []) {
+    const place = field.placeOffset + 1;
+    lines.push({ place, text: t('rules.placeField', { places: placesText(place, field.placeOffset + field.seats.length) }) });
+  }
+  for (const { seat, place } of structure.consolation?.direct ?? []) {
+    lines.push({ place, text: t('rules.placeDirect', { seat: seatText(t, seat, structure.format) ?? '', place }) });
   }
   return lines.sort((a, b) => a.place - b.place).map((l) => l.text);
 }
@@ -267,7 +363,11 @@ function groupPlaces(t: Translate, structure: CompetitionStructure): string[] {
   const tiers = groupStagePlaces(structure);
   if (tiers.length === 0) return [];
   if (!structure.knockout && tiers.every((p) => p.place === p.placeTo)) return [t('rules.placeIsRank')];
-  return tiers.map(({ rank, place, placeTo }) =>
-    place === placeTo ? t('rules.groupPlace', { rank, place }) : t('rules.groupPlaceShared', { rank, places: placesText(place, placeTo) }),
-  );
+  // After a Swiss system the table has a rank for everybody who missed the knockout.
+  if (structure.swiss) return [t('rules.placeIsRankRest', { place: tiers[0]!.place })];
+  return tiers.map(({ rank, place, placeTo, advancing }) => {
+    const places = placesText(place, placeTo);
+    if (advancing > 0) return t('rules.groupPlaceRest', { rank, places });
+    return place === placeTo ? t('rules.groupPlace', { rank, place }) : t('rules.groupPlaceShared', { rank, places });
+  });
 }

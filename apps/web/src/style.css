@@ -1690,6 +1690,11 @@ textarea {
   transform-origin: top center;
 }
 
+/* Laid out narrower and scaled up to the full width */
+.fit-box-content.enlarged {
+  transform-origin: top left;
+}
+
 .d-empty,
 .d-note {
   margin: 0 0 16px;
@@ -1834,6 +1839,8 @@ textarea {
 
 .table-card.large h3 {
   font-size: 30px;
+  /* On one line, so the projector's fit-to-box scale stops before the name would wrap */
+  white-space: nowrap;
 }
 
 .table-card.large .table-card-meta {
@@ -1916,14 +1923,15 @@ textarea {
 }
 
 .d-table .num {
-  width: 3.4em;
+  /* Wide enough for "12:10" and the longest heading ("Games"): anything sticking out stops the fit-to-box scale */
+  width: 3.9em;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .d-table thead th:first-child,
 .d-table tbody td:first-child {
-  width: 2em;
+  width: 2.4em;
 }
 
 .d-table .name {

@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import type { PlacementMode } from '@draw-and-play/domain';
 import { useI18n } from 'vue-i18n';
-import { describeFormat, describePlacements } from '../../lib/describe.js';
+import { describeFormat } from '../../lib/describe.js';
+import type { FormatForm } from '../../lib/formatForm.js';
 import { MAX_COMPETITIONS, variantsFor, type CompetitionDraft } from '../../lib/planDraft.js';
+import FormatSettingsFields from '../FormatSettingsFields.vue';
 import { usePlannerStore } from '../../stores/planner.js';
 
 const { t } = useI18n();
 const store = usePlannerStore();
 
 const scoringOptions = [1, 2, 3, 4];
-const placementModes: PlacementMode[] = ['none', 'thirdPlace', 'all'];
 
 const earlier = (c: CompetitionDraft) => store.draft.competitions.slice(0, store.draft.competitions.indexOf(c));
-const hasKnockout = (c: CompetitionDraft) => variantsFor(c).find((v) => v.id === c.variantId)?.format.knockout !== undefined;
+const formatOf = (c: CompetitionDraft) => variantsFor(c).find((v) => v.id === c.variantId)?.format;
+const settingsOf = (c: CompetitionDraft): FormatForm => ({ placements: c.placements, consolation: c.consolation, fillByes: c.fillByes, swissRounds: c.swissRounds });
 
 function onScoring(c: CompetitionDraft, event: Event) {
   store.setGamesToWin(c, Number((event.target as HTMLSelectElement).value));
@@ -87,12 +88,7 @@ function onScoring(c: CompetitionDraft, event: Event) {
           </select>
           <span v-else class="warning-text">{{ t('planner.competitions.noFormat') }}</span>
         </label>
-        <label v-if="hasKnockout(c)" class="field">
-          <span>{{ t('planner.competitions.placements') }}</span>
-          <select v-model="c.placements">
-            <option v-for="mode in placementModes" :key="mode" :value="mode">{{ describePlacements(t, mode) }}</option>
-          </select>
-        </label>
+        <FormatSettingsFields :model-value="settingsOf(c)" :format="formatOf(c)" :entry-count="c.entryCount" @update:model-value="Object.assign(c, $event)" />
         <label class="field">
           <span>{{ t('planner.competitions.earliestStart') }}</span>
           <input v-model="c.earliestStart" type="time" step="300" />

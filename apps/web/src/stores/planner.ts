@@ -2,6 +2,7 @@ import { compareVariants, simulatePlan } from '@draw-and-play/domain';
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { i18n } from '../i18n/index.js';
+import { defaultFormatForm } from '../lib/formatForm.js';
 import {
   createCompetition,
   emptyDraft,
@@ -60,6 +61,8 @@ function sanitize(draft: PlannerDraft) {
   clampField(day, 'bufferMinutes', 0, 240, 0);
   const ids = new Set<string>();
   for (const c of draft.competitions) {
+    // Drafts saved before these settings existed
+    Object.assign(c, { ...defaultFormatForm(), ...c });
     clampField(c, 'entryCount', 1, 128, 8);
     clampField(c, 'gamesToWin', 1, 7, 3);
     clampField(c, 'matchMinutes', 5, 240, 30);

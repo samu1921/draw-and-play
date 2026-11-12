@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { useCompetitionText } from '../../composables/useCompetitionText.js';
 import type { CompetitionStateInfo } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
-import { bracketWindow, mainBracketRounds } from '../../lib/displaySlides.js';
+import { bracketWindow } from '../../lib/displaySlides.js';
+import { bracketViews } from '../../lib/stages.js';
 
 const props = defineProps<{
   state: CompetitionStateInfo;
@@ -14,12 +15,14 @@ const props = defineProps<{
   tableName?: (tableId: string) => string | undefined;
   /** Live draw: first-round matches revealed so far (all when undefined) */
   revealed?: number;
+  /** A consolation bracket (`C1`, …) instead of the main bracket */
+  stage?: string;
 }>();
 const { t } = useI18n();
 const { sideText, score, gameScores } = useCompetitionText(() => props.state);
 
 const rounds = computed(() =>
-  mainBracketRounds(props.state.matches).map((matches, r) => {
+  (bracketViews(props.state.matches).find((b) => b.stage === (props.stage ?? 'KO'))?.rounds ?? []).map((matches) => {
     const [start, end] = bracketWindow(matches.length, props.from, props.to);
     return { label: matchLabel(t, matches[0]!), matches: matches.slice(start, end).map((m, i) => ({ m, index: start + i })) };
   }),
