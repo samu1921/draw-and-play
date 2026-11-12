@@ -2,6 +2,18 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.4.0] – 2026-11-12
+
+### Features
+
+- **domain:** Doubles with rotating partners
+- **server:** Store and serve doubles with rotating partners
+- **web:** Set up and show doubles with rotating partners
+
+### Documentation
+
+- Describe doubles with rotating partners
+
 ## [0.3.0] – 2026-11-12
 
 ### Features
