@@ -7,7 +7,9 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import DisplayBracket from '../../components/display/DisplayBracket.vue';
 import DisplayEntries from '../../components/display/DisplayEntries.vue';
+import DisplayFields from '../../components/display/DisplayFields.vue';
 import DisplayGroups from '../../components/display/DisplayGroups.vue';
+import DisplayRound from '../../components/display/DisplayRound.vue';
 import DisplayRules from '../../components/display/DisplayRules.vue';
 import DisplayTies from '../../components/display/DisplayTies.vue';
 import DisplayStage from '../../components/display/DisplayStage.vue';
@@ -21,6 +23,8 @@ import { useNow } from '../../composables/useNow.js';
 import { api, defaultDisplaySettings, type CompetitionStateInfo, type DisplayProfile } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { buildSlides, competitionShown, groupRevealOrder, mainBracketRounds, NEXT_MATCHES, type Slide } from '../../lib/displaySlides.js';
+import { placesText } from '../../lib/rules.js';
+import { bracketViews } from '../../lib/stages.js';
 import { formatClock } from '../../lib/time.js';
 
 const { t } = useI18n();
@@ -295,11 +299,20 @@ const heading = computed(() => {
     case 'groups': {
       const state = stateOf(s.competitionId);
       const letters = s.groups.map((g) => groupLetter(g));
+      if (state?.swiss) return { competitionId: s.competitionId, sub: t('public.table') + pageSuffix(s) };
       const range = s.pages > 1 ? t('display.groupsRange', { from: letters[0], to: letters.at(-1) }) : (state?.groups.length ?? 0) > 1 ? t('display.groups') : '';
       return { competitionId: s.competitionId, sub: range };
     }
-    case 'bracket':
-      return { competitionId: s.competitionId, sub: t('public.knockout') + pageSuffix(s) };
+    case 'round':
+      return { competitionId: s.competitionId, sub: t('public.roundOfTotal', { round: s.round, total: stateOf(s.competitionId)?.swiss?.rounds ?? s.round }) + pageSuffix(s) };
+    case 'bracket': {
+      if (!s.stage) return { competitionId: s.competitionId, sub: t('public.knockout') + pageSuffix(s) };
+      const places = bracketViews(stateOf(s.competitionId)?.matches ?? []).find((b) => b.stage === s.stage)?.places;
+      const title = places ? `${t('public.consolation')} · ${t('public.consolationPlaces', { places: placesText(...places) })}` : t('public.consolation');
+      return { competitionId: s.competitionId, sub: title + pageSuffix(s) };
+    }
+    case 'fields':
+      return { competitionId: s.competitionId, sub: t('public.consolation') + pageSuffix(s) };
     case 'placements':
       return { competitionId: s.competitionId, sub: t('public.placements') };
     case 'ties':
@@ -389,7 +402,16 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
             :state="stateOf(current.competitionId)!"
             :groups="current.groups"
             :columns="current.columns"
-            :tie-notes="settings.rules"
+            :tie-notes="settings.rules && (current.rows === undefined || current.page === current.pages - 1)"
+            v-bind="current.rows ? { rows: current.rows } : {}"
+          />
+
+          <DisplayRound
+            v-else-if="current.kind === 'round' && stateOf(current.competitionId)"
+            :state="stateOf(current.competitionId)!"
+            :round="current.round"
+            :match-keys="current.matchKeys"
+            :table-name="tableName"
           />
 
           <DisplayTies
@@ -409,6 +431,14 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
             :state="stateOf(current.competitionId)!"
             :from="current.from"
             :to="current.to"
+            :table-name="tableName"
+            v-bind="current.stage ? { stage: current.stage } : {}"
+          />
+
+          <DisplayFields
+            v-else-if="current.kind === 'fields' && stateOf(current.competitionId)"
+            :state="stateOf(current.competitionId)!"
+            :stages="current.stages"
             :table-name="tableName"
           />
 

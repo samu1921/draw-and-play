@@ -6,17 +6,18 @@ import {
   rankForSeeding,
   validateFormat,
   type PairDrawMode,
-  type PlacementMode,
   type SeedPlacement,
 } from '@draw-and-play/domain';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import CompetitionSchedule from '../../components/admin/CompetitionSchedule.vue';
+import FormatSettingsFields from '../../components/FormatSettingsFields.vue';
 import CompetitionStateView from '../../components/live/CompetitionStateView.vue';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionStateInfo, type EntryInfo, type PersonInfo } from '../../lib/api.js';
-import { describeFormat, describePlacements, sameFormat } from '../../lib/describe.js';
+import { describeFormat, sameBaseFormat, sameFormat } from '../../lib/describe.js';
+import { defaultFormatForm, formatFormOf, formatSettings } from '../../lib/formatForm.js';
 import { errorText } from '../../lib/messages.js';
 import { useSessionStore } from '../../stores/session.js';
 
@@ -89,15 +90,18 @@ const updateEntry = (e: EntryInfo, patch: Record<string, unknown>) => run(() => 
 const removeEntry = (e: EntryInfo) => run(() => api('DELETE', `/api/entries/${e.id}`));
 
 // --- Format ---
-const placements = ref<PlacementMode>('none');
+const formatForm = ref(defaultFormatForm());
 const variantId = ref('');
-const variants = computed(() => generateVariants(drawCount.value, { placements: placements.value }));
+const variants = computed(() => generateVariants(drawCount.value, formatSettings(formatForm.value)));
+const chosenFormat = computed(() => variants.value.find((v) => v.id === variantId.value)?.format);
 // Watched by value: every live reload brings a new competition object, which must not undo a choice not saved yet
 const savedFormat = computed(() => (competition.value ? JSON.stringify(competition.value.format) : null));
+/** The saved format the selection was last set from */
+let shownFormat: string | null | undefined;
 watch(
   savedFormat,
   () => {
-    if (competition.value) placements.value = competition.value.format.knockout?.placements ?? 'none';
+    if (competition.value) formatForm.value = formatFormOf(competition.value.format);
   },
   { immediate: true },
 );
@@ -105,7 +109,11 @@ watch(
   [variants, savedFormat],
   () => {
     const current = competition.value?.format;
-    variantId.value = variants.value.find((v) => current && sameFormat(v.format, current))?.id ?? variants.value[0]?.id ?? '';
+    // A setting changed in the form must not move the selection to another format
+    const keep = variants.value.find((v) => v.id === variantId.value);
+    const saved = variants.value.find((v) => current && sameFormat(v.format, current)) ?? variants.value.find((v) => current && sameBaseFormat(v.format, current));
+    variantId.value = (savedFormat.value === shownFormat ? keep : undefined)?.id ?? saved?.id ?? variants.value[0]?.id ?? '';
+    shownFormat = savedFormat.value;
   },
   { immediate: true },
 );
@@ -127,14 +135,19 @@ const seedingOf = (e: EntryInfo) => {
   };
 };
 const groupDraw = computed(() => competition.value?.format.groups !== undefined);
-const defaultSeedCount = computed(() =>
-  groupDraw.value ? competition.value!.format.groups!.groupCount : Math.max(2, bracketSize(drawCount.value) / 4),
-);
+const swissDraw = computed(() => competition.value?.format.swiss !== undefined);
+/** Which kind of draw the format needs; also the key of its texts */
+const drawKind = computed(() => (swissDraw.value ? 'swiss' : groupDraw.value ? 'groups' : 'knockout'));
+const defaultSeedCount = computed(() => {
+  // Swiss system: the upper half is seeded, so that in round 1 every seed meets a drawn opponent
+  if (swissDraw.value) return Math.ceil(drawCount.value / 2);
+  return groupDraw.value ? competition.value!.format.groups!.groupCount : Math.max(2, bracketSize(drawCount.value) / 4);
+});
 const seedCount = ref<number | null>(null);
 const seedPlacement = ref<SeedPlacement>('fixed');
 const effectiveSeedCount = computed(() => Math.min(seedCount.value ?? defaultSeedCount.value, drawCount.value));
 watch(
-  () => [competitionId.value, groupDraw.value],
+  () => [competitionId.value, drawKind.value],
   () => {
     seedCount.value = null;
     seedPlacement.value = groupDraw.value ? 'fixed' : 'drawn';
@@ -346,12 +359,7 @@ const removeCompetition = async () => {
               <option v-for="v in variants" :key="v.id" :value="v.id">{{ describeFormat(t, v.format, drawCount) }}</option>
             </select>
           </label>
-          <label class="field">
-            <span>{{ t('planner.competitions.placements') }}</span>
-            <select v-model="placements">
-              <option v-for="mode in ['none', 'thirdPlace', 'all'] as const" :key="mode" :value="mode">{{ describePlacements(t, mode) }}</option>
-            </select>
-          </label>
+          <FormatSettingsFields v-model="formatForm" :format="chosenFormat" :entry-count="drawCount" />
           <div class="field form-actions">
             <button type="button" class="button secondary" @click="saveFormat">{{ t('admin.competition.saveFormat') }}</button>
           </div>
@@ -378,7 +386,7 @@ const removeCompetition = async () => {
           <div class="field form-actions">
             <button type="button" class="button secondary small" @click="seedCount = Math.floor(drawCount / 2)">{{ t('admin.competition.seedHalf') }}</button>
           </div>
-          <label class="field wide">
+          <label v-if="!swissDraw" class="field wide">
             <span>{{ t('admin.competition.seedPlacement') }}</span>
             <select v-model="seedPlacement">
               <option v-for="p in ['fixed', 'drawn'] as const" :key="p" :value="p">
@@ -395,7 +403,7 @@ const removeCompetition = async () => {
           </div>
         </div>
         <p class="muted small">
-          {{ t(groupDraw ? 'admin.competition.unseededHintGroups' : 'admin.competition.unseededHintKnockout') }}
+          {{ t({ swiss: 'admin.competition.unseededHintSwiss', groups: 'admin.competition.unseededHintGroups', knockout: 'admin.competition.unseededHintKnockout' }[drawKind]) }}
           {{ t('admin.competition.drawSeedHint') }}
         </p>
       </section>
@@ -411,7 +419,7 @@ const removeCompetition = async () => {
       </section>
       <section v-if="session.isAdmin" class="card" aria-labelledby="withdrawals">
         <h2 id="withdrawals"><UserMinus aria-hidden="true" />{{ t('admin.competition.withdrawals') }}</h2>
-        <p class="muted small">{{ t('admin.competition.withdrawHint') }}</p>
+        <p class="muted small">{{ t(swissDraw ? 'admin.competition.withdrawHintSwiss' : 'admin.competition.withdrawHint') }}</p>
         <ul class="withdraw-list">
           <li v-for="e in drawnEntries" :key="e.id">
             <span :class="{ muted: e.status === 'withdrawn' }">{{ entryName(e) }}</span>

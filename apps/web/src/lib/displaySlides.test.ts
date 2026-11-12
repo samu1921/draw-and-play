@@ -101,6 +101,27 @@ describe('buildSlides', () => {
     expect(slides.map((s) => s.key)).toEqual(['next', 'groups:a:0', 'placements:a', 'rules:a']);
   });
 
+  it('shows only the phase being played: groups, then the bracket, then placements and bracket', () => {
+    const final = (sides: [string | null, string | null]) => ({ ...knockoutMatch(4, 0), sides });
+    const consolation = { ...knockoutMatch(1, 0), key: 'C1-1-0', stage: 'C1', places: [3, 4] } as MatchInfo;
+    const keys = (groupsComplete: boolean[], matches: MatchInfo[], finished = false) => {
+      const base = state(groupsComplete.map(() => 4));
+      const groups = base.groups.map((g, i) => ({ ...g, complete: groupsComplete[i]! }));
+      const placements = finished ? [{ entryId: 'x', place: 1, placeTo: 1 }] : [];
+      const s = { ...base, groups, matches, finished, placements } as CompetitionStateInfo;
+      const settings = { ...defaultDisplaySettings, next: false, rules: false };
+      return buildSlides({ settings, today: '', competitions: [competition('a')], states: new Map([['a', s]]), tableIds: [] }).map((x) => x.key);
+    };
+    // Groups running, the bracket still empty
+    expect(keys([false, false], [final([null, null]), consolation])).toEqual(['groups:a:0']);
+    // Group A done, group B running: the first match knows both players, both phases overlap
+    expect(keys([true, false], [final(['e1', 'e2']), consolation])).toEqual(['groups:a:0', 'bracket:a:0']);
+    // All groups done: only the brackets that started
+    expect(keys([true, true], [final(['e1', 'e2']), consolation])).toEqual(['bracket:a:0']);
+    // Finished: the placements next to every bracket
+    expect(keys([true, true], [final(['e1', 'e2']), consolation], true)).toEqual(['bracket:a:0', 'bracket:a:C1:0', 'placements:a']);
+  });
+
   it('explains the ties of finished groups after the tables, and leaves the format out when switched off', () => {
     const tie = { criterion: 'matchPoints', entries: [], scores: [], steps: [] };
     const groups = state([4, 4, 4]).groups.map((g, i) => ({ ...g, complete: i !== 1, tieBreaks: i === 2 ? Array(5).fill(tie) : [tie] }));

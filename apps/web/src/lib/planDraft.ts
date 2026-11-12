@@ -4,9 +4,9 @@ import {
   sportProfiles,
   type CompetitionPlan,
   type FormatVariant,
-  type PlacementMode,
   type PlanInput,
 } from '@draw-and-play/domain';
+import { defaultFormatForm, formatSettings, type FormatForm } from './formatForm.js';
 import { parseClock } from './time.js';
 
 /** The planner works without an event, so it plans with the default sport. */
@@ -24,7 +24,7 @@ export interface DayDraft {
   bufferMinutes: number;
 }
 
-export interface CompetitionDraft {
+export interface CompetitionDraft extends FormatForm {
   id: string;
   name: string;
   /** Fixed categorical color slot (0–7), assigned once so colors never shift */
@@ -34,7 +34,6 @@ export interface CompetitionDraft {
   matchMinutes: number;
   /** Id of a variant from `generateVariants`, e.g. "g3-top2" */
   variantId: string;
-  placements: PlacementMode;
   /** "HH:MM" or empty */
   earliestStart: string;
   /** Id of an earlier competition that must finish first, or empty */
@@ -54,12 +53,12 @@ export const tableNames = (count: number) => Array.from({ length: count }, (_, i
 /** Form fields may be empty ('') while the user types */
 const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value > 0;
 
-export function variantsFor(c: Pick<CompetitionDraft, 'entryCount' | 'placements'>): FormatVariant[] {
-  return generateVariants(c.entryCount, { placements: c.placements });
+export function variantsFor(c: Pick<CompetitionDraft, 'entryCount'> & Partial<FormatForm>): FormatVariant[] {
+  return generateVariants(c.entryCount, formatSettings(c));
 }
 
 /** The chosen variant, or the first available one if it no longer fits the number of entries */
-export function resolveVariant(c: Pick<CompetitionDraft, 'entryCount' | 'placements' | 'variantId'>): FormatVariant | undefined {
+export function resolveVariant(c: Pick<CompetitionDraft, 'entryCount' | 'variantId'> & Partial<FormatForm>): FormatVariant | undefined {
   const variants = variantsFor(c);
   return variants.find((v) => v.id === c.variantId) ?? variants[0];
 }
@@ -121,7 +120,7 @@ export function createCompetition(
     entryCount: 8,
     matchMinutes: plannerSport.estimateMatchMinutes({ ...plannerSport.defaultMatchRules, gamesToWin }),
     variantId: '',
-    placements: 'none',
+    ...defaultFormatForm(),
     earliestStart: '',
     startAfter: '',
     tableFrom: null,

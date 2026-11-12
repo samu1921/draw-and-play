@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue';
-import { generateVariants, type PlacementMode } from '@draw-and-play/domain';
+import { generateVariants } from '@draw-and-play/domain';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { api, type CompetitionInfo } from '../../lib/api.js';
 import { dayDate, eventDays } from '../../lib/days.js';
-import { describeFormat, describePlacements } from '../../lib/describe.js';
+import FormatSettingsFields from '../../components/FormatSettingsFields.vue';
+import { describeFormat } from '../../lib/describe.js';
+import { defaultFormatForm, formatSettings } from '../../lib/formatForm.js';
 import { errorText } from '../../lib/messages.js';
 import { useSessionStore } from '../../stores/session.js';
 
@@ -17,13 +19,14 @@ const live = injectLiveEvent();
 const session = useSessionStore();
 const overview = computed(() => live.overview.value!);
 
-const form = ref({ name: '', kind: 'singles' as 'singles' | 'doubles', gamesToWin: 3, expected: 8, variantId: '', placements: 'none' as PlacementMode, day: '' });
+const form = ref({ name: '', kind: 'singles' as 'singles' | 'doubles', gamesToWin: 3, expected: 8, variantId: '', day: '' });
+const settings = ref(defaultFormatForm());
 /** Days of a multi-day event; a new competition starts on the first one */
 const days = computed(() => eventDays(overview.value.event.startsOn, overview.value.event.endsOn));
 watch(days, (list) => {
   if (list.length > 1 && !list.includes(form.value.day)) form.value.day = list[0]!;
 }, { immediate: true });
-const variants = computed(() => generateVariants(form.value.expected, { placements: form.value.placements }));
+const variants = computed(() => generateVariants(form.value.expected, formatSettings(settings.value)));
 watch(
   variants,
   (list) => {
@@ -31,7 +34,7 @@ watch(
   },
   { immediate: true },
 );
-const hasKnockout = computed(() => variants.value.find((v) => v.id === form.value.variantId)?.format.knockout !== undefined);
+const chosenFormat = computed(() => variants.value.find((v) => v.id === form.value.variantId)?.format);
 const error = ref('');
 
 async function create() {
@@ -104,12 +107,7 @@ async function create() {
             <option v-for="v in variants" :key="v.id" :value="v.id">{{ describeFormat(t, v.format, form.expected) }}</option>
           </select>
         </label>
-        <label v-if="hasKnockout" class="field">
-          <span>{{ t('planner.competitions.placements') }}</span>
-          <select v-model="form.placements">
-            <option v-for="mode in ['none', 'thirdPlace', 'all'] as const" :key="mode" :value="mode">{{ describePlacements(t, mode) }}</option>
-          </select>
-        </label>
+        <FormatSettingsFields v-model="settings" :format="chosenFormat" :entry-count="form.expected" />
         <div class="field form-actions">
           <button type="submit" class="button" :disabled="!form.variantId">{{ t('admin.competitions.create') }}</button>
         </div>

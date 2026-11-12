@@ -1,4 +1,5 @@
 import {
+  bestNextCount,
   bracketSize,
   groupLetter,
   groupSizes,
@@ -38,28 +39,47 @@ export function sameFormat(a: CompetitionFormat, b: CompetitionFormat): boolean 
   return (
     a.groups?.groupCount === b.groups?.groupCount &&
     (a.groups?.double ?? false) === (b.groups?.double ?? false) &&
+    a.swiss?.rounds === b.swiss?.rounds &&
     (a.knockout === undefined) === (b.knockout === undefined) &&
     a.knockout?.qualifiersPerGroup === b.knockout?.qualifiersPerGroup &&
-    a.knockout?.placements === b.knockout?.placements
+    a.knockout?.placements === b.knockout?.placements &&
+    (a.knockout?.fillByes ?? false) === (b.knockout?.fillByes ?? false) &&
+    a.knockout?.consolation === b.knockout?.consolation
+  );
+}
+
+/** Same stages and qualifiers, whatever the settings (placement matches, rounds, consolation, …) */
+export function sameBaseFormat(a: CompetitionFormat, b: CompetitionFormat): boolean {
+  return (
+    a.groups?.groupCount === b.groups?.groupCount &&
+    (a.swiss === undefined) === (b.swiss === undefined) &&
+    (a.knockout === undefined) === (b.knockout === undefined) &&
+    a.knockout?.qualifiersPerGroup === b.knockout?.qualifiersPerGroup
   );
 }
 
 /** Human-readable format, e.g. "Groups 3 × (4/3/3), top 2 → quarterfinals, 2 byes" */
 export function describeFormat(t: Translate, format: CompetitionFormat, entryCount: number): string {
-  const groups = format.groups;
-  const ko = format.knockout;
-  if (groups && !ko) {
+  const { groups, swiss, knockout: ko } = format;
+  if (!ko) {
+    if (swiss) return t('format.swiss', swiss.rounds, { named: { rounds: swiss.rounds } });
+    if (!groups) return '';
     return groups.groupCount === 1 ? t('format.roundRobin') : t('format.groups', { groups: groupSizesText(entryCount, groups.groupCount) });
   }
-  if (!ko) return '';
-  const qualifiers = groups ? groups.groupCount * (ko.qualifiersPerGroup ?? 0) : entryCount;
+  const k = ko.qualifiersPerGroup ?? 0;
+  const best = bestNextCount(format);
+  const qualifiers = swiss ? k : groups ? groups.groupCount * k + best : entryCount;
   const size = bracketSize(qualifiers);
   const byes = size - qualifiers;
+  const named = { k, ko: bracketText(t, size) };
   let text: string;
-  if (!groups) text = t('format.knockout', { ko: bracketText(t, size) });
-  else if (groups.groupCount === 1) text = t('format.roundRobinTop', { k: ko.qualifiersPerGroup, ko: bracketText(t, size) });
-  else text = t('format.groupsTop', { groups: groupSizesText(entryCount, groups.groupCount), k: ko.qualifiersPerGroup, ko: bracketText(t, size) });
-  return byes > 0 ? `${text}, ${t('format.byes', byes, { named: { n: byes } })}` : text;
+  if (swiss) text = t('format.swissTop', swiss.rounds, { named: { ...named, rounds: swiss.rounds } });
+  else if (!groups) text = t('format.knockout', named);
+  else if (groups.groupCount === 1) text = t(best > 0 ? 'format.roundRobinTopBest' : 'format.roundRobinTop', { ...named, best, rank: k + 1 });
+  else text = t(best > 0 ? 'format.groupsTopBest' : 'format.groupsTop', { ...named, groups: groupSizesText(entryCount, groups.groupCount), best, rank: k + 1 });
+  if (byes > 0) text += `, ${t('format.byes', byes, { named: { n: byes } })}`;
+  if (ko.consolation) text += `, ${t(`format.consolation.${ko.consolation}`)}`;
+  return text;
 }
 
 export function describePlacements(t: Translate, mode: PlacementMode): string {
@@ -83,17 +103,19 @@ export function roundName(t: Translate, name: KnockoutRoundName, short = false):
 
 /** The parts of a match that its label depends on: from the planner structure or from the API */
 export interface MatchLabelSource {
-  phase: 'group' | 'knockout';
+  phase: 'group' | 'swiss' | 'knockout' | 'placement';
   group?: number | null | undefined;
   round: number;
   places?: [number, number] | null | undefined;
 }
 
-/** "Group A, round 2" / "Semifinal"; short: "A·2" / "SF" */
+/** "Group A, round 2" / "Round 3" (Swiss system) / "Semifinal" / "Place 7–9" (consolation field); short: "A·2" / "R3" / "SF" / "P7–9" */
 export function matchLabel(t: Translate, match: StructureMatch | MatchLabelSource, short = false): string {
   if (match.phase === 'group') {
     return t(short ? 'match.groupShort' : 'match.group', { group: groupLetter(match.group ?? 0), round: match.round });
   }
-  const places = 'bracketMatch' in match ? match.bracketMatch?.places : (match as MatchLabelSource).places;
+  if (match.phase === 'swiss') return t(short ? 'match.swissShort' : 'match.swiss', { round: match.round });
+  // The place range to show leaves out the places that byes keep empty
+  const places = match.places ?? ('bracketMatch' in match ? match.bracketMatch?.places : undefined);
   return places ? roundName(t, knockoutRoundName({ places }), short) : '';
 }

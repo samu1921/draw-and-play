@@ -18,11 +18,15 @@ const props = defineProps<{
   latest?: string | null;
   /** Below finished groups, one line per tie saying what decided it */
   tieNotes?: boolean;
+  /** Part of a long table (a Swiss table) on this slide, as row indexes from–to */
+  rows?: [number, number];
 }>();
 const { t } = useI18n();
 const { name } = useCompetitionText(() => props.state);
 
+const isSwiss = computed(() => props.state.competition.format.swiss !== undefined);
 const shown = computed(() => props.groups.map((g) => props.state.groups[g]!));
+const rowsOf = <T,>(list: readonly T[]) => (props.rows ? list.slice(...props.rows) : list);
 const notes = (g: CompetitionStateInfo['groups'][number]) => {
   if (!props.tieNotes || props.revealed || !g.complete || !g.tieBreaks) return [];
   const rank = new Map(g.standings.map((r) => [r.entryId, r.rank]));
@@ -34,7 +38,7 @@ const notes = (g: CompetitionStateInfo['groups'][number]) => {
   <div class="d-groups" :style="{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }">
     <section v-for="g in shown" :key="g.group" class="d-group">
       <h3>
-        {{ t('public.group', { group: groupLetter(g.group) }) }}
+        {{ isSwiss ? t('public.table') : t('public.group', { group: groupLetter(g.group) }) }}
         <span v-if="g.complete && !revealed" class="badge">{{ t('public.complete') }}</span>
       </h3>
       <table class="d-table">
@@ -44,6 +48,7 @@ const notes = (g: CompetitionStateInfo['groups'][number]) => {
             <th>{{ t('public.entry') }}</th>
             <th class="num">{{ t('public.played') }}</th>
             <th class="num">{{ t('public.record') }}</th>
+            <th v-if="isSwiss" class="num">{{ t('public.buchholz') }}</th>
             <th class="num">{{ t('public.games') }}</th>
           </tr>
         </thead>
@@ -57,13 +62,14 @@ const notes = (g: CompetitionStateInfo['groups'][number]) => {
           </tr>
         </tbody>
         <tbody v-else>
-          <tr v-for="s in g.standings" :key="s.entryId">
+          <tr v-for="s in rowsOf(g.standings)" :key="s.entryId">
             <td class="num">{{ s.rank }}</td>
             <th class="name">
               {{ name(s.entryId) }}<span v-if="s.withdrawn" class="d-withdrawn"> · {{ t('public.withdrawn') }}</span>
             </th>
             <td class="num">{{ s.played }}</td>
             <td class="num">{{ s.won }}:{{ s.lost }}</td>
+            <td v-if="isSwiss" class="num">{{ s.buchholz ?? 0 }}</td>
             <td class="num">{{ s.gamesWon }}:{{ s.gamesLost }}</td>
           </tr>
         </tbody>

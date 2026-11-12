@@ -16,6 +16,7 @@ const sections = computed(() => {
     format: competition.format,
     matchRules: competition.matchRules,
     ranking: props.sport.ranking,
+    swissRanking: props.sport.swissRanking,
     ...(te(`rules.reference.${props.sport.id}`) && { reference: t(`rules.reference.${props.sport.id}`) }),
     entryCount: drawnCount > 0 ? drawnCount : entries.length,
     drawn: competition.drawn,

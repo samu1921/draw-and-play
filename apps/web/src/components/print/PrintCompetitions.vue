@@ -5,8 +5,9 @@ import { useI18n } from 'vue-i18n';
 import type { CompetitionStateInfo } from '../../lib/api.js';
 import { competitionText } from '../../lib/competitionText.js';
 import { matchLabel, type Translate } from '../../lib/describe.js';
-import { mainBracketRounds } from '../../lib/displaySlides.js';
 import { crossTable, placeText } from '../../lib/printData.js';
+import { placesText } from '../../lib/rules.js';
+import { bracketViews, placementGroupViews, swissRoundViews } from '../../lib/stages.js';
 
 const props = defineProps<{ states: CompetitionStateInfo[] }>();
 const { t: rawT } = useI18n();
@@ -16,15 +17,20 @@ const sections = computed(() =>
   props.states.map((state) => ({
     state,
     text: competitionText(t, state),
-    groups: state.groups.map((g) => ({
+    // A Swiss table is far too sparse for a cross table: it is printed as a table with the rounds below
+    groups: (state.swiss ? [] : state.groups).map((g) => ({
       group: g,
       cross: crossTable(t, state, g.group),
       standing: new Map(g.standings.map((s) => [s.entryId, s])),
     })),
-    rounds: mainBracketRounds(state.matches),
-    placementMatches: state.matches.filter((m) => m.phase === 'knockout' && (m.places?.[0] ?? 1) > 1),
+    swissTable: state.swiss ? state.groups[0] : undefined,
+    swissRounds: swissRoundViews(state).filter((r) => r.paired),
+    brackets: bracketViews(state.matches),
+    fields: placementGroupViews(state),
   })),
 );
+const bracketTitle = (b: { stage: string; places: [number, number] }) =>
+  b.stage === 'KO' ? t('public.knockout') : `${t('public.consolation')} · ${t('public.consolationPlaces', { places: placesText(...b.places) })}`;
 </script>
 
 <template>
@@ -55,10 +61,44 @@ const sections = computed(() =>
       </table>
     </div>
 
-    <div v-if="s.rounds.length > 0" class="print-bracket">
-      <h3>{{ t('public.knockout') }}</h3>
+    <div v-if="s.swissTable" class="print-group">
+      <h3>{{ t('public.table') }}</h3>
+      <table class="data-table print-table">
+        <thead>
+          <tr>
+            <th scope="col" class="num">{{ t('public.rank') }}</th>
+            <th scope="col">{{ t('public.entry') }}</th>
+            <th scope="col" class="num">{{ t('public.record') }}</th>
+            <th scope="col" class="num">{{ t('public.buchholz') }}</th>
+            <th scope="col" class="num">{{ t('public.games') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in s.swissTable.standings" :key="row.entryId">
+            <td class="num">{{ row.rank }}</td>
+            <th scope="row">{{ s.text.name(row.entryId) }}</th>
+            <td class="num">{{ row.won }}:{{ row.lost }}</td>
+            <td class="num">{{ row.buchholz ?? 0 }}</td>
+            <td class="num">{{ row.gamesWon }}:{{ row.gamesLost }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div v-for="r in s.swissRounds" :key="r.round">
+        <h4>{{ t('match.swiss', { round: r.round }) }}</h4>
+        <ul class="placement-matches">
+          <li v-for="m in r.matches" :key="m.key">
+            {{ s.text.sideText(m, 0) }} – {{ s.text.sideText(m, 1) }}
+            <strong>{{ s.text.score(m) }}</strong> <span class="muted small">{{ s.text.gameScores(m) }}</span>
+          </li>
+          <li v-if="r.bye">{{ t('public.bye', { name: s.text.name(r.bye) }) }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div v-for="b in s.brackets" :key="b.stage" class="print-bracket">
+      <h3>{{ bracketTitle(b) }}</h3>
       <div class="print-bracket-rounds">
-        <div v-for="(round, i) in s.rounds" :key="i" class="print-bracket-round">
+        <div v-for="(round, i) in b.rounds" :key="i" class="print-bracket-round">
           <h4>{{ matchLabel(t, round[0]!) }}</h4>
           <div v-for="m in round" :key="m.key" class="print-bracket-match">
             <div v-for="side in [0, 1] as const" :key="side" :class="{ winner: m.result?.winner === side }">{{ s.text.sideText(m, side) }}</div>
@@ -66,10 +106,38 @@ const sections = computed(() =>
           </div>
         </div>
       </div>
-      <ul v-if="s.placementMatches.length > 0" class="placement-matches">
-        <li v-for="m in s.placementMatches" :key="m.key">
+      <ul v-if="b.placementMatches.length > 0" class="placement-matches">
+        <li v-for="m in b.placementMatches" :key="m.key">
           {{ s.text.numberedLabel(m.key) }}: {{ s.text.sideText(m, 0) }} – {{ s.text.sideText(m, 1) }}
           <strong>{{ s.text.score(m) }}</strong>
+        </li>
+      </ul>
+    </div>
+
+    <div v-for="f in s.fields" :key="f.stage" class="print-group">
+      <h3>{{ t('public.consolation') }} · {{ t('public.consolationPlaces', { places: placesText(...f.places) }) }}</h3>
+      <table v-if="f.group.standings.length > 0" class="data-table print-table">
+        <thead>
+          <tr>
+            <th scope="col" class="num">{{ t('public.rank') }}</th>
+            <th scope="col">{{ t('public.entry') }}</th>
+            <th scope="col" class="num">{{ t('public.record') }}</th>
+            <th scope="col" class="num">{{ t('public.games') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, i) in f.group.standings" :key="row.entryId">
+            <td class="num">{{ f.group.complete ? f.places[0] + i : '' }}</td>
+            <th scope="row">{{ s.text.name(row.entryId) }}</th>
+            <td class="num">{{ row.won }}:{{ row.lost }}</td>
+            <td class="num">{{ row.gamesWon }}:{{ row.gamesLost }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ul class="placement-matches">
+        <li v-for="m in f.matches" :key="m.key">
+          {{ s.text.sideText(m, 0) }} – {{ s.text.sideText(m, 1) }}
+          <strong>{{ s.text.score(m) }}</strong> <span class="muted small">{{ s.text.gameScores(m) }}</span>
         </li>
       </ul>
     </div>
