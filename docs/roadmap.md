@@ -45,7 +45,7 @@ Every change shows the new forecast before it is confirmed ("final moves from 16
 ## Ideas for later
 
 - Eligibility rules per competition (gender, year of birth, rating), mixed doubles (F10)
-- Further stages: best third-placed entries, consolation round, double elimination, Swiss system, team matches, handicap (F11)
+- Further stages: double elimination, team matches, handicap (F11)
 - Moving single entries in a draw by hand (F19)
 - Confirmation of a result by the opponent (F26)
 - Entry fees, cash desk, receipts (F35)
