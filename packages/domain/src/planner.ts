@@ -10,6 +10,7 @@ import {
   type StructureOptions,
 } from './format.js';
 import { groupSizes } from './groupDraw.js';
+import { ROTATION_MAX_ENTRIES, ROTATION_MIN_ENTRIES } from './rotation.js';
 import { swissRoundRange } from './swiss.js';
 import { scheduleTasks, type ScheduledMatch, type ScheduleTask } from './scheduler.js';
 
@@ -93,6 +94,8 @@ function seatToken(competitionId: string, seat: SeatRef): string | undefined {
       return `${competitionId}/G${seat.group}.${seat.position}`;
     case 'drawSeat':
       return `${competitionId}/S${seat.position}`;
+    case 'rotationSeat':
+      return `${competitionId}/R${seat.position}`;
     // Whoever takes a seat after the groups can play several matches of a consolation field that are not
     // ordered by dependencies.
     case 'qualifier':
@@ -115,7 +118,9 @@ export function simulatePlan(input: PlanInput): PlanResult {
     return structure.matches.map((m) => ({
       id: taskId(plan.id, m.id),
       durationMin: plan.matchMinutes,
-      participants: plan.live?.participants?.get(m.id) ?? m.sides.flatMap((seat) => plan.participants?.(seat) ?? seatToken(plan.id, seat) ?? []),
+      participants:
+        plan.live?.participants?.get(m.id) ??
+        [...m.sides, ...(m.partners ?? [])].flatMap((seat) => plan.participants?.(seat) ?? seatToken(plan.id, seat) ?? []),
       // Roots wait for the preceding competitions; everything else follows them transitively.
       dependsOn: m.dependsOn.length > 0 ? m.dependsOn.map((d) => taskId(plan.id, d)) : before,
       ...(plan.earliestStart !== undefined && { earliestStart: plan.earliestStart }),
@@ -154,7 +159,7 @@ export function simulatePlan(input: PlanInput): PlanResult {
     for (const m of structure.matches) {
       const s = slot(m.id);
       if (!s) continue;
-      for (const seat of m.sides) {
+      for (const seat of [...m.sides, ...(m.partners ?? [])]) {
         const token = seatToken(plan.id, seat);
         if (token) timesOf.set(token, [...(timesOf.get(token) ?? []), s]);
         if (seat.type === 'winner' || seat.type === 'loser') {
@@ -213,7 +218,7 @@ export function simulatePlan(input: PlanInput): PlanResult {
   };
 }
 
-/** A candidate format with a stable id: `rr`, `rr-top2`, `g3-top2`, `swiss`, `swiss-top4`, `ko`, … */
+/** A candidate format with a stable id: `rr`, `rr-top2`, `g3-top2`, `swiss`, `swiss-top4`, `ko`, `rotation`, … */
 export interface FormatVariant {
   id: string;
   format: CompetitionFormat;
@@ -235,6 +240,11 @@ export interface VariantOptions extends FormatSettings {
   maxRoundRobin?: number;
   /** Largest group in a group stage (default 8) */
   maxGroupSize?: number;
+  /**
+   * Doubles with rotating partners, whose entries are single players: left out (default), offered with the
+   * other formats (the planner, which does not know what the entries are), or the only format.
+   */
+  rotation?: 'exclude' | 'include' | 'only';
 }
 
 /** Which settings a format can take, so that a form only offers what has an effect */
@@ -261,6 +271,7 @@ export function formatCapabilities(format: CompetitionFormat, entryCount: number
 
 /** The format with the settings that fit it; settings without an effect are left out */
 export function applyFormatSettings(format: CompetitionFormat, entryCount: number, settings: FormatSettings): CompetitionFormat {
+  if (format.rotation) return format;
   const range = format.swiss ? swissRoundRange(entryCount) : null;
   const swiss = range && { rounds: Math.max(1, Math.min(Math.round(settings.swissRounds ?? range.recommended) || range.recommended, range.max)) };
   if (!format.knockout) return { ...format, ...(swiss && { swiss }) };
@@ -283,6 +294,10 @@ export function generateVariants(entryCount: number, options: VariantOptions = {
   const maxGroupSize = options.maxGroupSize ?? 8;
   const variants: FormatVariant[] = [];
   const n = entryCount;
+  const rotation = options.rotation ?? 'exclude';
+  const rotationVariant: FormatVariant[] =
+    rotation !== 'exclude' && n >= ROTATION_MIN_ENTRIES && n <= ROTATION_MAX_ENTRIES ? [{ id: 'rotation', format: { rotation: {} } }] : [];
+  if (rotation === 'only') return rotationVariant;
 
   if (n >= 2 && n <= maxRoundRobin) {
     variants.push({ id: 'rr', format: { groups: { groupCount: 1 } } });
@@ -314,7 +329,7 @@ export function generateVariants(entryCount: number, options: VariantOptions = {
   }
 
   if (n >= 3) variants.push({ id: 'ko', format: { knockout: { placements } } });
-  return variants.map((v) => ({ id: v.id, format: applyFormatSettings(v.format, n, options) }));
+  return [...variants.map((v) => ({ id: v.id, format: applyFormatSettings(v.format, n, options) })), ...rotationVariant];
 }
 
 export interface VariantComparison {

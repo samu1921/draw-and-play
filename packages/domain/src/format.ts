@@ -4,6 +4,7 @@ import type { Side } from './sport/types.js';
 import { swissRoundRange } from './swiss.js';
 import { BYE, buildKnockout, resolveKnockout, type Knockout, type KnockoutMatch } from './knockout.js';
 import { roundRobinSchedule } from './roundRobin.js';
+import { ROTATION_MAX_ENTRIES, ROTATION_MIN_ENTRIES, rotationSchedule } from './rotation.js';
 import { groupLetter, placeQualifiers, qualifierOrder } from './transition.js';
 
 /** Which knockout places are played out */
@@ -27,6 +28,12 @@ export interface SwissStageFormat {
   rounds: number;
 }
 
+/**
+ * Doubles with rotating partners: the entries are single players, every match is two against two, and everybody
+ * partners everybody else once. Every player has their own row in one table; the most wins take first place.
+ */
+export type RotationStageFormat = Record<string, never>;
+
 export interface KnockoutStageFormat {
   /** Required after a group stage: top k of every group advance. After a Swiss system: the top k of the table. */
   qualifiersPerGroup?: number;
@@ -48,12 +55,15 @@ export interface CompetitionFormat {
   groups?: GroupStageFormat;
   swiss?: SwissStageFormat;
   knockout?: KnockoutStageFormat;
+  /** Stands alone: no other stage before or after it */
+  rotation?: RotationStageFormat;
 }
 
 export type FormatError =
   | 'noStages'
   | 'conflictingStages'
   | 'tooFewEntries'
+  | 'tooManyEntries'
   | 'groupsTooSmall'
   | 'invalidRounds'
   | 'missingQualifiers'
@@ -70,6 +80,12 @@ export function bestNextCount(format: CompetitionFormat): number {
 }
 
 export function validateFormat(format: CompetitionFormat, entryCount: number): FormatError | null {
+  if (format.rotation) {
+    if (format.groups || format.swiss || format.knockout) return 'conflictingStages';
+    if (entryCount < ROTATION_MIN_ENTRIES) return 'tooFewEntries';
+    if (entryCount > ROTATION_MAX_ENTRIES) return 'tooManyEntries';
+    return null;
+  }
   if (!format.groups && !format.swiss && !format.knockout) return 'noStages';
   if (format.groups && format.swiss) return 'conflictingStages';
   if (entryCount < 2) return 'tooFewEntries';
@@ -118,6 +134,8 @@ export type SeatRef =
   | { type: 'drawSeat'; position: number }
   /** Side of a Swiss pairing; known once the round is paired */
   | { type: 'swissSeat'; round: number; board: number; side: Side }
+  /** Position in the draw order of a doubles competition with rotating partners */
+  | { type: 'rotationSeat'; position: number }
   /** Rank after the group stage, e.g. A1; after a Swiss system the rank in its table (group 0) */
   | { type: 'qualifier'; group: number; rank: number }
   /**
@@ -131,13 +149,18 @@ export type SeatRef =
 
 export interface StructureMatch {
   id: string;
-  /** `placement`: a match of a consolation field that plays everybody against everybody */
-  phase: 'group' | 'swiss' | 'knockout' | 'placement';
+  /**
+   * `placement`: a match of a consolation field that plays everybody against everybody.
+   * `rotation`: a doubles match with rotating partners.
+   */
+  phase: 'group' | 'swiss' | 'knockout' | 'placement' | 'rotation';
   /** Group stage only */
   group?: number;
   /** Group or Swiss round, or knockout round counted from the start of its bracket */
   round: number;
   sides: [SeatRef, SeatRef];
+  /** Rotating partners only: the partner of the player on each side */
+  partners?: [SeatRef, SeatRef];
   /** Matches that must be finished before this one can start */
   dependsOn: string[];
   /** Knockout and placement only: id of the bracket (`BracketStage`) or of the field (`PlacementGroup`) */
@@ -175,12 +198,17 @@ export interface PlacementGroup {
 export interface CompetitionStructure {
   format: CompetitionFormat;
   entryCount: number;
-  /** Empty for a knockout without groups; a Swiss system is one table with all entries */
+  /** Empty for a knockout without groups; a Swiss system or rotating partners are one table with all entries */
   groupSizes: number[];
   swiss?: {
     rounds: number;
     /** Matches per round when nobody has withdrawn */
     boards: number;
+  };
+  rotation?: {
+    rounds: number;
+    /** Every player plays this many matches */
+    matchesPerPlayer: number;
   };
   /** The main bracket */
   knockout?: BracketStage;
@@ -212,6 +240,18 @@ export function buildStructure(
 ): CompetitionStructure {
   const error = validateFormat(format, entryCount);
   if (error) throw new Error(`Invalid format: ${error}`);
+  if (format.rotation) {
+    const schedule = rotationSchedule(entryCount);
+    const games = schedule.matchesPerPlayer;
+    return {
+      format,
+      entryCount,
+      groupSizes: [entryCount],
+      rotation: { rounds: schedule.rounds.length, matchesPerPlayer: games },
+      matches: buildRotationMatches(schedule.rounds),
+      matchesPerEntry: { min: games, max: games },
+    };
+  }
 
   const sizes = format.swiss ? [entryCount] : format.groups ? groupSizes(entryCount, format.groups.groupCount) : [];
   const preliminary = format.swiss
@@ -439,6 +479,21 @@ function buildGroupMatches(sizes: readonly number[], double: boolean): Structure
     });
   }
   return matches;
+}
+
+/** Rotating partners: the matches of every round, ids `RT-<round>-<match>`; nobody waits for a result */
+function buildRotationMatches(rounds: ReturnType<typeof rotationSchedule>['rounds']): StructureMatch[] {
+  const seat = (position: number): SeatRef => ({ type: 'rotationSeat', position });
+  return rounds.flatMap((matches, r) =>
+    matches.map(([[a, b], [c, d]], i): StructureMatch => ({
+      id: `RT-${r + 1}-${i + 1}`,
+      phase: 'rotation',
+      round: r + 1,
+      sides: [seat(a), seat(c)],
+      partners: [seat(b), seat(d)],
+      dependsOn: [],
+    })),
+  );
 }
 
 /** Id of the match on `board` (0-based) of a Swiss `round` (1-based) */

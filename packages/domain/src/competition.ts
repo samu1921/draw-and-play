@@ -3,20 +3,22 @@ import { bestNextCount, swissMatchId, type BracketStage, type CompetitionStructu
 import { drawGroups, rankForSeeding, type DrawEntry, type SeedPlacement } from './groupDraw.js';
 import { knockoutPlacements, resolveKnockout, type Placement } from './knockout.js';
 import { createRng, shuffle, type Rng, type Seed } from './rng.js';
-import type { Ranking, Side } from './sport/types.js';
-import { explainStandings, tallyStandings, type EntryId, type MatchResult, type RankingInput, type StandingsMatch, type StandingsRow, type TieBreak } from './standings.js';
+import type { Ranking, RankingCriterion, Side } from './sport/types.js';
+import { explainStandings, tallyStandings, toRanking, type EntryId, type MatchResult, type RankingInput, type StandingsMatch, type StandingsRow, type TieBreak } from './standings.js';
 import { pairSwissRound, swissStandings, type SwissRound, type SwissRoundResults } from './swiss.js';
 import { assignBestNext, rankAcrossGroups, type CrossGroupRow } from './transition.js';
 
 /**
  * Result of the draw: entries per group position, or per knockout position (`null` = bye). In a Swiss system the
  * draw holds the starting order (seeds first) and the pairings of every round paired so far; `syncSwissRounds`
- * adds the next round once the one before is finished.
+ * adds the next round once the one before is finished. With rotating partners the draw is the order of the players,
+ * which gives everybody their place in the fixed schedule.
  */
 export type Draw =
   | { type: 'groups'; groups: EntryId[][] }
   | { type: 'knockout'; seats: (EntryId | null)[] }
-  | { type: 'swiss'; order: EntryId[]; rounds: SwissRound[] };
+  | { type: 'swiss'; order: EntryId[]; rounds: SwissRound[] }
+  | { type: 'rotation'; order: EntryId[] };
 
 export type DrawError =
   | 'wrongEntryCount'
@@ -35,6 +37,7 @@ export function drawnEntries(draw: Draw): EntryId[] {
     case 'knockout':
       return draw.seats.filter((s): s is EntryId => s !== null);
     case 'swiss':
+    case 'rotation':
       return draw.order;
   }
 }
@@ -46,7 +49,23 @@ export const DEFAULT_SWISS_RANKING: Ranking = {
   lastResort: 'lot',
 };
 
+/**
+ * The order of a table with rotating partners: the criteria of the sport without those that need direct matches
+ * (head-to-head) or a Swiss system (Buchholz). Nobody plays anybody alone, so lots decide what is still level.
+ */
+export function rotationRanking(input: RankingInput): Ranking {
+  const unusable = new Set<RankingCriterion>(['headToHead', 'buchholz', 'fineBuchholz']);
+  const criteria = toRanking(input).criteria.filter((c) => !unusable.has(c));
+  return { criteria: criteria.length > 0 ? criteria : ['matchPoints'], lastResort: 'lot' };
+}
+
 export function validateDraw(structure: CompetitionStructure, draw: Draw): DrawError | null {
+  if (structure.rotation) {
+    if (draw.type !== 'rotation') return 'wrongDrawType';
+    if (draw.order.length !== structure.entryCount) return 'wrongEntryCount';
+    return new Set(draw.order).size === draw.order.length ? null : 'duplicateEntry';
+  }
+  if (draw.type === 'rotation') return 'wrongDrawType';
   if (structure.swiss) {
     if (draw.type !== 'swiss') return 'wrongDrawType';
     if (draw.order.length !== structure.entryCount) return 'wrongEntryCount';
@@ -101,6 +120,8 @@ export function drawForStructure(
   if (entries.length !== structure.entryCount) {
     throw new Error(`Draw needs ${structure.entryCount} entries, got ${entries.length}`);
   }
+  // Everybody plays with and against everybody, so the order is drawn without seeding.
+  if (structure.rotation) return { type: 'rotation', order: shuffle(entries.map((e) => e.id), rng) };
   if (structure.swiss) {
     const ranked = rankForSeeding(entries).map((e) => e.id);
     const seedCount = Math.max(0, Math.min(options.seedCount ?? Math.ceil(ranked.length / 2), ranked.length));
@@ -137,12 +158,17 @@ export interface ResolvedMatch {
   round: number;
   /** `null` while the side depends on unfinished matches */
   sides: [EntryId | null, EntryId | null];
+  /** Rotating partners only: the partner of the player on each side; `winner`/`loser` name the player in `sides` */
+  partners?: [EntryId | null, EntryId | null];
   /** pending = a side is not known yet, ready = can be played, finished = result recorded */
   status: 'pending' | 'ready' | 'finished';
   result?: MatchResult;
   winner?: EntryId;
   loser?: EntryId;
-  /** Decided as a walkover because a side withdrew; there is no recorded result behind it */
+  /**
+   * Decided as a walkover because a side withdrew; there is no recorded result behind it. With rotating partners
+   * the match is not played as soon as one of the four withdrew, and it does not count for anybody.
+   */
   withdrawal?: true;
 }
 
@@ -211,6 +237,7 @@ export interface ResolveOptions {
    * withdrew, the first side goes through, so the bracket can still be resolved.
    * Losing a match by a recorded walkover (not turning up) counts as withdrawing from then on.
    * In the group table, all matches of a withdrawn entry are annulled and it is ranked last (DTTB WO D 7.9).
+   * With rotating partners the same holds for the matches of a withdrawn player, for all four players of them.
    */
   withdrawn?: ReadonlySet<EntryId>;
   /** Seed for drawing lots in finished groups, see `StandingsOptions` (e.g. the seed of the draw) */
@@ -260,6 +287,8 @@ export function resolveCompetition(
         return draw.type === 'knockout' ? (draw.seats[seat.position] ?? null) : null;
       case 'swissSeat':
         return draw.type === 'swiss' ? (draw.rounds[seat.round - 1]?.pairs[seat.board]?.[seat.side] ?? null) : null;
+      case 'rotationSeat':
+        return draw.type === 'rotation' ? (draw.order[seat.position] ?? null) : null;
       case 'qualifier': {
         const group = groupStates[seat.group];
         return group?.complete ? (group.standings[seat.rank - 1]?.entryId ?? null) : null;
@@ -275,17 +304,28 @@ export function resolveCompetition(
 
   const resolveMatch = (m: StructureMatch) => {
     const sides: [EntryId | null, EntryId | null] = [seatEntry(m.sides[0]), seatEntry(m.sides[1])];
-    const base = { id: m.id, phase: m.phase, round: m.round, sides, ...(m.group !== undefined && { group: m.group }) };
+    const partners: [EntryId | null, EntryId | null] | undefined = m.partners && [seatEntry(m.partners[0]), seatEntry(m.partners[1])];
+    const base = {
+      id: m.id,
+      phase: m.phase,
+      round: m.round,
+      sides,
+      ...(partners && { partners }),
+      ...(m.group !== undefined && { group: m.group }),
+    };
     const recorded = results.get(m.id);
+    /** Whether a side has a withdrawn player, the partner included */
+    const out = (side: Side) => withdrawn.has(sides[side]!) || (partners?.[side] != null && withdrawn.has(partners[side]));
     let match: ResolvedMatch;
-    if (sides[0] === null || sides[1] === null) match = { ...base, status: 'pending' };
+    if (sides[0] === null || sides[1] === null || partners?.includes(null)) match = { ...base, status: 'pending' };
     else if (recorded) {
       match = { ...base, status: 'finished', result: recorded, winner: sides[recorded.winner]!, loser: sides[(1 - recorded.winner) as Side]! };
-      // A knockout walkover: the loser plays no further matches, e.g. no match for third place
-      if (recorded.walkover) withdrawn.add(match.loser!);
+      // A knockout walkover: the loser plays no further matches, e.g. no match for third place. With rotating
+      // partners it is not known which of the two did not turn up; withdrawing is up to the referee.
+      if (recorded.walkover && !partners) withdrawn.add(match.loser!);
     }
-    else if (withdrawn.has(sides[0]) || withdrawn.has(sides[1])) {
-      const winner: Side = withdrawn.has(sides[0]) && !withdrawn.has(sides[1]) ? 1 : 0;
+    else if (out(0) || out(1)) {
+      const winner: Side = out(0) && !out(1) ? 1 : 0;
       const result: MatchResult = { winner, games: [], walkover: true };
       match = { ...base, status: 'finished', result, winner: sides[winner]!, loser: sides[(1 - winner) as Side]!, withdrawal: true };
     } else match = { ...base, status: 'ready' };
@@ -310,7 +350,7 @@ export function resolveCompetition(
     const last = explainStandings(out, [], ranking).rows.map((r, i) => ({ ...r, rank: rows.length + i + 1, withdrawn: true as const }));
     return { standings: [...rows, ...last], tieBreaks, complete, finished };
   };
-  (structure.swiss ? [] : structure.groupSizes).forEach((_, group) => {
+  (structure.swiss || structure.rotation ? [] : structure.groupSizes).forEach((_, group) => {
     const entries = draw.type === 'groups' ? (draw.groups[group] ?? []) : [];
     const { finished, ...table } = tableOf(entries, groupMatches.filter((m) => m.group === group), group);
     groupStates.push({ group, entries, ...table });
@@ -345,6 +385,27 @@ export function resolveCompetition(
     // Unlike in a group, a withdrawn entry keeps its wins and its place in the table (DTTB WO D 7.6).
     const standings = rows.map((row) => (withdrawn.has(row.entryId) ? { ...row, withdrawn: true as const } : row));
     groupStates.push({ group: 0, entries: draw.order, standings, tieBreaks, complete });
+  }
+
+  // Rotating partners: one table of the players; a match counts for each of its four players.
+  const rotationMatches = structure.rotation ? structure.matches.filter((m) => m.phase === 'rotation').map(resolveMatch) : [];
+  if (structure.rotation && draw.type === 'rotation') {
+    const counted = (m: ResolvedMatch) => m.status === 'finished' && ![...m.sides, ...m.partners!].some((id) => withdrawn.has(id!));
+    // Each player appears in exactly one of the two halves, so `tallyStandings` credits everybody once.
+    const finished: StandingsMatch[] = rotationMatches
+      .filter(counted)
+      .flatMap((m) => [
+        { a: m.sides[0]!, b: m.sides[1]!, result: m.result! },
+        { a: m.partners![0]!, b: m.partners![1]!, result: m.result! },
+      ]);
+    const complete = rotationMatches.every((m) => m.status === 'finished');
+    const order = rotationRanking(ranking);
+    const active = draw.order.filter((id) => !withdrawn.has(id));
+    const lotSeed = options.lotSeed !== undefined && complete ? { lotSeed: `${options.lotSeed}:rotation` } : {};
+    const { rows, tieBreaks } = explainStandings(active, finished, order, lotSeed);
+    const out = draw.order.filter((id) => withdrawn.has(id));
+    const last = explainStandings(out, [], order).rows.map((r, i) => ({ ...r, rank: rows.length + i + 1, withdrawn: true as const }));
+    groupStates.push({ group: 0, entries: draw.order, standings: [...rows, ...last], tieBreaks, complete });
   }
 
   // Group ranks compared across the groups: the rank below the qualifiers when its best fill the main bracket,
@@ -394,7 +455,7 @@ export function resolveCompetition(
       complete: entries.length > 0 && table.complete,
     };
   });
-  const matches = [...groupMatches, ...swissMatches, ...laterMatches];
+  const matches = [...groupMatches, ...swissMatches, ...rotationMatches, ...laterMatches];
   const stages = [...(structure.knockout ? [structure.knockout] : []), ...(structure.consolation?.brackets ?? [])];
   const direct = (structure.consolation?.direct ?? []).flatMap(({ seat, place }): Placement[] => {
     const entryId = seatEntry(seat);
