@@ -61,15 +61,47 @@ A competition has a name, a type (singles or doubles), a colour, scoring (games 
 | Format | Options |
 |---|---|
 | Round robin | single or double round robin |
-| Groups + knockout | number of groups, top *k* of each group advance |
+| Groups + knockout | number of groups, top *k* of each group advance; optionally the best of the next group rank advance too, and the eliminated entries play a consolation round |
+| Swiss system | number of rounds; on its own (the table is the final ranking) or as a preliminary stage, after which the top *k* of the table go into a knockout |
 | Knockout | bracket size is the next power of two, byes go to the best seeds |
 
 Placement matches in the knockout: **none**, **3rd place** or **all places**. Group standings follow the sport profile; in table tennis the German federation's rules (DTTB Wettspielordnung D 7.5): more wins, then fewer losses, then game and point difference over all matches, then the matches among those still level (match, game and point difference), and finally lots. Lots are only drawn once the group is finished, automatically with the random key of the draw; until then the order of the draw applies provisionally. The crossover from the groups into the knockout keeps entries of the same group apart for as long as possible.
+
+### Avoiding byes: the best of the next group rank advance
+
+If the qualifiers do not fill a knockout bracket (for example 3 groups × 2 = 6 in a bracket of 8), the best seeded group winners would get a bye. With **avoid byes** the best entries of the next group rank advance instead, here the two best third-placed entries. The option is only offered when there are enough groups for it.
+
+The thirds of all groups are compared with each other: first by the share of matches won, then by the game difference per match, then by the point difference per match, and finally by lot. With groups of the same size the order is the same as wins, game and point difference in the group table. If the groups differ in size (4 and 5), the matches against the bottom of the larger groups do not count: everyone is measured only on the matches against the first four of their group, so that the additional win against a fifth is no advantage. The per-match values even out what still differs after that, for example after a withdrawal. The competition shows this comparison as a table of its own, provisional while group matches are still open. In the bracket these entries are seeded so that they meet players of their own group as late as possible. Knockout matches with them only start when all groups are finished.
+
+### Consolation: eliminated entries play for their places
+
+By default the entries eliminated in the group stage share places by group rank (all thirds share 9th–12th, for example). **Consolation** offers two alternatives:
+
+- **One bracket for everybody:** all eliminated entries play a knockout of their own for the places behind the main bracket. The better group ranks are seeded.
+- **One bracket per group rank:** all thirds play among themselves, all fourths among themselves, and so on, so nobody ends up behind a lower group rank. A rank held by a single entry takes its place without a match.
+
+A field of exactly **three entries** (the thirds of three groups, for example) plays **everybody against everybody** instead of a knockout: otherwise there would be a bye, and one entry would be done after a single match. The table of the field is ranked like a group and gives the places; everybody plays two matches. Whoever does not turn up to one of these matches is ranked last, as in a group.
+
+If **byes** are left in a consolation bracket, they go to the best: first the better group ranks, and among entries with the same group rank the same comparison across all groups decides as for the best thirds (share of matches won, game and point difference per match, lots), not the letter of the group. The competition shows this comparison as a table. In the first round nobody meets an entry of the own group if it can be avoided.
+
+Which places are played out in the consolation brackets follows the **placement matches** setting: with **all places** every place is played out in the main bracket and in the consolation, so every entry gets a place of its own.
+
+### Swiss system
+
+In a Swiss system nobody is eliminated: everybody plays a different opponent in every round. It follows the German federation's rules (DTTB Wettspielordnung D 7.6).
+
+- **Rounds:** free to choose. The suggestion is two rounds more than a knockout of the same size would need (6 for 16 entries).
+- **Pairings:** round 1 by the seeding list, upper half against lower half. After that, players with the same number of wins meet where possible, the upper half of them against the lower half; whoever is left over plays the best player with fewer wins. Nobody meets the same opponent twice.
+- **Next round:** paired automatically as soon as the last result of the round before is entered. While no match of the new round has been called or played, it is paired again after a correction or a withdrawal; after that its pairings stay.
+- **Bye:** with an odd number of players a different player sits out in every round, which counts as a win. It goes to the lowest player in the table who has not had one.
+- **Table:** wins, then the Buchholz score (the sum of the wins of all opponents so far; a bye counts with the wins of the entry at the bottom of the table), then head-to-head, then lots.
+- **Afterwards:** without a knockout the table position is the final place. With a knockout the top *k* go into the bracket with the table as the seeding list; everybody else keeps their table position.
 
 The format and type can be changed until the draw. Scoring, match duration, start time, dependency and tables can be changed at any time (day, start time, dependency, minutes per match and tables on the competition's page under **Schedule**); they apply to matches that have not been called yet, and the forecast follows immediately.
 
 ## 5. Draw
 
+- **Swiss system:** the seeds lead the starting order (default: the upper half) and the others are drawn below them, so in round 1 every seed meets a drawn opponent from the lower half.
 - **Seeding list:** manual seed first, then rating (in doubles the average of both players). The number of seeded entries is configurable; by default the group heads or a quarter of the bracket.
 - **Seed placement:** *fixed* (by seed number, groups in snake order) or *drawn* (pot by pot into the groups, or seeds 3/4, 5–8 … drawn within their tier in a knockout).
 - **Unseeded entries** are drawn freely, keeping players of the same club in different groups where possible.
@@ -80,6 +112,8 @@ The format and type can be changed until the draw. Scoring, match duration, star
 ### Withdrawals
 
 If a player withdraws after the draw, their remaining matches become walkovers for the opponents, including knockout matches that only arise later. As in DTTB Wettspielordnung D 7.9, all their group matches are annulled, including those already played, and they are last in the group. The same applies when a match is entered as a walkover: whoever does not turn up is out of the competition. The dialog shows how many matches are affected. A withdrawal can be taken back as long as no match that builds on one of its walkovers has started.
+
+In a Swiss system DTTB WO D 7.6 applies: whoever withdraws or does not turn up stops playing but stays in the table with their wins, and their played matches keep counting. They are given a loss for every further round. If the current round has not started yet, it is paired again without them.
 
 ## 6. Match desk
 
@@ -112,7 +146,7 @@ Results use the short notation known from table tennis: per game the loser's poi
 ## 9. Public views
 
 - `/e/<slug>` shows the tables with their current matches, the forecast per competition and day, and the latest results. Each competition has its own page with entries, groups with standings, the bracket and placements. Everything updates live.
-- **Transparent ranking:** every competition page explains under **Format and ranking** the format, the match rules, all standings criteria in order, who advances to the knockout, the pairings of the first knockout round (e.g. A1 – B2) and which places are played out or shared. Below each group table, **How the order comes about** walks through every tie step by step with the numbers: which criterion was applied, with which values, and who is ahead afterwards.
+- **Transparent ranking:** every competition page explains under **Format and ranking** the format, the match rules, all standings criteria in order, who advances to the knockout, the pairings of the first knockout round (e.g. A1 – B2) and which places are played out or shared. As soon as two players are level on wins, **How the tie is broken** below the group table walks through every tie step by step with the numbers: which criterion was applied, with which values, and who is ahead afterwards.
 - **Access code:** new events start with their public views behind a six-character code. A notice with a QR code is printed and hung up at the venue; whoever scans it is in and stays signed in until the day after the event. The code can be renewed (signs everybody out) or switched off.
 - **Privacy:** public pages show name and club only. Ratings only if enabled, short names ("Max M.") on request. Search engines are told not to index the pages.
 - **Legal links:** legal notice and privacy policy in the footer of every public page, plus an optional note (for example "names and results of this event are published here"). Each event can set its own links; otherwise the installation's defaults apply.

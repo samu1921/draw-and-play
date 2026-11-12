@@ -115,6 +115,13 @@ Pair draw: `mode: 'seeded'` (default) gives each player of the upper half of the
 
 `format` is the domain's `CompetitionFormat`, e.g. `{ "groups": { "groupCount": 2 }, "knockout": { "qualifiersPerGroup": 2, "placements": "thirdPlace" } }`.
 
+- `groups` (`groupCount`, `double?`) or `swiss` (`rounds`) is the preliminary stage; the two exclude each other.
+- `knockout.qualifiersPerGroup` is required after a preliminary stage: the top *k* of every group, or of the Swiss table.
+- `knockout.fillByes: true` lets the best entries of the next group rank fill the bracket (rejected with `cannotFillByes` at the draw if there are too few groups).
+- `knockout.consolation` is `"bracket"` (one bracket for everybody eliminated in the groups) or `"perRank"` (one bracket per group rank). A field of exactly three entries is played everybody against everybody instead of a bracket.
+
+In the state, a Swiss system has one table (`groups[0]`, rows with `buchholz`), matches with `phase: "swiss"` and keys `SW-<round>-<board>`, and `swiss: { rounds, paired: [{ round, bye }] }`. The next round is paired by the server when the last result of the round before is recorded. Knockout matches carry `stage` (`KO`, or `C1`, `C2`, … for consolation brackets). Consolation fields of three have matches with `phase: "placement"`, a `stage` like the brackets and keys `C1-<round>-<match>`; their tables are in `placementGroups: [{ stage, places, entries, standings, tieBreaks, complete }]`. `nextRanked` holds the comparison of the group rank whose best entries fill the bracket; `seeding` holds the same comparison for every further group rank that seeds a consolation bracket with byes (`advancing: 0`). If the groups differ in size, it carries `comparedSize` and its rows only count the matches against the first `comparedSize` entries of the own group. A side that is still open can have the sources `{ "type": "bestNext", "rank", "advancing", "index" }` and `{ "type": "swiss" }`.
+
 ### Competition state
 
 ```jsonc

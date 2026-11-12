@@ -61,16 +61,48 @@ Eine Konkurrenz hat einen Namen, eine Art (Einzel oder Doppel), eine Farbe, eine
 | Modus | Optionen |
 |---|---|
 | Jeder gegen jeden | einfache oder doppelte Runde |
-| Gruppen + KO | Anzahl Gruppen, Top *k* jeder Gruppe kommen weiter |
+| Gruppen + KO | Anzahl Gruppen, Top *k* jeder Gruppe kommen weiter; optional rücken die besten Nächstplatzierten nach, und die Ausgeschiedenen spielen eine Trostrunde |
+| Schweizer System | Anzahl Runden; allein (die Tabelle ist die Platzierung) oder als Vorrunde, nach der die besten *k* der Tabelle ins KO gehen |
 | KO | Feldgröße ist die nächste Zweierpotenz, Freilose gehen an die Besten der Setzliste |
 
 Platzierungsspiele im KO: **keine**, **Spiel um Platz 3** oder **alle Plätze**. Die Gruppentabelle folgt dem Sport-Profil, im Tischtennis der Wettspielordnung des DTTB (WO D 7.5): mehr Pluspunkte, dann weniger Minuspunkte, dann Satz- und Balldifferenz aus allen Spielen, dann die Spiele der noch Gleichen untereinander (Spiel-, Satz- und Balldifferenz), zuletzt das Los. Das Los wird erst gezogen, wenn die Gruppe beendet ist, automatisch mit dem Zufallsschlüssel der Auslosung; bis dahin gilt vorläufig die Reihenfolge der Auslosung. Der Übergang von den Gruppen ins KO hält Spieler derselben Gruppe so lange wie möglich auseinander.
+
+### Freilose vermeiden: die besten Nächstplatzierten rücken nach
+
+Ergeben die Qualifizierten kein volles KO-Feld (zum Beispiel 3 Gruppen × 2 = 6 im 8er-Feld), bekämen sonst die bestgesetzten Gruppensieger ein Freilos. Mit **Freilose vermeiden** rücken stattdessen die Besten des nächsten Gruppenplatzes nach, hier die zwei besten Gruppendritten. Angeboten wird die Option nur, wenn es dafür genug Gruppen gibt.
+
+Die Dritten aller Gruppen werden miteinander verglichen: zuerst nach dem Anteil gewonnener Spiele, dann nach der Satzdifferenz pro Spiel, dann nach der Balldifferenz pro Spiel, zuletzt entscheidet das Los. Bei gleich großen Gruppen ist das dieselbe Reihenfolge wie Siege, Satz- und Balldifferenz in der Gruppentabelle. Sind die Gruppen unterschiedlich groß (4er und 5er), zählen in den größeren die Spiele gegen die Gruppenletzten nicht mit: Jeder wird nur an den Spielen gegen die ersten vier seiner Gruppe gemessen, damit der zusätzliche Sieg gegen einen Fünften keinen Vorteil bringt. Die Werte pro Spiel gleichen aus, was danach noch abweicht, etwa nach einem Rückzug. Die Konkurrenz zeigt diesen Vergleich als eigene Tabelle, vorläufig, solange noch Gruppenspiele offen sind. Im KO-Feld werden die Nachrücker so gesetzt, dass sie möglichst spät auf Spieler ihrer eigenen Gruppe treffen. Die KO-Spiele mit Nachrückern beginnen erst, wenn alle Gruppen beendet sind.
+
+### Trostrunde: Ausgeschiedene spielen ihre Plätze aus
+
+Ohne weitere Einstellung teilen sich die in der Gruppe Ausgeschiedenen die Plätze nach Gruppenplatz (alle Dritten zum Beispiel Platz 9–12). Unter **Trostrunde** gibt es zwei Alternativen:
+
+- **Ein gemeinsames Feld:** Alle Ausgeschiedenen spielen ein eigenes KO-Feld um die Plätze hinter dem Hauptfeld. Die besseren Gruppenplätze sind gesetzt.
+- **Je Gruppenplatz ein Feld:** Alle Dritten spielen untereinander, alle Vierten untereinander und so weiter. So landet niemand hinter einem schlechteren Gruppenplatz. Ein Gruppenplatz, den nur ein Spieler belegt, bekommt seinen Platz ohne Spiel.
+
+Ein Feld mit genau **drei Spielern** (etwa die Dritten von drei Gruppen) spielt **jeder gegen jeden** statt KO: Es gäbe sonst ein Freilos, und ein Spieler wäre nach einem Spiel fertig. Die Tabelle des Felds wird wie eine Gruppe gewertet und ergibt die Plätze; jeder hat zwei Spiele. Wer zu einem dieser Spiele nicht antritt, wird wie in einer Gruppe ans Ende gesetzt.
+
+Bleiben in einem KO-Feld der Trostrunde **Freilose**, bekommen sie die Besten: zuerst die besseren Gruppenplätze, und unter Spielern mit gleichem Gruppenplatz entscheidet derselbe Vergleich über alle Gruppen wie bei den besten Dritten (Anteil gewonnener Spiele, Satz- und Balldifferenz pro Spiel, Los), nicht der Buchstabe der Gruppe. Die Konkurrenz zeigt diesen Vergleich als Tabelle. In der ersten Runde trifft dabei möglichst niemand auf einen Spieler der eigenen Gruppe.
+
+Welche Plätze in den KO-Feldern der Trostrunde ausgespielt werden, richtet sich nach den **Platzierungsspielen**: Mit **alle Plätze** wird im Hauptfeld und in der Trostrunde jeder Platz ausgespielt, sodass jeder Teilnehmer eine eigene Platzierung hat.
+
+### Schweizer System
+
+Im Schweizer System scheidet niemand aus: Jeder spielt in jeder Runde gegen einen anderen Gegner. Es folgt der Wettspielordnung des DTTB (WO D 7.6).
+
+- **Runden:** frei einstellbar. Vorgeschlagen werden zwei Runden mehr, als ein KO-Feld derselben Größe bräuchte (bei 16 Teilnehmern 6).
+- **Paarungen:** Runde 1 nach der Setzliste, obere Hälfte gegen untere. Danach treffen möglichst Spieler mit gleich vielen Siegen aufeinander, dabei die obere Tabellenhälfte gegen die untere; wer übrig bleibt, spielt gegen den Besten mit weniger Siegen. Niemand trifft zweimal auf denselben Gegner.
+- **Nächste Runde:** wird automatisch gepaart, sobald das letzte Spiel der Runde davor eingetragen ist. Solange kein Spiel der neuen Runde aufgerufen oder gespielt ist, wird sie nach einer Korrektur oder einem Rückzug neu gepaart; danach stehen ihre Paarungen fest.
+- **Freilos:** Bei ungerader Teilnehmerzahl setzt in jeder Runde ein anderer Spieler aus, das zählt als Sieg. Es geht an den am weitesten hinten Platzierten, der noch keines hatte.
+- **Tabelle:** Siege, dann Buchholzzahl (Summe der Siege aller bisherigen Gegner; ein Freilos zählt mit den Siegen des Tabellenletzten), dann der direkte Vergleich, zuletzt das Los.
+- **Danach:** Ohne KO ist der Tabellenplatz die Platzierung. Mit KO gehen die besten *k* ins Feld, die Tabelle ist die Setzliste; alle anderen behalten ihren Tabellenplatz.
 
 Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startzeit, Abhängigkeit und Tische lassen sich jederzeit ändern (Tag, Startzeit, Abhängigkeit, Minuten pro Spiel und Tische auf der Seite der Konkurrenz unter **Zeitplan**); sie gelten für noch nicht aufgerufene Spiele, und die Prognose zieht sofort nach.
 
 ## 5. Auslosung
 
-- **Setzliste:** zuerst der manuelle Setzplatz, dann die Wertungszahl (im Doppel der Mittelwert beider Spieler). Die Zahl der Gesetzten ist einstellbar; Standard sind die Gruppenköpfe bzw. ein Viertel des KO-Feldes.
+- **Setzliste:** zuerst der manuelle Setzplatz, dann die Wertungszahl (im Doppel der Mittelwert beider Spieler). Die Zahl der Gesetzten ist einstellbar; Standard sind die Gruppenköpfe bzw. ein Viertel des KO-Feldes, im Schweizer System die obere Hälfte.
+- **Schweizer System:** Die Gesetzten stehen in der Startreihenfolge oben, die anderen werden darunter gelost. So trifft in Runde 1 jeder Gesetzte auf einen zugelosten Gegner aus der unteren Hälfte.
 - **Platzierung der Gesetzten:** *fest* (nach Setzplatz, Gruppen in Schlangenreihenfolge) oder *gelost* (Topf für Topf in die Gruppen, bzw. im KO die Plätze 3/4, 5–8 … innerhalb ihrer Stufe gelost).
 - **Ungesetzte** werden frei gelost, Spieler desselben Vereins möglichst in verschiedene Gruppen.
 - **Reproduzierbar:** Jede Auslosung hat einen Startwert (Seed). Gleicher Seed und gleiche Optionen ergeben dieselbe Auslosung, sie lässt sich also prüfen oder wiederholen.
@@ -80,6 +112,8 @@ Modus und Art lassen sich bis zur Auslosung ändern. Wertung, Spieldauer, Startz
 ### Rückzug
 
 Zieht ein Spieler nach der Auslosung zurück, werden seine restlichen Spiele kampflos für die Gegner gewertet, auch KO-Spiele, die erst später entstehen. Wie in der WO D 7.9 werden in der Gruppe alle seine Spiele gestrichen, auch die schon gespielten, und er wird Gruppenletzter. Dasselbe gilt, wenn ein Spiel kampflos eingetragen wird: Wer nicht antritt, scheidet aus der Konkurrenz aus. Der Dialog zeigt, wie viele Spiele betroffen sind. Ein Rückzug lässt sich zurücknehmen, solange kein Spiel begonnen hat, das auf einer der kampflosen Wertungen aufbaut.
+
+Im Schweizer System gilt die WO D 7.6: Wer zurückzieht oder nicht antritt, spielt nicht weiter, bleibt aber mit seinen Siegen in der Tabelle, und seine gespielten Spiele zählen weiter. Für jede weitere Runde bekommt er eine Niederlage. Hat die laufende Runde noch nicht begonnen, wird sie ohne ihn neu gepaart.
 
 ## 6. Spielbetrieb
 
@@ -112,7 +146,7 @@ Ergebnisse werden in der aus dem Tischtennis bekannten Kurznotation eingegeben: 
 ## 9. Öffentliche Ansichten
 
 - `/e/<slug>` zeigt die Tische mit den laufenden Spielen, die Prognose je Konkurrenz und Tag und die letzten Ergebnisse. Jede Konkurrenz hat eine eigene Seite mit Meldungen, Gruppen mit Tabellen, KO-Baum und Platzierungen. Alles aktualisiert sich live.
-- **Nachvollziehbare Wertung:** Jede Konkurrenzseite erklärt unter **Spielmodus und Wertung** den Ablauf, die Spielregeln, alle Kriterien der Tabelle in ihrer Reihenfolge, wer ins KO kommt, die Paarungen der ersten KO-Runde (z. B. A1 – B2) und welche Plätze ausgespielt oder geteilt werden. Unter jeder Gruppentabelle zeigt **So entsteht die Reihenfolge** jeden Gleichstand Schritt für Schritt mit den Zahlen: welches Kriterium angewendet wurde, mit welchen Werten, und wer danach vorn liegt.
+- **Nachvollziehbare Wertung:** Jede Konkurrenzseite erklärt unter **Spielmodus und Wertung** den Ablauf, die Spielregeln, alle Kriterien der Tabelle in ihrer Reihenfolge, wer ins KO kommt, die Paarungen der ersten KO-Runde (z. B. A1 – B2) und welche Plätze ausgespielt oder geteilt werden. Sobald zwei Spieler gleich viele Siege haben, zeigt **So wird der Gleichstand aufgelöst** unter der Gruppentabelle jeden Gleichstand Schritt für Schritt mit den Zahlen: welches Kriterium angewendet wurde, mit welchen Werten, und wer danach vorn liegt.
 - **Zugangscode:** Neue Veranstaltungen starten mit öffentlichen Ansichten hinter einem sechsstelligen Code aus Buchstaben und Ziffern. Ein Aushang mit QR-Code wird gedruckt und in der Halle aufgehängt; wer ihn scannt, ist drin und bleibt bis zum Tag nach der Veranstaltung angemeldet. Der Code lässt sich erneuern (meldet alle ab) oder abschalten.
 - **Datenschutz:** Öffentliche Seiten zeigen nur Name und Verein. Wertungszahlen nur, wenn freigegeben, auf Wunsch Kurznamen („Max M.“). Suchmaschinen werden angewiesen, die Seiten nicht aufzunehmen.
 - **Impressum und Datenschutz:** im Fuß jeder öffentlichen Seite verlinkt, dazu ein optionaler Hinweis (z. B. „Namen und Ergebnisse dieser Veranstaltung werden hier veröffentlicht“). Jede Veranstaltung kann eigene Links setzen, sonst gelten die Vorgaben der Installation.

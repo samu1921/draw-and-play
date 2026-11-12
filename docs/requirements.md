@@ -76,7 +76,7 @@ Consequences for planning:
 | F8 | Knockout with automatic bracket size, byes for the best seeds and a choice of placement matches: none, 3rd place, all places. | ✅ | [Formats](features.md#4-competitions-and-formats) |
 | F9 | Crossover from groups to knockout (A1–B2, B1–A2 …) that keeps entries of the same group apart in the first rounds. | ✅ | [Formats](features.md#4-competitions-and-formats) |
 | F10 | Eligibility rules per competition (gender, year of birth, rating range), mixed doubles as doubles with a gender rule. | 💡 | |
-| F11 | Further stages: best third-placed entries advancing, consolation round, double elimination, Swiss system, team matches, handicap. | 💡 | |
+| F11 | Further stages: best third-placed entries advancing, consolation round, double elimination, Swiss system, team matches, handicap. | 🟡 | best third-placed entries, consolation round and Swiss system ✅; double elimination, team matches and handicap 💡 |
 
 ### 5.3 Planner and forecast
 

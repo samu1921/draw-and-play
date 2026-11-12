@@ -45,7 +45,7 @@ Jede Änderung zeigt vor der Bestätigung die neue Prognose („Finale verschieb
 ## Ideen für später
 
 - Zulassungsregeln je Konkurrenz (Geschlecht, Jahrgang, Wertung), Mixed (F10)
-- Weitere Bausteine: beste Gruppendritte, Trostrunde, Doppel-KO, Schweizer System, Mannschaftskampf, Vorgabe (F11)
+- Weitere Bausteine: Doppel-KO, Mannschaftskampf, Vorgabe (F11)
 - Einzelne Meldungen in einer Auslosung von Hand verschieben (F19)
 - Bestätigung eines Ergebnisses durch den Gegner (F26)
 - Startgeld, Kasse, Quittungen (F35)
