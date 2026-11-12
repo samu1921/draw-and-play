@@ -18,9 +18,11 @@ export function competitionText(t: Translate, state: CompetitionStateInfo) {
     return siblings.length > 1 && m.phase === 'knockout' ? `${label} ${siblings.indexOf(m) + 1}` : label;
   }
 
-  /** Entry name, or where the side will come from while it is still open */
+  /** Entry name (with rotating partners both players), or where the side will come from while it is still open */
   function sideText(m: MatchInfo, side: 0 | 1): string {
     const id = m.sides[side];
+    const partner = m.partners?.[side];
+    if (id && partner) return `${name(id)} / ${name(partner)}`;
     if (id) return name(id);
     const source = m.sources?.[side];
     if (source?.type === 'qualifier') {
@@ -38,13 +40,20 @@ export function competitionText(t: Translate, state: CompetitionStateInfo) {
     return '—';
   }
 
+  /** Clubs of a side, with rotating partners those of both players */
+  function sideClubs(m: MatchInfo, side: 0 | 1): string {
+    const ids = [m.sides[side], m.partners?.[side] ?? null].filter((id): id is string => id !== null);
+    return [...new Set(ids.map(clubs).filter((c) => c !== ''))].join(' / ');
+  }
+
   function score(m: MatchInfo): string {
     if (!m.result) return '';
+    if (m.withdrawal && m.phase === 'rotation') return t('public.annulled');
     if (m.result.walkover) return t('public.walkover');
     const won = m.result.games.filter(([a, b]) => a > b).length;
     return `${won}:${m.result.games.length - won}`;
   }
   const gameScores = (m: MatchInfo) => m.result?.games.map(([a, b]) => `${a}:${b}`).join(', ') ?? '';
 
-  return { name, clubs, numberedLabel, sideText, score, gameScores };
+  return { name, clubs, numberedLabel, sideText, sideClubs, score, gameScores };
 }

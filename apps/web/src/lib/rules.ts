@@ -5,6 +5,8 @@ import {
   groupLetter,
   groupStagePlaces,
   knockoutRoundName,
+  rotationMatchesPerPlayer,
+  rotationRanking,
   type BracketStage,
   type CompetitionFormat,
   type CompetitionStructure,
@@ -104,9 +106,9 @@ function stepText(t: Translate, step: TieBreakStep, ctx: TieBreakContext): strin
   }
 }
 
-/** Whether a match counts for the table of `group`; a Swiss system has a single table */
+/** Whether a match counts for the table of `group`; a Swiss system and rotating partners have a single table */
 export function inTable(m: { phase: string; group: number | null }, group: number): boolean {
-  return m.phase === 'swiss' || (m.phase === 'group' && m.group === group);
+  return m.phase === 'swiss' || m.phase === 'rotation' || (m.phase === 'group' && m.group === group);
 }
 
 /** The ties of one group in words, with names and the duels among the tied entries taken from the state */
@@ -137,7 +139,9 @@ function tableTieTexts(
       .filter((m) => m.sides.every((side) => side !== null && members.has(side)))
       .map((m) => `${name(m.sides[0])} – ${name(m.sides[1])} ${score(m)}`);
   };
-  return g.tieBreaks.map((tie) => tieBreakText(t, tie, { name, rankOf: (id) => rank.get(id) ?? 0, duels, provisional: !g.complete, swiss: state.competition.format.swiss !== undefined }));
+  // A table of rounds rather than a group: a Swiss system, or rotating partners
+  const swiss = state.competition.format.swiss !== undefined || state.competition.format.rotation !== undefined;
+  return g.tieBreaks.map((tie) => tieBreakText(t, tie, { name, rankOf: (id) => rank.get(id) ?? 0, duels, provisional: !g.complete, swiss }));
 }
 
 /** One line per tie for the projector's group tables: "Place 2–3: same number of wins, decided by head-to-head" */
@@ -243,6 +247,24 @@ export function competitionRules(t: Translate, input: RulesInput): RulesSection[
     });
     const notes = compact ? [t('rules.short.swissWithdrawal')] : [t('rules.swissWithdrawal'), ...(swissRanking.lastResort === 'lot' ? [t('rules.swissLotNote')] : [])];
     if (input.reference) notes.push(input.reference);
+    sections.push({ title: t('rules.notes'), paragraphs: notes });
+  }
+
+  if (format.rotation) {
+    const games = rotationMatchesPerPlayer(Math.max(4, input.entryCount));
+    const everybody = games === input.entryCount - 1;
+    sections.push({
+      title: t('rules.rotationStage'),
+      paragraphs: compact
+        ? [t(everybody ? 'rules.short.rotation' : 'rules.short.rotationMost', { games }), t('rules.short.orderIntro')]
+        : [
+            t(everybody ? 'rules.rotationPartners' : 'rules.rotationPartnersMost', { games }),
+            t('rules.rotationTable'),
+            t('rules.orderIntro'),
+          ],
+      ordered: criteriaList(t, rotationRanking(ranking), compact, true),
+    });
+    const notes = compact ? [t('rules.short.rotationWithdrawal')] : [t('rules.rotationWithdrawal'), t('rules.swissLotNote')];
     sections.push({ title: t('rules.notes'), paragraphs: notes });
   }
 

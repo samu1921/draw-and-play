@@ -299,12 +299,17 @@ const heading = computed(() => {
     case 'groups': {
       const state = stateOf(s.competitionId);
       const letters = s.groups.map((g) => groupLetter(g));
-      if (state?.swiss) return { competitionId: s.competitionId, sub: t('public.table') + pageSuffix(s) };
+      if (state?.swiss || state?.competition.format.rotation) return { competitionId: s.competitionId, sub: t('public.table') + pageSuffix(s) };
       const range = s.pages > 1 ? t('display.groupsRange', { from: letters[0], to: letters.at(-1) }) : (state?.groups.length ?? 0) > 1 ? t('display.groups') : '';
       return { competitionId: s.competitionId, sub: range };
     }
-    case 'round':
-      return { competitionId: s.competitionId, sub: t('public.roundOfTotal', { round: s.round, total: stateOf(s.competitionId)?.swiss?.rounds ?? s.round }) + pageSuffix(s) };
+    case 'round': {
+      const state = stateOf(s.competitionId);
+      // Rotating partners have a fixed number of rounds: the highest round of their matches
+      const rotationRounds = Math.max(0, ...(state?.matches ?? []).filter((m) => m.phase === 'rotation').map((m) => m.round));
+      const total = state?.swiss?.rounds ?? (rotationRounds || s.round);
+      return { competitionId: s.competitionId, sub: t('public.roundOfTotal', { round: s.round, total }) + pageSuffix(s) };
+    }
     case 'bracket': {
       if (!s.stage) return { competitionId: s.competitionId, sub: t('public.knockout') + pageSuffix(s) };
       const places = bracketViews(stateOf(s.competitionId)?.matches ?? []).find((b) => b.stage === s.stage)?.places;

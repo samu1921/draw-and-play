@@ -77,3 +77,25 @@ export function swissRoundViews(state: Pick<CompetitionStateInfo, 'swiss' | 'mat
 export function currentSwissRound(state: Pick<CompetitionStateInfo, 'swiss' | 'matches'>): SwissRoundView | undefined {
   return swissRoundViews(state).filter((r) => r.paired).at(-1);
 }
+
+/** One round of doubles with rotating partners: its matches and who sits out */
+export interface RotationRoundView {
+  round: number;
+  matches: MatchInfo[];
+  /** Players without a match in this round */
+  resting: string[];
+  /** Every match of the round is finished */
+  complete: boolean;
+}
+
+export function rotationRoundViews(state: Pick<CompetitionStateInfo, 'groups' | 'matches'>): RotationRoundView[] {
+  const own = state.matches.filter((m) => m.phase === 'rotation');
+  const players = state.groups[0]?.entries ?? [];
+  return [...new Set(own.map((m) => m.round))]
+    .sort((a, b) => a - b)
+    .map((round) => {
+      const matches = own.filter((m) => m.round === round);
+      const playing = new Set(matches.flatMap((m) => [...m.sides, ...(m.partners ?? [])]));
+      return { round, matches, resting: players.filter((id) => !playing.has(id)), complete: matches.every((m) => m.status === 'finished') };
+    });
+}

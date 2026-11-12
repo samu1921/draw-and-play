@@ -54,7 +54,8 @@ export const tableNames = (count: number) => Array.from({ length: count }, (_, i
 const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value > 0;
 
 export function variantsFor(c: Pick<CompetitionDraft, 'entryCount'> & Partial<FormatForm>): FormatVariant[] {
-  return generateVariants(c.entryCount, formatSettings(c));
+  // The planner does not know whether the entries are pairs or single players, so it offers rotating partners as well.
+  return generateVariants(c.entryCount, { ...formatSettings(c), rotation: 'include' });
 }
 
 /** The chosen variant, or the first available one if it no longer fits the number of entries */

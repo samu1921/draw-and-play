@@ -12,7 +12,8 @@ const { t } = useI18n();
 const info = computed(() =>
   props.stage !== undefined ? props.state.placementGroups?.find((g) => g.stage === props.stage) : props.state.groups.find((g) => g.group === props.group),
 );
-const isSwiss = computed(() => props.state.competition.format.swiss !== undefined);
+// A table of rounds rather than a group: a Swiss system, or rotating partners
+const isSwiss = computed(() => props.state.competition.format.swiss !== undefined || props.state.competition.format.rotation !== undefined);
 const ties = computed(() =>
   props.stage !== undefined ? placementTieTexts(t as Translate, props.state, props.stage) : groupTieTexts(t as Translate, props.state, props.group ?? 0),
 );

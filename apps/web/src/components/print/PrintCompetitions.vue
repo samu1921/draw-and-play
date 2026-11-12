@@ -7,7 +7,7 @@ import { competitionText } from '../../lib/competitionText.js';
 import { matchLabel, type Translate } from '../../lib/describe.js';
 import { crossTable, placeText } from '../../lib/printData.js';
 import { placesText } from '../../lib/rules.js';
-import { bracketViews, placementGroupViews, swissRoundViews } from '../../lib/stages.js';
+import { bracketViews, placementGroupViews, rotationRoundViews, swissRoundViews } from '../../lib/stages.js';
 
 const props = defineProps<{ states: CompetitionStateInfo[] }>();
 const { t: rawT } = useI18n();
@@ -17,14 +17,20 @@ const sections = computed(() =>
   props.states.map((state) => ({
     state,
     text: competitionText(t, state),
-    // A Swiss table is far too sparse for a cross table: it is printed as a table with the rounds below
-    groups: (state.swiss ? [] : state.groups).map((g) => ({
+    // A Swiss table is far too sparse for a cross table, and with rotating partners nobody plays anybody alone:
+    // both are printed as a table with the rounds below
+    groups: (state.swiss || state.competition.format.rotation ? [] : state.groups).map((g) => ({
       group: g,
       cross: crossTable(t, state, g.group),
       standing: new Map(g.standings.map((s) => [s.entryId, s])),
     })),
-    swissTable: state.swiss ? state.groups[0] : undefined,
-    swissRounds: swissRoundViews(state).filter((r) => r.paired),
+    swissTable: state.swiss || state.competition.format.rotation ? state.groups[0] : undefined,
+    buchholz: state.swiss !== undefined && state.swiss !== null,
+    swissRounds: state.competition.format.rotation
+      ? rotationRoundViews(state).map((r) => ({ round: r.round, matches: r.matches, bye: null, resting: r.resting }))
+      : swissRoundViews(state)
+          .filter((r) => r.paired)
+          .map((r) => ({ ...r, resting: [] as string[] })),
     brackets: bracketViews(state.matches),
     fields: placementGroupViews(state),
   })),
@@ -69,7 +75,7 @@ const bracketTitle = (b: { stage: string; places: [number, number] }) =>
             <th scope="col" class="num">{{ t('public.rank') }}</th>
             <th scope="col">{{ t('public.entry') }}</th>
             <th scope="col" class="num">{{ t('public.record') }}</th>
-            <th scope="col" class="num">{{ t('public.buchholz') }}</th>
+            <th v-if="s.buchholz" scope="col" class="num">{{ t('public.buchholz') }}</th>
             <th scope="col" class="num">{{ t('public.games') }}</th>
           </tr>
         </thead>
@@ -78,7 +84,7 @@ const bracketTitle = (b: { stage: string; places: [number, number] }) =>
             <td class="num">{{ row.rank }}</td>
             <th scope="row">{{ s.text.name(row.entryId) }}</th>
             <td class="num">{{ row.won }}:{{ row.lost }}</td>
-            <td class="num">{{ row.buchholz ?? 0 }}</td>
+            <td v-if="s.buchholz" class="num">{{ row.buchholz ?? 0 }}</td>
             <td class="num">{{ row.gamesWon }}:{{ row.gamesLost }}</td>
           </tr>
         </tbody>
@@ -91,6 +97,7 @@ const bracketTitle = (b: { stage: string; places: [number, number] }) =>
             <strong>{{ s.text.score(m) }}</strong> <span class="muted small">{{ s.text.gameScores(m) }}</span>
           </li>
           <li v-if="r.bye">{{ t('public.bye', { name: s.text.name(r.bye) }) }}</li>
+          <li v-if="r.resting.length > 0">{{ t('public.resting', { names: r.resting.map(s.text.name).join(', ') }) }}</li>
         </ul>
       </div>
     </div>

@@ -25,6 +25,8 @@ const { t } = useI18n();
 const { name } = useCompetitionText(() => props.state);
 
 const isSwiss = computed(() => props.state.competition.format.swiss !== undefined);
+/** One table of all entries: a Swiss system, or rotating partners */
+const singleTable = computed(() => isSwiss.value || props.state.competition.format.rotation !== undefined);
 const shown = computed(() => props.groups.map((g) => props.state.groups[g]!));
 const rowsOf = <T,>(list: readonly T[]) => (props.rows ? list.slice(...props.rows) : list);
 const notes = (g: CompetitionStateInfo['groups'][number]) => {
@@ -38,7 +40,7 @@ const notes = (g: CompetitionStateInfo['groups'][number]) => {
   <div class="d-groups" :style="{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }">
     <section v-for="g in shown" :key="g.group" class="d-group">
       <h3>
-        {{ isSwiss ? t('public.table') : t('public.group', { group: groupLetter(g.group) }) }}
+        {{ singleTable ? t('public.table') : t('public.group', { group: groupLetter(g.group) }) }}
         <span v-if="g.complete && !revealed" class="badge">{{ t('public.complete') }}</span>
       </h3>
       <table class="d-table">

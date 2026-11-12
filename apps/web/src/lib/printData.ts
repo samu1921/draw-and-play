@@ -44,7 +44,7 @@ export function scoresheets(
       competition: state.competition.name,
       label: knockoutAwareLabel(t, state, m),
       sides: [text.sideText(m, 0), text.sideText(m, 1)] as [string, string],
-      clubs: [text.clubs(m.sides[0]), text.clubs(m.sides[1])] as [string, string],
+      clubs: [text.sideClubs(m, 0), text.sideClubs(m, 1)] as [string, string],
       table: m.tableId ? (tableName(m.tableId) ?? null) : null,
       games: 2 * state.competition.matchRules.gamesToWin - 1,
     }));
@@ -135,7 +135,7 @@ export function resultRows(t: Translate, states: readonly CompetitionStateInfo[]
       .map((m) => ({
         competition: state.competition.name,
         label: knockoutAwareLabel(t, state, m),
-        sides: [text.name(m.sides[0]), text.name(m.sides[1])] as [string, string],
+        sides: [text.sideText(m, 0), text.sideText(m, 1)] as [string, string],
         score: text.score(m),
         games: text.gameScores(m),
       }));

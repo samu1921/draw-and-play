@@ -88,11 +88,14 @@ export interface TableInfo {
   name: string;
 }
 
+export type CompetitionKind = 'singles' | 'doubles' | 'rotation';
+
 export interface CompetitionInfo {
   id: string;
   eventId: string;
   name: string;
-  kind: 'singles' | 'doubles';
+  /** rotation: doubles with rotating partners, entered as single players */
+  kind: CompetitionKind;
   day: string | null;
   color: number;
   sortOrder: number;
@@ -147,20 +150,24 @@ export type SideSource =
 export interface MatchInfo {
   id: string | null;
   key: string;
-  /** `placement`: a consolation field of three that plays everybody against everybody */
-  phase: 'group' | 'swiss' | 'knockout' | 'placement';
+  /** `placement`: a consolation field of three that plays everybody against everybody; `rotation`: rotating partners */
+  phase: 'group' | 'swiss' | 'knockout' | 'placement' | 'rotation';
   group: number | null;
   round: number;
   /** `KO` for the main bracket, `C1`, `C2`, … for consolation brackets and fields (missing from older servers) */
   stage?: string | null;
   places: [number, number] | null;
   sides: [string | null, string | null];
+  /** Rotating partners: the partner of the player on each side (missing from older servers) */
+  partners?: [string | null, string | null] | null;
   sources: [SideSource, SideSource] | null;
   status: MatchStatus;
   tableId: string | null;
   calledAt: string | null;
   finishedAt: string | null;
   result: MatchResult | null;
+  /** Decided because a player withdrew; with rotating partners such a match does not count for anybody */
+  withdrawal?: true;
   version: number;
 }
 

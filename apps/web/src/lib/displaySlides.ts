@@ -1,5 +1,5 @@
 import type { CompetitionInfo, CompetitionStateInfo, DisplaySettings, MatchInfo } from './api.js';
-import { bracketViews, currentSwissRound, placementGroupViews, type BracketView } from './stages.js';
+import { bracketViews, currentSwissRound, placementGroupViews, rotationRoundViews, type BracketView } from './stages.js';
 
 /*
  * The projector shows a fixed 16:9 stage (1920 × 1080). Every slide must fit on it without scrolling, so the
@@ -19,6 +19,8 @@ export const TABLE_ROWS_PER_PAGE = 16;
 export const FIELDS_PER_PAGE = 2;
 /** Pairings of a Swiss round per page, in two columns */
 export const PAIRINGS_PER_PAGE = 16;
+/** Matches of a round with rotating partners per page: four names each */
+export const ROTATION_MATCHES_PER_PAGE = 8;
 /** Groups up to this size fit two rows high */
 const TWO_ROW_GROUP_SIZE = 7;
 
@@ -34,7 +36,7 @@ export type Slide =
   | (Paged & { kind: 'next' })
   /** `rows`: part of a long table on this page (a Swiss table), as row indexes from–to */
   | (Paged & { kind: 'groups'; competitionId: string; groups: number[]; columns: number; rows?: [number, number] })
-  /** The pairings of the current round of a Swiss system */
+  /** The pairings of the current round of a Swiss system, or of rotating partners */
   | (Paged & { kind: 'round'; competitionId: string; round: number; matchKeys: string[] })
   /** `from`/`to`: part of the bracket on this page, as a fraction (0–1) of its height; `stage`: a consolation bracket */
   | (Paged & { kind: 'bracket'; competitionId: string; from: number; to: number; stage?: string })
@@ -147,7 +149,8 @@ export function buildSlides({ settings, today, competitions, states, tableIds }:
     const brackets = bracketViews(state.matches).filter((b) => !groupPhase || state.finished || bracketStarted(b));
     const showGroups = groupPhase && (brackets.length === 0 || state.groups.some((g) => !g.complete));
 
-    if (showGroups && state.swiss) {
+    const rotation = state.matches.some((m) => m.phase === 'rotation');
+    if (showGroups && (state.swiss || rotation)) {
       // One table with everybody, page by page, then the pairings of the round being played
       const rows = state.groups[0]?.standings.map((_, i) => i) ?? [];
       pushPages(paginate(rows, TABLE_ROWS_PER_PAGE), (items, page, pages) => ({
@@ -160,9 +163,10 @@ export function buildSlides({ settings, today, competitions, states, tableIds }:
         page,
         pages,
       }));
-      const round = currentSwissRound(state);
+      const round = rotation ? rotationRoundViews(state).find((r) => !r.complete) : currentSwissRound(state);
       if (round && !state.groups[0]?.complete) {
-        pushPages(paginate(round.matches.map((m) => m.key), PAIRINGS_PER_PAGE), (matchKeys, page, pages) => ({
+        const perPage = rotation ? ROTATION_MATCHES_PER_PAGE : PAIRINGS_PER_PAGE;
+        pushPages(paginate(round.matches.map((m) => m.key), perPage), (matchKeys, page, pages) => ({
           key: `round:${c.id}:${page}`,
           kind: 'round',
           competitionId: c.id,

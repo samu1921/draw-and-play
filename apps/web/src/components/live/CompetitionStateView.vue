@@ -6,7 +6,7 @@ import { useCompetitionText } from '../../composables/useCompetitionText.js';
 import type { CompetitionStateInfo } from '../../lib/api.js';
 import { matchLabel } from '../../lib/describe.js';
 import { placesText, signed } from '../../lib/rules.js';
-import { bracketViews, placementGroupViews, swissRoundViews } from '../../lib/stages.js';
+import { bracketViews, placementGroupViews, rotationRoundViews, swissRoundViews } from '../../lib/stages.js';
 import GroupTieBreaks from './GroupTieBreaks.vue';
 
 const props = defineProps<{
@@ -18,6 +18,11 @@ const { t } = useI18n();
 const { name, sideText, score, gameScores } = useCompetitionText(() => props.state);
 
 const isSwiss = computed(() => props.state.competition.format.swiss !== undefined);
+/** Doubles with rotating partners: one table of single players and a fixed schedule of rounds */
+const isRotation = computed(() => props.state.competition.format.rotation !== undefined);
+const rotationRounds = computed(() => rotationRoundViews(props.state));
+/** The first round with open matches is shown unfolded */
+const currentRotationRound = computed(() => rotationRounds.value.find((r) => !r.complete)?.round);
 /** Rounds of a Swiss system, the current one first */
 const swissRounds = computed(() => swissRoundViews(props.state).filter((r) => r.paired).reverse());
 const nextSwissRound = computed(() => swissRoundViews(props.state).find((r) => !r.paired));
@@ -42,7 +47,7 @@ const percent = (won: number, played: number) => (played === 0 ? '–' : `${Math
     <div v-if="state.groups.length > 0" class="groups">
       <section v-for="g in state.groups" :key="g.group" class="group">
         <h3>
-          {{ isSwiss ? t('public.table') : t('public.group', { group: groupLetter(g.group) }) }}
+          {{ isSwiss || isRotation ? t('public.table') : t('public.group', { group: groupLetter(g.group) }) }}
           <span v-if="g.complete" class="badge">{{ t('public.complete') }}</span>
         </h3>
         <div class="table-scroll">
@@ -138,6 +143,28 @@ const percent = (won: number, played: number) => (played === 0 ? '–' : `${Math
             <span v-else-if="m.status === 'called' && m.tableId" class="muted">{{ t('table.title', { name: tableName?.(m.tableId) ?? '' }) }}</span>
           </li>
           <li v-if="r.bye" class="muted">{{ t('public.bye', { name: name(r.bye) }) }}</li>
+        </ul>
+      </details>
+    </section>
+
+    <section v-if="isRotation && rotationRounds.length > 0" class="swiss-rounds">
+      <h3>{{ t('public.rounds') }}</h3>
+      <p class="muted">{{ t('public.rotationHint') }}</p>
+      <details v-for="r in rotationRounds" :key="r.round" class="swiss-round" :open="r.round === currentRotationRound">
+        <summary>
+          {{ t('public.roundOfTotal', { round: r.round, total: rotationRounds.length }) }}
+          <span v-if="r.complete" class="badge quiet">{{ t('public.complete') }}</span>
+        </summary>
+        <ul class="placement-matches">
+          <li v-for="m in r.matches" :key="m.key">
+            <span :class="{ winner: m.result?.winner === 0 }">{{ sideText(m, 0) }}</span> –
+            <span :class="{ winner: m.result?.winner === 1 }">{{ sideText(m, 1) }}</span>{{ ' ' }}
+            <template v-if="m.status === 'finished'">
+              <strong>{{ score(m) }}</strong> <span class="muted">{{ gameScores(m) }}</span>
+            </template>
+            <span v-else-if="m.status === 'called' && m.tableId" class="muted">{{ t('table.title', { name: tableName?.(m.tableId) ?? '' }) }}</span>
+          </li>
+          <li v-if="r.resting.length > 0" class="muted">{{ t('public.resting', { names: r.resting.map(name).join(', ') }) }}</li>
         </ul>
       </details>
     </section>

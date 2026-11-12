@@ -58,6 +58,8 @@ async function run(action: () => Promise<unknown>) {
 const competition = computed(() => state.value?.competition);
 const activeEntries = computed(() => state.value?.entries.filter((e) => e.status !== 'withdrawn') ?? []);
 const isDoubles = computed(() => competition.value?.kind === 'doubles');
+/** Doubles with rotating partners: single players, a fixed schedule, no seeding */
+const isRotation = computed(() => competition.value?.kind === 'rotation');
 /** Doubles players still waiting for a partner from the pair draw */
 const unpaired = computed(() => (isDoubles.value ? activeEntries.value.filter((e) => e.members.length === 1) : []));
 /** Entries the draw will have: two unpaired players make one pair */
@@ -92,7 +94,9 @@ const removeEntry = (e: EntryInfo) => run(() => api('DELETE', `/api/entries/${e.
 // --- Format ---
 const formatForm = ref(defaultFormatForm());
 const variantId = ref('');
-const variants = computed(() => generateVariants(drawCount.value, formatSettings(formatForm.value)));
+const variants = computed(() =>
+  generateVariants(drawCount.value, { ...formatSettings(formatForm.value), rotation: isRotation.value ? 'only' : 'exclude' }),
+);
 const chosenFormat = computed(() => variants.value.find((v) => v.id === variantId.value)?.format);
 // Watched by value: every live reload brings a new competition object, which must not undo a choice not saved yet
 const savedFormat = computed(() => (competition.value ? JSON.stringify(competition.value.format) : null));
@@ -137,7 +141,7 @@ const seedingOf = (e: EntryInfo) => {
 const groupDraw = computed(() => competition.value?.format.groups !== undefined);
 const swissDraw = computed(() => competition.value?.format.swiss !== undefined);
 /** Which kind of draw the format needs; also the key of its texts */
-const drawKind = computed(() => (swissDraw.value ? 'swiss' : groupDraw.value ? 'groups' : 'knockout'));
+const drawKind = computed(() => (isRotation.value ? 'rotation' : swissDraw.value ? 'swiss' : groupDraw.value ? 'groups' : 'knockout'));
 const defaultSeedCount = computed(() => {
   // Swiss system: the upper half is seeded, so that in round 1 every seed meets a drawn opponent
   if (swissDraw.value) return Math.ceil(drawCount.value / 2);
@@ -158,7 +162,7 @@ watch(
 const seeding = computed(() => {
   const pairing = unpaired.value.length > 0;
   const list = pairing ? unpaired.value : activeEntries.value;
-  const seeded = pairing ? Math.floor(list.length / 2) : effectiveSeedCount.value;
+  const seeded = pairing ? Math.floor(list.length / 2) : isRotation.value ? 0 : effectiveSeedCount.value;
   const rank = new Map(rankForSeeding(list.map(seedingOf)).map((e, i) => [e.id, i + 1]));
   return { rank, seeded };
 });
@@ -190,10 +194,11 @@ const draw = () =>
 
 /** Entries that take part in the draw (players withdrawn before the draw are not in it) */
 const drawnEntries = computed(() => {
-  const ids = new Set(state.value?.matches.flatMap((m) => m.sides).concat(state.value.groups.flatMap((g) => g.entries)) ?? []);
+  const ids = new Set(state.value?.matches.flatMap((m) => [...m.sides, ...(m.partners ?? [])]).concat(state.value.groups.flatMap((g) => g.entries)) ?? []);
   return state.value?.entries.filter((e) => ids.has(e.id)) ?? [];
 });
-const openMatches = (e: EntryInfo) => state.value?.matches.filter((m) => m.sides.includes(e.id) && m.status !== 'finished').length ?? 0;
+const openMatches = (e: EntryInfo) =>
+  state.value?.matches.filter((m) => [...m.sides, ...(m.partners ?? [])].includes(e.id) && m.status !== 'finished').length ?? 0;
 const withdraw = (e: EntryInfo) => {
   if (confirm(t('admin.competition.withdrawConfirm', { name: entryName(e), n: openMatches(e) }))) void run(() => api('POST', `/api/entries/${e.id}/withdraw`));
 };
@@ -289,7 +294,7 @@ const removeCompetition = async () => {
           </table>
         </div>
 
-        <p class="muted small">{{ t('admin.competition.seedingHint', { rating: live.sport.value.ratingName }) }}</p>
+        <p v-if="!isRotation" class="muted small">{{ t('admin.competition.seedingHint', { rating: live.sport.value.ratingName }) }}</p>
         <div class="stack">
           <h4 v-if="isDoubles">{{ t('admin.competition.addPlayers') }}</h4>
           <p v-if="isDoubles" class="muted small">{{ t('admin.competition.addPlayersHint') }}</p>
@@ -372,7 +377,7 @@ const removeCompetition = async () => {
         <h3 id="draw-title"><Shuffle aria-hidden="true" />{{ t('admin.competition.draw') }}</h3>
         <p v-if="unpaired.length > 0" class="warning-text">{{ t('admin.competition.drawNeedsPairs') }}</p>
         <div class="fields">
-          <label class="field">
+          <label v-if="!isRotation" class="field">
             <span>{{ t('admin.competition.seedCount') }}</span>
             <input
               class="seed-input"
@@ -383,10 +388,10 @@ const removeCompetition = async () => {
               @change="seedCount = Math.max(0, Number(($event.target as HTMLInputElement).value) || 0)"
             />
           </label>
-          <div class="field form-actions">
+          <div v-if="!isRotation" class="field form-actions">
             <button type="button" class="button secondary small" @click="seedCount = Math.floor(drawCount / 2)">{{ t('admin.competition.seedHalf') }}</button>
           </div>
-          <label v-if="!swissDraw" class="field wide">
+          <label v-if="!swissDraw && !isRotation" class="field wide">
             <span>{{ t('admin.competition.seedPlacement') }}</span>
             <select v-model="seedPlacement">
               <option v-for="p in ['fixed', 'drawn'] as const" :key="p" :value="p">
@@ -403,7 +408,16 @@ const removeCompetition = async () => {
           </div>
         </div>
         <p class="muted small">
-          {{ t({ swiss: 'admin.competition.unseededHintSwiss', groups: 'admin.competition.unseededHintGroups', knockout: 'admin.competition.unseededHintKnockout' }[drawKind]) }}
+          {{
+            t(
+              {
+                rotation: 'admin.competition.drawHintRotation',
+                swiss: 'admin.competition.unseededHintSwiss',
+                groups: 'admin.competition.unseededHintGroups',
+                knockout: 'admin.competition.unseededHintKnockout',
+              }[drawKind],
+            )
+          }}
           {{ t('admin.competition.drawSeedHint') }}
         </p>
       </section>
@@ -419,7 +433,7 @@ const removeCompetition = async () => {
       </section>
       <section v-if="session.isAdmin" class="card" aria-labelledby="withdrawals">
         <h2 id="withdrawals"><UserMinus aria-hidden="true" />{{ t('admin.competition.withdrawals') }}</h2>
-        <p class="muted small">{{ t(swissDraw ? 'admin.competition.withdrawHintSwiss' : 'admin.competition.withdrawHint') }}</p>
+        <p class="muted small">{{ t(isRotation ? 'admin.competition.withdrawHintRotation' : swissDraw ? 'admin.competition.withdrawHintSwiss' : 'admin.competition.withdrawHint') }}</p>
         <ul class="withdraw-list">
           <li v-for="e in drawnEntries" :key="e.id">
             <span :class="{ muted: e.status === 'withdrawn' }">{{ entryName(e) }}</span>
