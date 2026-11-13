@@ -429,8 +429,9 @@ export default {
       options: {
         tables: 'Tables',
         next: 'Next matches',
+        standings: 'Standings of the competitions (tables, rounds, brackets, placements); off for a screen with information only',
         entries: 'Entry lists of competitions not drawn yet',
-        rules: 'Explain format and ties (a slide on the format of each competition, and the calculation of ties once a group is finished)',
+        rules: 'Explain format and ties (a slide on the format of each competition; with standings, also the calculation of ties once a group is finished)',
         liveDraw: 'Show draws live (jumps to the competition and reveals it step by step)',
         todayOnly: "Only today's competitions",
       },

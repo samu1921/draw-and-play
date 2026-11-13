@@ -430,8 +430,9 @@ const de: typeof en = {
       options: {
         tables: 'Tische',
         next: 'Nächste Spiele',
+        standings: 'Spielstand der Konkurrenzen (Tabellen, Runden, KO-Bäume, Platzierungen); aus für einen reinen Info-Bildschirm',
         entries: 'Meldelisten noch nicht ausgeloster Konkurrenzen',
-        rules: 'Spielmodus und Gleichstände erklären (je Konkurrenz eine Folie zum Modus, nach fertigen Gruppen die Rechnung bei Gleichstand)',
+        rules: 'Spielmodus und Gleichstände erklären (je Konkurrenz eine Folie zum Modus; mit Spielstand nach fertigen Gruppen auch die Rechnung bei Gleichstand)',
         liveDraw: 'Auslosungen live zeigen (springt zur Konkurrenz und deckt Schritt für Schritt auf)',
         todayOnly: 'Nur Konkurrenzen von heute',
       },

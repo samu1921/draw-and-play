@@ -236,6 +236,8 @@ export interface DisplaySettings {
   slideSeconds: number;
   tables: boolean;
   next: boolean;
+  /** Where the drawn competitions stand: tables, rounds, brackets, consolation fields, placements */
+  standings: boolean;
   /** Entry lists of competitions that are not drawn yet */
   entries: boolean;
   /** null = all competitions */
@@ -261,6 +263,7 @@ export const defaultDisplaySettings: DisplaySettings = {
   slideSeconds: 20,
   tables: true,
   next: true,
+  standings: true,
   entries: true,
   competitionIds: null,
   todayOnly: false,

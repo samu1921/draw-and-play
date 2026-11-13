@@ -142,6 +142,11 @@ export function buildSlides({ settings, today, competitions, states, tableIds }:
       }));
       continue;
     }
+    // A screen for information only (tables, next matches, format) leaves the standings to another screen
+    if (!settings.standings) {
+      if (settings.rules) slides.push({ key: `rules:${c.id}`, kind: 'rules', competitionId: c.id, page: 0, pages: 1 });
+      continue;
+    }
 
     // Only the phase being played: the groups until the first bracket starts (both overlap while the last groups
     // finish), then the brackets; once finished, the placements next to the last phase.
