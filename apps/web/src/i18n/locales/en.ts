@@ -569,7 +569,7 @@ export default {
     short: {
       record: 'more wins, with equal wins fewer losses',
       matchDiff: 'wins minus losses',
-      lot: 'lot',
+      lot: 'if still level, lots are drawn',
       withdrawal: 'Whoever does not turn up, retires or withdraws is out: all their group matches are annulled, they are last in the group.',
       orderIntro: 'Each criterion only applies to those still level after the previous ones:',
       matchPoints: 'more matches won',
