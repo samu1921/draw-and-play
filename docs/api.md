@@ -202,7 +202,7 @@ Every admin can build their own displays: a profile is a named configuration wit
 | PATCH | `/api/displays/:id` | admin | `{ name?, settings?, version }`; `settings` is merged into the stored ones |
 | DELETE | `/api/displays/:id` | admin | |
 
-`settings` (all optional when writing, always complete when read): `slideSeconds` (5–600, default 20), `tables`, `next`, `entries` (entry lists of competitions not drawn yet), `liveDraw` (reveal draws step by step), `todayOnly` (all booleans, default true except `todayOnly`) and `competitionIds` (`null` = all).
+`settings` (all optional when writing, always complete when read): `slideSeconds` (5–600, default 20), `tables`, `next`, `standings` (tables, rounds, brackets and placements of the drawn competitions), `entries` (entry lists of competitions not drawn yet), `rules` (a format slide per competition and the ties of finished groups), `liveDraw` (reveal draws step by step), `todayOnly` (all booleans, default true except `todayOnly`) and `competitionIds` (`null` = all).
 
 ## Live updates
 

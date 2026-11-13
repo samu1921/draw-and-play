@@ -151,7 +151,8 @@ Results use the short notation known from table tennis: per game the loser's poi
 ## 8. Displays
 
 - Under **Displays** every admin builds **display profiles**, one per screen (projector in the hall, TV at the entrance), each with its own link.
-- A profile chooses the slides: tables, next matches, groups, brackets, entry lists of competitions not drawn yet and a **live draw** that reveals draws and doubles pairs step by step. It can also limit the competitions, show only today and set the seconds per slide.
+- A profile chooses the slides: tables, next matches, the **standings** of the competitions (groups, rounds, brackets, placements), entry lists of competitions not drawn yet and a **live draw** that reveals draws and doubles pairs step by step. It can also limit the competitions, show only today and set the seconds per slide.
+- So the slides can be split across screens: one profile with the standings only, another without standings for tables, next matches, format and entry lists.
 - **Explain format and ties** (in the profile, on by default): every competition gets a **Format and ranking** slide with the format, match rules, standings criteria, who advances with the first knockout pairings, and the places. Once a group is finished, a line below its table says for each tie what decided it ("Place 2–3: same number of wins, decided by head-to-head"), and a **Ties** slide shows the calculation step by step. So the players in the hall can follow who advances and why.
 - The display is a 16:9 stage that never scrolls. Arrow keys or a presenter remote switch slides, space pauses, F toggles full screen. Changes to the profile show up immediately on every screen.
 - If the network drops, the display keeps showing the last state.
