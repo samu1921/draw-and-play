@@ -32,11 +32,14 @@ const shownMembers = (i: number) => (props.revealedHalves === undefined ? 2 : Ma
         <span v-if="e.clubs" class="club">{{ e.clubs }}</span>
       </template>
       <template v-else>
-        <span v-if="shownMembers(i) >= 1" class="name reveal-in">{{ e.members[0] }}</span>
-        <span v-else class="placeholder" aria-hidden="true"></span>
-        <span class="plus" aria-hidden="true">+</span>
-        <span v-if="shownMembers(i) >= 2" class="name reveal-in">{{ e.members[1] }}</span>
-        <span v-else class="placeholder" aria-hidden="true"></span>
+        <!-- Hidden names stay in the layout: every step of the draw keeps the same size -->
+        <template v-for="(member, half) in [e.members[0], e.members[1]]" :key="half">
+          <span v-if="half === 1" class="plus" aria-hidden="true">+</span>
+          <span class="name reveal-slot">
+            <span :class="shownMembers(i) > half ? 'reveal-in' : 'concealed'">{{ member }}</span>
+            <span v-if="shownMembers(i) <= half" class="placeholder" aria-hidden="true"></span>
+          </span>
+        </template>
       </template>
     </li>
   </ol>
