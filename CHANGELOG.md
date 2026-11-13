@@ -2,6 +2,23 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.6.0] – 2026-11-13
+
+### Features
+
+- **server:** Standings setting for display profiles
+- **web:** Split standings and information across screens
+
+### Bug fixes
+
+- **web:** Explain the lot on the projector's format slide
+- **web:** Keep the size steady while a draw is revealed
+- **web:** Line up the names on the placements slide
+
+### Documentation
+
+- Describe splitting displays across screens
+
 ## [0.5.0] – 2026-11-13
 
 ### Features
