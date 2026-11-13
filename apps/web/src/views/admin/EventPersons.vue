@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UserPlus, Users } from '@lucide/vue';
+import { Pencil, UserPlus, Users } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import PersonImport from '../../components/admin/PersonImport.vue';
@@ -41,6 +41,40 @@ async function add() {
     await load();
   } catch (e) {
     error.value = errorText(t, te, e);
+  }
+}
+
+// Correcting a person afterwards, e.g. a typo in the name: one row at a time, in place
+const editingId = ref<string | null>(null);
+const draft = ref(empty());
+const editError = ref('');
+
+function startEdit(p: PersonInfo) {
+  editError.value = '';
+  editingId.value = p.id;
+  draft.value = { firstName: p.firstName ?? p.name, lastName: p.lastName ?? '', club: p.club ?? '', rating: p.rating ?? '', birthYear: p.birthYear ?? '' };
+}
+
+async function saveEdit() {
+  if (!editingId.value) return;
+  editError.value = '';
+  const f = draft.value;
+  if (!f.firstName.trim()) {
+    editError.value = t('errors.firstNameRequired');
+    return;
+  }
+  try {
+    await api('PATCH', `/api/persons/${editingId.value}`, {
+      firstName: f.firstName,
+      lastName: f.lastName.trim(),
+      club: f.club.trim() || null,
+      rating: f.rating === '' ? null : f.rating,
+      birthYear: f.birthYear === '' ? null : f.birthYear,
+    });
+    editingId.value = null;
+    await load();
+  } catch (e) {
+    editError.value = errorText(t, te, e);
   }
 }
 
@@ -107,11 +141,29 @@ async function remove(p: PersonInfo) {
               <th scope="col">{{ t('admin.persons.club') }}</th>
               <th scope="col" class="num">{{ t('admin.persons.rating') }}</th>
               <th scope="col" class="num">{{ t('admin.persons.birthYear') }}</th>
-              <th scope="col"><span class="visually-hidden">{{ t('common.delete') }}</span></th>
+              <th scope="col"><span class="visually-hidden">{{ t('admin.persons.edit') }}, {{ t('common.delete') }}</span></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="p in persons" :key="p.id">
+            <template v-for="p in persons" :key="p.id">
+            <tr v-if="editingId === p.id" class="person-edit" @keydown.enter.prevent="saveEdit" @keydown.esc="editingId = null">
+              <th scope="row">
+                <div class="person-edit-names">
+                  <input v-model="draft.firstName" type="text" required maxlength="80" :aria-label="t('admin.persons.firstName')" :placeholder="t('admin.persons.firstName')" />
+                  <input v-model="draft.lastName" type="text" maxlength="80" :aria-label="t('admin.persons.lastName')" :placeholder="t('admin.persons.lastName')" />
+                </div>
+              </th>
+              <td><input v-model="draft.club" type="text" maxlength="120" :aria-label="t('admin.persons.club')" /></td>
+              <td class="num"><input v-model.number="draft.rating" type="number" min="0" max="4000" inputmode="numeric" :aria-label="t('admin.persons.rating')" /></td>
+              <td class="num"><input v-model.number="draft.birthYear" type="number" min="1900" max="2100" inputmode="numeric" :aria-label="t('admin.persons.birthYear')" /></td>
+              <td>
+                <div class="button-row">
+                  <button type="button" class="button" @click="saveEdit">{{ t('common.save') }}</button>
+                  <button type="button" class="button secondary" @click="editingId = null">{{ t('common.cancel') }}</button>
+                </div>
+              </td>
+            </tr>
+            <tr v-else>
               <th scope="row">
                 {{ listName(p) }}
                 <span v-if="isDuplicate(p, duplicates)" class="badge warning">{{ t('admin.persons.duplicateMark') }}</span>
@@ -120,12 +172,19 @@ async function remove(p: PersonInfo) {
               <td class="num">{{ p.rating ?? '' }}</td>
               <td class="num">{{ p.birthYear ?? '' }}</td>
               <td>
-                <button type="button" class="button icon" :aria-label="`${t('common.delete')}: ${p.name}`" @click="remove(p)">×</button>
+                <div class="button-row nowrap">
+                  <button type="button" class="button icon" :aria-label="t('admin.persons.editing', { name: p.name })" :title="t('admin.persons.edit')" @click="startEdit(p)">
+                    <Pencil aria-hidden="true" />
+                  </button>
+                  <button type="button" class="button icon" :aria-label="`${t('common.delete')}: ${p.name}`" @click="remove(p)">×</button>
+                </div>
               </td>
             </tr>
+            </template>
           </tbody>
         </table>
       </div>
+      <p v-if="editError" class="warning-text" role="alert">{{ editError }}</p>
     </section>
   </div>
 </template>

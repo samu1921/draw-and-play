@@ -101,6 +101,7 @@ const de: typeof en = {
     invalidImport: 'Die Datei ist beschädigt oder unvollständig ({reason} bei {at}).',
     notJson: 'Die Datei ist keine gültige JSON-Datei.',
     notFound: 'Nicht gefunden.',
+    firstNameRequired: 'Der Vorname fehlt.',
     validation: 'Bitte die Eingaben prüfen.',
     versionConflict: 'Gerade hat jemand anderes etwas geändert. Die Ansicht ist aktualisiert, bitte noch einmal versuchen.',
     alreadyDrawn: 'Bereits ausgelost: Meldungen und Modus lassen sich nicht mehr ändern.',
@@ -283,6 +284,8 @@ const de: typeof en = {
       deleteConfirm: '{name} löschen?',
       duplicates: 'Diese Namen sehen öffentlich gleich aus: {names}. Ergänze zum Beispiel den Nachnamen oder einen Buchstaben davon, damit man die Spieler unterscheiden kann.',
       duplicateMark: 'gleicher Name',
+      edit: 'Bearbeiten',
+      editing: '{name} bearbeiten',
     },
     import: {
       title: 'Spieler aus CSV importieren',
