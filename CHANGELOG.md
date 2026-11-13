@@ -2,6 +2,25 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.5.0] – 2026-11-13
+
+### Features
+
+- **web:** Score sheets and blank score sheets as A6 PDF
+- **web:** Correct players afterwards
+
+### Bug fixes
+
+- **web:** Name downloaded PDFs and CSVs after contents and event
+
+### Documentation
+
+- Describe A6 score sheet PDFs and correcting players
+
+### Tests
+
+- **e2e:** Cover A6 PDFs and correcting a player
+
 ## [0.4.0] – 2026-11-12
 
 ### Features
