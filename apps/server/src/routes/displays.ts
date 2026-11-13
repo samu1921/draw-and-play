@@ -15,6 +15,7 @@ export const displayDefaults: DisplaySettings = {
   slideSeconds: 20,
   tables: true,
   next: true,
+  standings: true,
   entries: true,
   competitionIds: null,
   todayOnly: false,

@@ -203,6 +203,8 @@ export interface DisplaySettings {
   tables: boolean;
   /** Matches that are ready to be called */
   next: boolean;
+  /** Where the drawn competitions stand: tables, rounds, brackets, consolation fields, placements */
+  standings: boolean;
   /** Entry lists of competitions that are not drawn yet */
   entries: boolean;
   /** Competitions to show; null = all */
