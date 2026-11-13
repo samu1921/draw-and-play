@@ -13,6 +13,14 @@ export function placeText(p: { place: number; placeTo: number }): string {
   return p.place === p.placeTo ? `${p.place}.` : `${p.place}.–${p.placeTo}.`;
 }
 
+/** Name of a downloaded file, readable in the downloads folder: "Ergebnisse – Vereinsmeisterschaft 2026.csv" */
+export function downloadName(title: string, eventName: string, extension: string): string {
+  // Characters that Windows or macOS do not allow in file names
+  const clean = (s: string) => s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const name = [clean(title), clean(eventName)].filter(Boolean).join(' – ').replace(/[. ]+$/, '');
+  return `${name || 'download'}.${extension}`;
+}
+
 // --- Score sheets ---
 
 /** called: on a table right now; ready: both sides known, not finished; open: everything not finished yet */

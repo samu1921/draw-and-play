@@ -7,6 +7,7 @@ import type { Translate } from './describe.js';
 import {
   certificates,
   crossTable,
+  downloadName,
   placementRows,
   placementsCsv,
   placeText,
@@ -179,5 +180,16 @@ describe('CSV', () => {
 
   it('writes the placements with a translated header', () => {
     expect(placementsCsv(t, [state], ';').split('\r\n').slice(0, 2)).toEqual(['﻿Konkurrenz;Platz;Name;Verein', 'Einzel;1.;Anna Berger;TTC']);
+  });
+});
+
+describe('downloadName', () => {
+  it('names the file after its contents and the event', () => {
+    expect(downloadName('Blanko-Schiedsrichterzettel', 'Vereinsmeisterschaft 2026', 'pdf')).toBe('Blanko-Schiedsrichterzettel – Vereinsmeisterschaft 2026.pdf');
+  });
+
+  it('drops characters file systems do not allow', () => {
+    expect(downloadName('Ergebnisse', 'Cup: Jugend/Herren "A"?', 'csv')).toBe('Ergebnisse – Cup Jugend Herren A.csv');
+    expect(downloadName('Ergebnisse', '', 'csv')).toBe('Ergebnisse.csv');
   });
 });

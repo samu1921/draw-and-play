@@ -7,7 +7,7 @@ import { useSessionStore } from '../../stores/session.js';
 import { api, type CompetitionStateInfo } from '../../lib/api.js';
 import type { Translate } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
-import { placementsCsv, resultsCsv, scoresheets, type ScoresheetScope } from '../../lib/printData.js';
+import { downloadName, placementsCsv, resultsCsv, scoresheets, type ScoresheetScope } from '../../lib/printData.js';
 import type { PdfSheet, SheetLabels, SheetPaper } from '../../lib/scoresheetPdf.js';
 
 const { t: rawT, te, d, locale } = useI18n();
@@ -74,7 +74,7 @@ async function downloadSheets(blank: boolean) {
       match: t('print.sheet.match'),
     };
     const title = blank ? t('print.titles.blank') : t('print.titles.scoresheets');
-    downloadPdf(await scoresheetPdf(sheets, labels, paper.value, `${title} · ${eventName}`), `${event.value.slug}-${blank ? 'blank-scoresheets' : 'scoresheets'}.pdf`);
+    downloadPdf(await scoresheetPdf(sheets, labels, paper.value, `${title} · ${eventName}`), downloadName(title, eventName, 'pdf'));
   } catch (e) {
     error.value = errorText(t, te, e);
   } finally {
@@ -93,7 +93,7 @@ async function download(kind: 'placements' | 'results') {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${event.value.slug}-${kind}.csv`;
+    a.download = downloadName(t(kind === 'placements' ? 'print.results.placements' : 'print.results.matches'), event.value.name, 'csv');
     a.click();
     URL.revokeObjectURL(url);
   } catch (e) {
