@@ -100,6 +100,7 @@ export default {
     invalidImport: 'The file is damaged or incomplete ({reason} at {at}).',
     notJson: 'The file is not a valid JSON file.',
     notFound: 'Not found.',
+    firstNameRequired: 'The first name is missing.',
     validation: 'Please check your input.',
     versionConflict: 'Someone else changed this just now. The view has been updated, please try again.',
     alreadyDrawn: 'Already drawn: entries and format can no longer be changed.',
@@ -282,6 +283,8 @@ export default {
       deleteConfirm: 'Delete {name}?',
       duplicates: 'These names look the same in public views: {names}. Add a last name or its initial, for example, so the players can be told apart.',
       duplicateMark: 'same name',
+      edit: 'Edit',
+      editing: 'Edit {name}',
     },
     import: {
       title: 'Import players from CSV',

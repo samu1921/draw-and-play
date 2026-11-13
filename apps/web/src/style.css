@@ -544,6 +544,31 @@ a.button {
   line-height: 1;
 }
 
+.button.icon svg {
+  width: 1rem;
+  height: 1rem;
+  vertical-align: -0.15rem;
+}
+
+.button-row.nowrap {
+  flex-wrap: nowrap;
+}
+
+/* A person's row while it is being corrected */
+.person-edit input {
+  width: 100%;
+  min-width: 5rem;
+}
+
+.person-edit .num input {
+  max-width: 6rem;
+}
+
+.person-edit-names {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
