@@ -37,12 +37,13 @@ const { t } = useI18n();
             <td></td>
             <td></td>
           </tr>
+          <tr class="scoresheet-winner">
+            <th scope="row">{{ t('print.sheet.winner') }}</th>
+            <td><span class="scoresheet-tick" aria-hidden="true"></span></td>
+            <td><span class="scoresheet-tick" aria-hidden="true"></span></td>
+          </tr>
         </tbody>
       </table>
-      <div class="scoresheet-foot">
-        <span>{{ t('print.sheet.winner') }}: ______________________</span>
-        <span>{{ t('print.sheet.signature') }}: ______________________</span>
-      </div>
     </article>
   </div>
 </template>

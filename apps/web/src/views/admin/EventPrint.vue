@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { Award, ClipboardList, Clock, ListOrdered, Network } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { Award, ClipboardList, Clock, ListOrdered, Network, NotebookPen } from '@lucide/vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { injectLiveEvent } from '../../composables/useLiveEvent.js';
 import { useSessionStore } from '../../stores/session.js';
 import { api, type CompetitionStateInfo } from '../../lib/api.js';
 import type { Translate } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
-import { placementsCsv, resultsCsv, type ScoresheetScope } from '../../lib/printData.js';
+import { placementsCsv, resultsCsv, scoresheets, type ScoresheetScope } from '../../lib/printData.js';
+import type { PdfSheet, SheetLabels, SheetPaper } from '../../lib/scoresheetPdf.js';
 
 const { t: rawT, te, d, locale } = useI18n();
 const t = rawT as Translate;
@@ -22,6 +23,13 @@ const scope = ref<ScoresheetScope>('called');
 const day = ref('');
 const maxPlace = ref(3);
 const error = ref('');
+const paper = ref<SheetPaper>('a4');
+const blankCount = ref(4);
+const blankGames = ref(5);
+const busy = ref(false);
+const selectedCompetition = computed(() => competitions.value.find((c) => c.id === competitionId.value) ?? null);
+// The chosen competition decides how many games a blank sheet needs
+watch(selectedCompetition, (c) => (blankGames.value = c ? 2 * c.matchRules.gamesToWin - 1 : 5), { immediate: true });
 
 /** Link to a print page with the chosen options */
 function link(kind: string, extra: Record<string, string | number> = {}) {
@@ -30,6 +38,48 @@ function link(kind: string, extra: Record<string, string | number> = {}) {
   for (const [key, value] of Object.entries(extra)) if (value !== '') query.set(key, String(value));
   const search = query.toString();
   return `/admin/events/${event.value.id}/print/${kind}${search ? `?${search}` : ''}`;
+}
+
+/** Score sheets as an A6 PDF: of the chosen matches, or blank ones to fill in by hand */
+async function downloadSheets(blank: boolean) {
+  error.value = '';
+  busy.value = true;
+  try {
+    // Loaded only when needed, so the PDF library stays out of the main bundle
+    const { scoresheetPdf, downloadPdf } = await import('../../lib/scoresheetPdf.js');
+    const eventName = event.value.name;
+    let sheets: PdfSheet[];
+    if (blank) {
+      const c = selectedCompetition.value;
+      const games = Math.min(9, Math.max(1, Math.round(blankGames.value) || 5));
+      const count = Math.min(200, Math.max(1, Math.round(blankCount.value) || 1));
+      const sheet: PdfSheet = { eventName, competition: null, label: null, sides: null, clubs: ['', ''], table: null, games, pairs: !!c && c.kind !== 'singles' };
+      sheets = Array.from({ length: count }, () => sheet);
+    } else {
+      const drawn = competitions.value.filter((c) => c.drawn && (!competitionId.value || c.id === competitionId.value));
+      const states = await Promise.all(drawn.map((c) => api<CompetitionStateInfo>('GET', `/api/competitions/${c.id}/state`)));
+      const tableName = (id: string) => live.overview.value?.tables.find((x) => x.id === id)?.name;
+      sheets = scoresheets(t, states, scope.value, tableName).map((x) => ({ ...x, eventName, pairs: false }));
+      if (sheets.length === 0) {
+        error.value = t('print.nothing');
+        return;
+      }
+    }
+    const labels: SheetLabels = {
+      game: t('print.sheet.game'),
+      result: t('print.sheet.result'),
+      winner: t('print.sheet.winner'),
+      table: t('print.sheet.tableLabel'),
+      competition: t('print.sheet.competition'),
+      match: t('print.sheet.match'),
+    };
+    const title = blank ? t('print.titles.blank') : t('print.titles.scoresheets');
+    downloadPdf(await scoresheetPdf(sheets, labels, paper.value, `${title} · ${eventName}`), `${event.value.slug}-${blank ? 'blank-scoresheets' : 'scoresheets'}.pdf`);
+  } catch (e) {
+    error.value = errorText(t, te, e);
+  } finally {
+    busy.value = false;
+  }
 }
 
 async function download(kind: 'placements' | 'results') {
@@ -75,7 +125,36 @@ async function download(kind: 'placements' | 'results') {
             <option v-for="s in ['called', 'ready', 'open'] as const" :key="s" :value="s">{{ t(`print.scopes.${s}`) }}</option>
           </select>
         </label>
-        <div><a class="button" :href="link('scoresheets', { scope })" target="_blank">{{ t('print.open') }}</a></div>
+        <label class="field">
+          <span>{{ t('print.paper') }}</span>
+          <select v-model="paper">
+            <option v-for="p in ['a4', 'a6'] as const" :key="p" :value="p">{{ t(`print.papers.${p}`) }}</option>
+          </select>
+        </label>
+        <div class="button-row">
+          <button type="button" class="button" :disabled="busy" @click="downloadSheets(false)">{{ t('print.pdf') }}</button>
+          <a class="button secondary" :href="link('scoresheets', { scope })" target="_blank">{{ t('print.open') }}</a>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="print-blank">
+        <h2 id="print-blank"><NotebookPen aria-hidden="true" />{{ t('print.titles.blank') }}</h2>
+        <p class="muted">{{ t('print.hints.blank') }}</p>
+        <label class="field">
+          <span>{{ t('print.blankCount') }}</span>
+          <input v-model.number="blankCount" type="number" min="1" max="200" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span>{{ t('print.blankGames') }}</span>
+          <input v-model.number="blankGames" type="number" min="1" max="9" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span>{{ t('print.paper') }}</span>
+          <select v-model="paper">
+            <option v-for="p in ['a4', 'a6'] as const" :key="p" :value="p">{{ t(`print.papers.${p}`) }}</option>
+          </select>
+        </label>
+        <div><button type="button" class="button" :disabled="busy" @click="downloadSheets(true)">{{ t('print.pdf') }}</button></div>
       </section>
 
       <section class="card" aria-labelledby="print-schedule">
