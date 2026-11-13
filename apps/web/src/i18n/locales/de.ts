@@ -570,7 +570,7 @@ const de: typeof en = {
     short: {
       record: 'mehr Siege, bei Gleichheit weniger Niederlagen',
       matchDiff: 'Siege minus Niederlagen',
-      lot: 'Los',
+      lot: 'bei weiterer Gleichheit wird gelost',
       withdrawal: 'Wer nicht antritt, aufgibt oder zurückzieht, scheidet aus: Alle seine Gruppenspiele werden gestrichen, er wird Gruppenletzter.',
       orderIntro: 'Jedes Kriterium gilt nur für die, die nach den vorherigen noch gleich sind:',
       matchPoints: 'mehr gewonnene Spiele',

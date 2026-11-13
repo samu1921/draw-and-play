@@ -50,6 +50,24 @@ describe('tieBreakText', () => {
 describe('competitionRules', () => {
   const rules = tableTennis.defaultMatchRules;
 
+  it('explains every criterion on the projector, the lot too', () => {
+    for (const locale of ['de', 'en'] as const) {
+      const sections = competitionRules(translator(locale), {
+        format: { groups: { groupCount: 2 } },
+        matchRules: rules,
+        ranking: tableTennis.ranking,
+        entryCount: 8,
+        drawn: true,
+        compact: true,
+      });
+      const criteria = sections.find((s) => s.ordered)!.ordered!;
+      for (const line of criteria) {
+        const [label, hint] = line.split(': ');
+        expect(hint!.toLowerCase()).not.toBe(label!.toLowerCase());
+      }
+    }
+  });
+
   it('describes groups with a knockout: criteria, pairings and places', () => {
     const sections = competitionRules(translator('de'), {
       format: { groups: { groupCount: 4 }, knockout: { qualifiersPerGroup: 2, placements: 'none' } },
