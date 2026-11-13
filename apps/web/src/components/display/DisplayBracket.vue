@@ -36,9 +36,15 @@ const hidden = (round: number, index: number) => props.revealed !== undefined &&
       <h4>{{ round.label }}</h4>
       <ol>
         <li v-for="{ m, index } in round.matches" :key="m.key" class="d-match" :class="[m.status, { hidden: hidden(r, index) }]">
-          <div v-for="side in [0, 1] as const" :key="side" class="d-side" :class="{ winner: m.result && m.result.winner === side, open: !m.sides[side] }">
+          <div
+            v-for="side in [0, 1] as const"
+            :key="side"
+            class="d-side"
+            :class="{ winner: m.result && m.result.winner === side, open: !m.sides[side], 'reveal-slot': revealed !== undefined }"
+          >
+            <!-- Hidden names stay in the layout: every step of a live draw keeps the same size -->
+            <span :class="{ concealed: hidden(r, index), 'reveal-in': revealed !== undefined && r === 0 && !hidden(r, index) }">{{ sideText(m, side) }}</span>
             <span v-if="hidden(r, index)" class="placeholder" aria-hidden="true"></span>
-            <span v-else :class="{ 'reveal-in': revealed !== undefined && r === 0 }">{{ sideText(m, side) }}</span>
           </div>
           <div class="d-match-info">
             <template v-if="m.status === 'finished'">

@@ -57,9 +57,10 @@ const notes = (g: CompetitionStateInfo['groups'][number]) => {
         <tbody v-if="revealed">
           <tr v-for="(entryId, i) in g.entries" :key="entryId" :class="{ latest: entryId === latest }">
             <td class="num">{{ i + 1 }}</td>
-            <th class="name">
-              <span v-if="revealed.has(entryId)" class="reveal-in">{{ name(entryId) }}</span>
-              <span v-else class="placeholder" aria-hidden="true"></span>
+            <!-- The name is laid out from the start, only hidden: every step keeps the same size -->
+            <th class="name reveal-slot">
+              <span :class="revealed.has(entryId) ? 'reveal-in' : 'concealed'">{{ name(entryId) }}</span>
+              <span v-if="!revealed.has(entryId)" class="placeholder" aria-hidden="true"></span>
             </th>
           </tr>
         </tbody>

@@ -2236,6 +2236,32 @@ textarea {
 @keyframes reveal-in {
   from {
     opacity: 0;
+/* A name that is laid out but not uncovered yet; the placeholder bar sits on top of it */
+.reveal-slot {
+  position: relative;
+}
+
+.concealed {
+  display: inline-block;
+  visibility: hidden;
+}
+
+/* Starts where the text starts: after the slot's own padding */
+.reveal-slot > .placeholder {
+  position: absolute;
+  top: 50%;
+  left: var(--slot-padding, 0);
+  translate: 0 -50%;
+}
+
+.d-table .reveal-slot {
+  --slot-padding: 8px;
+}
+
+.d-side.reveal-slot {
+  --slot-padding: 12px;
+}
+
     transform: translateY(-0.6em) scale(1.15);
   }
   to {

@@ -365,7 +365,7 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
         <ViewerGate />
       </main>
       <main v-else class="d-body">
-        <FitBox v-if="reveal" :key="`reveal-${reveal.competitionId}`">
+        <FitBox v-if="reveal" :key="`reveal-${reveal.competitionId}`" stable>
           <DisplayGroups
             v-if="revealGroups"
             :state="reveal.state"

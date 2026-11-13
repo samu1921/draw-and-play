@@ -10,6 +10,14 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
  * the content fits the height and nothing more overflows its place than at the normal size (e.g. names cut off
  * with an ellipsis, or a label pushed out of its card).
  */
+const props = defineProps<{
+  /**
+   * The content keeps its layout while its text changes (a live draw only uncovers names that are laid out
+   * from the start), so text changes are not re-measured: the scale stays the same through the whole reveal.
+   */
+  stable?: boolean;
+}>();
+
 const MAX_SCALE = 2.5;
 const STEPS = 8;
 
@@ -101,8 +109,10 @@ onMounted(() => {
   // E.g. a logo or font that loads later; the size the measuring leaves behind is the one observed, so this settles
   observer.observe(inner.value!);
   // Data updates change the text without always changing the content's size (e.g. a longer name)
-  mutations = new MutationObserver(schedule);
-  mutations.observe(inner.value!, { childList: true, subtree: true, characterData: true });
+  if (!props.stable) {
+    mutations = new MutationObserver(schedule);
+    mutations.observe(inner.value!, { childList: true, subtree: true, characterData: true });
+  }
   measure();
 });
 onBeforeUnmount(() => {
