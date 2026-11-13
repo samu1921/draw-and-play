@@ -120,6 +120,14 @@ await admin.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 await admin.getByRole('rowheader', { name: 'Gast', exact: true }).waitFor();
 await shot(admin, '02b-persons');
 
+step('correct a player afterwards');
+await admin.getByRole('button', { name: 'Gast bearbeiten' }).click();
+const editRow = admin.locator('tr.person-edit');
+await editRow.getByLabel('Nachname').fill('Muster');
+await shot(admin, '02c-person-edit');
+await editRow.getByLabel('Nachname').press('Enter');
+await admin.getByRole('rowheader', { name: 'Muster, Gast', exact: true }).waitFor();
+
 step('legal links of the event');
 await section(admin, 'Einstellungen');
 await admin.getByLabel('Impressum (URL)').fill('https://ttc.example/impressum');
@@ -299,8 +307,20 @@ await deskContext.close();
 
 step('print pages');
 await admin.goto(`${BASE}/admin/events/${eventId}/print`);
-await admin.getByRole('heading', { name: 'Schiedsrichterzettel' }).waitFor();
+await admin.getByRole('heading', { name: 'Schiedsrichterzettel', exact: true }).waitFor();
 await shot(admin, '15-print-menu');
+for (const [card, file] of [
+  ['#print-blank', 'Blanko-Schiedsrichterzettel'],
+  ['#print-scoresheets', 'Schiedsrichterzettel'],
+]) {
+  if (card === '#print-scoresheets') await admin.locator('.card', { has: admin.locator(card) }).getByLabel('Spiele').selectOption('open');
+  const [pdf] = await Promise.all([
+    admin.waitForEvent('download'),
+    admin.locator('.card', { has: admin.locator(card) }).getByRole('button', { name: 'PDF herunterladen' }).click(),
+  ]);
+  if (!pdf.suggestedFilename().startsWith(`${file} – `)) throw new Error(`Unexpected file name ${pdf.suggestedFilename()}`);
+  await pdf.saveAs(`${OUT}print-${card.slice(7)}-a6.pdf`);
+}
 const printPage = await desk.newPage();
 watch(printPage, 'print');
 for (const [kind, query, ready] of [
