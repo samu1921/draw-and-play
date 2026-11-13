@@ -2143,24 +2143,42 @@ textarea {
 /* Placements and entry lists */
 
 .d-placements {
-  columns: 3;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: 48px;
+  align-items: start;
+}
+
+/* Place and name as two grid columns: the place column is as wide as its longest label ("10.–12.") */
+.d-placements ol {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* A real box (not display: contents): the fit-to-box scale compares every element with its parent */
 .d-placements li {
-  break-inside: avoid;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   padding: 6px 0;
   border-bottom: 1px solid var(--border);
 }
 
 .d-placements .place {
-  display: inline-block;
-  min-width: 3.4em;
+  padding-right: 0.5em;
   font-variant-numeric: tabular-nums;
   color: var(--fg-secondary);
+}
+
+/* One line per name: cut off rather than wrapped, so the fit-to-box scale sees it and shrinks instead */
+.d-placements .name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .d-placements li.podium {
@@ -2218,24 +2236,6 @@ textarea {
 
 /* Live draw */
 
-.placeholder {
-  display: inline-block;
-  width: 70%;
-  height: 0.9em;
-  border-radius: 6px;
-  vertical-align: middle;
-  background: var(--border);
-  opacity: 0.5;
-}
-
-.reveal-in {
-  display: inline-block;
-  animation: reveal-in 0.6s ease-out;
-}
-
-@keyframes reveal-in {
-  from {
-    opacity: 0;
 /* A name that is laid out but not uncovered yet; the placeholder bar sits on top of it */
 .reveal-slot {
   position: relative;
@@ -2262,6 +2262,24 @@ textarea {
   --slot-padding: 12px;
 }
 
+.placeholder {
+  display: inline-block;
+  width: 70%;
+  height: 0.9em;
+  border-radius: 6px;
+  vertical-align: middle;
+  background: var(--border);
+  opacity: 0.5;
+}
+
+.reveal-in {
+  display: inline-block;
+  animation: reveal-in 0.6s ease-out;
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
     transform: translateY(-0.6em) scale(1.15);
   }
   to {

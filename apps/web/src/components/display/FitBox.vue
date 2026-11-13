@@ -85,6 +85,8 @@ function measure() {
       }
       best = low;
     }
+    // A little room: widths are measured in whole pixels, a name a fraction too long would still be cut off
+    best = Math.max(1, best / 1.02);
   } else {
     // Too large: shrink as a whole at the box width
     best = Math.min(boxWidth / Math.max(1, base.width), boxHeight / Math.max(1, base.height));
