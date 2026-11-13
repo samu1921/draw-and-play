@@ -196,7 +196,7 @@ describe('consolation fields of three', () => {
     const field = (entries: string[]) => ({ stage: 'C1', places: [3, 5], entries, standings: [], tieBreaks: [], complete: false });
     const slides = (entries: string[]) =>
       buildSlides({
-        settings: { tables: false, next: false, competitions: true, rules: false, todayOnly: false } as never,
+        settings: { tables: false, next: false, standings: true, rules: false, todayOnly: false } as never,
         today: '2026-01-01',
         competitions: [{ id: 'c', drawn: true, day: null } as never],
         states: new Map([['c', { competition: { id: 'c', drawn: true }, entries: [], groups: [], matches: [], placementGroups: [field(entries)], placements: [], finished: false } as unknown as CompetitionStateInfo]]),
@@ -271,7 +271,7 @@ describe('Swiss views', () => {
 
   it('shows the table and the current round on the projector', () => {
     const slides = buildSlides({
-      settings: { slideSeconds: 20, tables: false, next: false, entries: true, competitionIds: null, todayOnly: false, liveDraw: true, rules: false },
+      settings: { slideSeconds: 20, tables: false, next: false, standings: true, entries: true, competitionIds: null, todayOnly: false, liveDraw: true, rules: false },
       today: '2026-01-01',
       competitions: [state.competition],
       states: new Map([['c', state]]),

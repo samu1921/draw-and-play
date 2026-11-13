@@ -135,6 +135,24 @@ describe('buildSlides', () => {
     const off = buildSlides({ ...source, settings: { ...defaultDisplaySettings, next: false, rules: false } });
     expect(off.map((s) => s.key)).toEqual(['groups:a:0']);
   });
+
+  it('splits standings and information across two screens', () => {
+    const finished = state([3], { finished: true, placements: [{ entryId: 'x', place: 1, placeTo: 1 }] });
+    const entries = [{ id: 'e', status: 'registered', members: [{ id: 'p', name: 'N' }] }];
+    const source = {
+      today: '',
+      competitions: [competition('a'), competition('open', { drawn: false })],
+      states: new Map([
+        ['a', finished],
+        ['open', state([], { entries } as unknown as Partial<CompetitionStateInfo>)],
+      ]),
+      tableIds: ['t'],
+    };
+    const info = buildSlides({ ...source, settings: { ...defaultDisplaySettings, standings: false } });
+    expect(info.map((s) => s.key)).toEqual(['tables:0', 'next', 'rules:a', 'entries:open:0']);
+    const standings = buildSlides({ ...source, settings: { ...defaultDisplaySettings, tables: false, next: false, entries: false, rules: false } });
+    expect(standings.map((s) => s.key)).toEqual(['groups:a:0', 'placements:a']);
+  });
 });
 
 describe('groupRevealOrder', () => {

@@ -85,7 +85,7 @@ describe('rotating partners in the web app', () => {
   it('shows the table and the current round on the projector', () => {
     const state = stateOf(8);
     const slides = buildSlides({
-      settings: { tables: false, next: false, competitions: true, rules: false, todayOnly: false } as never,
+      settings: { tables: false, next: false, standings: true, rules: false, todayOnly: false } as never,
       today: '2026-01-01',
       competitions: [{ id: 'c', drawn: true, day: null, format: rotation } as never],
       states: new Map([['c', state]]),
