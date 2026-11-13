@@ -2538,12 +2538,13 @@ textarea {
   border-top-width: 2px;
 }
 
-.scoresheet-foot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem 2rem;
-  padding-top: 0.75rem;
+/* A box to tick the winner */
+.scoresheet-tick {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid var(--fg-secondary);
+  vertical-align: middle;
 }
 
 /* Certificates stay paper-white in dark mode too. Sizes follow the certificate's width (cqi), so the editor's
