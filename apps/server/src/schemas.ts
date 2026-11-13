@@ -35,6 +35,7 @@ export const displaySettingsSchema = z
     slideSeconds: z.int().min(5).max(600),
     tables: z.boolean(),
     next: z.boolean(),
+    standings: z.boolean(),
     entries: z.boolean(),
     competitionIds: z.array(z.uuid()).max(64).nullable(),
     todayOnly: z.boolean(),
