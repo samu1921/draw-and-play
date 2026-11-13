@@ -332,6 +332,14 @@ const heading = computed(() => {
 const headingCompetition = computed(() => (heading.value?.competitionId ? competitionOf(heading.value.competitionId) : undefined));
 
 const placementsState = computed(() => (current.value?.kind === 'placements' ? stateOf(current.value.competitionId) : undefined));
+const placeLabel = (p: { place: number; placeTo: number }) => (p.place === p.placeTo ? `${p.place}.` : `${p.place}.–${p.placeTo}.`);
+/** Three columns, filled top to bottom; each is a grid, so its names line up behind the widest place */
+const PLACEMENT_COLUMNS = 3;
+const placementColumns = computed(() => {
+  const list = placementsState.value?.placements ?? [];
+  const rows = Math.max(1, Math.ceil(list.length / PLACEMENT_COLUMNS));
+  return Array.from({ length: PLACEMENT_COLUMNS }, (_, c) => list.slice(c * rows, (c + 1) * rows));
+});
 const { name: placementName } = useCompetitionText(() => placementsState.value ?? ({ entries: [], matches: [] } as unknown as CompetitionStateInfo));
 </script>
 
@@ -447,12 +455,14 @@ const { name: placementName } = useCompetitionText(() => placementsState.value ?
             :table-name="tableName"
           />
 
-          <ol v-else-if="current.kind === 'placements' && placementsState" class="d-placements">
-            <li v-for="p in placementsState.placements" :key="p.entryId" :class="{ podium: p.place <= 3 }">
-              <span class="place">{{ p.place === p.placeTo ? `${p.place}.` : `${p.place}.–${p.placeTo}.` }}</span>
-              {{ placementName(p.entryId) }}
-            </li>
-          </ol>
+          <div v-else-if="current.kind === 'placements' && placementsState" class="d-placements">
+            <ol v-for="(column, c) in placementColumns" :key="c" :start="column[0]?.place">
+              <li v-for="p in column" :key="p.entryId" :class="{ podium: p.place <= 3 }">
+                <span class="place">{{ placeLabel(p) }}</span>
+                <span class="name">{{ placementName(p.entryId) }}</span>
+              </li>
+            </ol>
+          </div>
 
           <template v-else-if="current.kind === 'entries' && stateOf(current.competitionId)">
             <p class="d-note">{{ t('public.notDrawn') }}</p>
