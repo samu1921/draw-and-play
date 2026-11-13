@@ -47,7 +47,7 @@ How the simulation works, with an example calculation, is described in the [arch
 
 ## 3. Players and entries
 
-- **Players:** first name (required), last name, club, gender, year of birth, licence number and rating (QTTR in table tennis). Players without a last name are fine, for example guests or children. If two players would show the same name in public, the list points this out.
+- **Players:** first name (required), last name, club, gender, year of birth, licence number and rating (QTTR in table tennis). Players without a last name are fine, for example guests or children. If two players would show the same name in public, the list points this out. A typo can be corrected at any time, also after the draw: the pencil in the list opens the row for editing (Enter saves, Esc cancels), and every view shows the new name right away.
 - **CSV import:** one row per player, columns are recognised by their header (first name, last name, club, gender, born, licence no., rating, competitions) and can be reassigned by hand. Separator (`;` or `,`) and encoding (UTF-8 or Windows-1252, as Excel saves) are detected automatically. A preview checks every row and finds players who already exist; they can be skipped or updated. The optional column "competitions" enters the players right away. A template can be downloaded.
 - **Entries:** players are entered into competitions as *registered* and set to *present* on arrival. Doubles are entered as pairs, or single players wait for the pair draw.
 - The **registration desk** role can do all of this, but nothing else (see [users and roles](#11-users-and-roles)).
@@ -166,11 +166,12 @@ Results use the short notation known from table tennis: per game the loser's poi
 
 ## 10. Print and export
 
-All print pages are formatted for A4 and can be saved as PDF from the browser's print dialog.
+All print pages are formatted for A4 and can be saved as PDF from the browser's print dialog. Score sheets are also downloaded directly as a PDF in A6, which fits the usual score sheet holders: either four sheets per A4 page with dashed cut lines, or one sheet per A6 page for printers that take A6.
 
 | Print page | Contents |
 |---|---|
-| Score sheets | one per match, with boxes for every game and a signature line; for called matches, ready matches or all open matches. Also the paper fallback if the network fails. |
+| Score sheets | one per match, with a row for every game, the result and a box to tick the winner; for called matches, ready matches or all open matches. Also the paper fallback if the network fails. |
+| Blank score sheets | PDF only: empty sheets to fill in by hand, with just the event name. The number of game rows follows the chosen competition (two name lines for doubles) or is set by hand. |
 | Schedule | expected start times per day and competition, from the forecast |
 | Competitions | group sheets with standings and cross tables, brackets |
 | Results | placements and all results per competition |

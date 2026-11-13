@@ -47,7 +47,7 @@ Wie die Simulation rechnet, steht mit Beispielrechnung in der [Architektur](arch
 
 ## 3. Spieler und Meldungen
 
-- **Spieler:** Vorname (Pflicht), Nachname, Verein, Geschlecht, Geburtsjahr, Lizenznummer und Wertungszahl (im Tischtennis QTTR). Spieler ohne Nachnamen sind möglich, z. B. Gäste oder Kinder. Würden zwei Spieler öffentlich gleich heißen, weist die Liste darauf hin.
+- **Spieler:** Vorname (Pflicht), Nachname, Verein, Geschlecht, Geburtsjahr, Lizenznummer und Wertungszahl (im Tischtennis QTTR). Spieler ohne Nachnamen sind möglich, z. B. Gäste oder Kinder. Würden zwei Spieler öffentlich gleich heißen, weist die Liste darauf hin. Tippfehler lassen sich jederzeit korrigieren, auch nach der Auslosung: Der Stift in der Liste öffnet die Zeile zum Bearbeiten (Enter speichert, Esc bricht ab), und alle Ansichten zeigen sofort den neuen Namen.
 - **CSV-Import:** eine Zeile pro Spieler. Spalten werden an der Kopfzeile erkannt (Vorname, Nachname, Verein, Geschlecht, Jahrgang, Lizenz-Nr., Wertung, Konkurrenzen) und lassen sich von Hand zuordnen. Trennzeichen (`;` oder `,`) und Kodierung (UTF-8 oder Windows-1252, wie Excel speichert) werden automatisch erkannt. Eine Vorschau prüft jede Zeile und findet Spieler, die es schon gibt; sie lassen sich überspringen oder aktualisieren. Die optionale Spalte „Konkurrenzen“ meldet die Spieler gleich. Eine Vorlage steht zum Herunterladen bereit.
 - **Meldungen:** Spieler werden als *gemeldet* in Konkurrenzen eingetragen und bei Ankunft auf *anwesend* gesetzt. Doppel werden als Paar gemeldet, oder einzelne Spieler warten auf die Paarauslosung.
 - Die Rolle **Meldestelle** darf all das, aber nichts anderes (siehe [Benutzer und Rollen](#11-benutzer-und-rollen)).
@@ -165,11 +165,12 @@ Ergebnisse werden in der aus dem Tischtennis bekannten Kurznotation eingegeben: 
 
 ## 10. Drucken und Export
 
-Alle Druckseiten sind für A4 gesetzt und lassen sich über den Druckdialog des Browsers als PDF speichern.
+Alle Druckseiten sind für A4 gesetzt und lassen sich über den Druckdialog des Browsers als PDF speichern. Schiedsrichterzettel gibt es außerdem direkt als PDF in A6, passend für die üblichen Zettelhalter: entweder vier Zettel pro A4-Seite mit gestrichelten Schnittlinien oder ein Zettel pro A6-Seite für Drucker, die A6 können.
 
 | Druckseite | Inhalt |
 |---|---|
-| Schiedsrichterzettel | einer pro Spiel, mit Kästchen für jeden Satz und Unterschriftenfeld; für aufgerufene, spielbereite oder alle offenen Spiele. Auch der Rückfall auf Papier, wenn das Netz ausfällt. |
+| Schiedsrichterzettel | einer pro Spiel, mit einer Zeile pro Satz, dem Ergebnis und Kästchen zum Ankreuzen des Siegers; für aufgerufene, spielbereite oder alle offenen Spiele. Auch der Rückfall auf Papier, wenn das Netz ausfällt. |
+| Blanko-Schiedsrichterzettel | nur als PDF: leere Zettel zum Ausfüllen von Hand, nur mit dem Namen der Veranstaltung. Die Zahl der Satzzeilen folgt der gewählten Konkurrenz (bei Doppeln zwei Namenszeilen) oder wird von Hand eingestellt. |
 | Zeitplan | voraussichtliche Startzeiten je Tag und Konkurrenz aus der Prognose |
 | Gruppen und KO-Baum | Gruppenblätter mit Tabellen und Kreuztabelle, KO-Bäume |
 | Ergebnisse | Platzierungen und alle Ergebnisse je Konkurrenz |
