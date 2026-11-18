@@ -12,6 +12,8 @@ import GroupTieBreaks from './GroupTieBreaks.vue';
 const props = defineProps<{
   state: CompetitionStateInfo;
   tableName?: (tableId: string) => string | undefined;
+  /** The public page shows the placements at the top instead */
+  hidePlacements?: boolean;
 }>();
 const { t } = useI18n();
 
@@ -250,7 +252,7 @@ const percent = (won: number, played: number) => (played === 0 ? '–' : `${Math
       </ul>
     </section>
 
-    <section v-if="state.placements.length > 0" class="placements">
+    <section v-if="!hidePlacements && state.placements.length > 0" class="placements">
       <h3>{{ t('public.placements') }}</h3>
       <ol class="placement-list">
         <li v-for="p in state.placements" :key="p.entryId">
