@@ -46,14 +46,19 @@ export function competitionText(t: Translate, state: CompetitionStateInfo) {
     return [...new Set(ids.map(clubs).filter((c) => c !== ''))].join(' / ');
   }
 
-  function score(m: MatchInfo): string {
-    if (!m.result) return '';
-    if (m.withdrawal && m.phase === 'rotation') return t('public.annulled');
-    if (m.result.walkover) return t('public.walkover');
-    const won = m.result.games.filter(([a, b]) => a > b).length;
-    return `${won}:${m.result.games.length - won}`;
-  }
-  const gameScores = (m: MatchInfo) => m.result?.games.map(([a, b]) => `${a}:${b}`).join(', ') ?? '';
+  const score = (m: MatchInfo) => scoreText(t, m);
 
   return { name, clubs, numberedLabel, sideText, sideClubs, score, gameScores };
 }
+
+/** "3:1" in games won, "walkover", or "annulled" for a rotation match a withdrawal decided; empty while open */
+export function scoreText(t: Translate, m: Pick<MatchInfo, 'result' | 'withdrawal' | 'phase'>): string {
+  if (!m.result) return '';
+  if (m.withdrawal && m.phase === 'rotation') return t('public.annulled');
+  if (m.result.walkover) return t('public.walkover');
+  const won = m.result.games.filter(([a, b]) => a > b).length;
+  return `${won}:${m.result.games.length - won}`;
+}
+
+/** "11:7, 9:11, 11:4" */
+export const gameScores = (m: Pick<MatchInfo, 'result'>) => m.result?.games.map(([a, b]) => `${a}:${b}`).join(', ') ?? '';

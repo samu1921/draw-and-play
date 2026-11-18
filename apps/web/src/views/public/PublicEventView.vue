@@ -31,7 +31,7 @@ const legal = useEventLegal(live);
     <ViewerGate v-if="live.locked.value" />
     <p v-else-if="live.error.value" class="warning-text" role="alert">{{ errorText(t, te, live.error.value) }}</p>
     <nav v-if="live.overview.value" class="tabs" :aria-label="t('public.competitions')">
-      <RouterLink :to="`/e/${slug}`" :class="{ active: route.name === 'public-event' }">{{ t('public.tables') }}</RouterLink>
+      <RouterLink :to="`/e/${slug}`" :class="{ active: route.name === 'public-event' }">{{ t('public.overview') }}</RouterLink>
       <RouterLink
         v-for="c in live.overview.value.competitions"
         :key="c.id"
