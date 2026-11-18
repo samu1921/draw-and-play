@@ -19,6 +19,7 @@ import { api, type CompetitionStateInfo, type EntryInfo, type PersonInfo } from 
 import { describeFormat, sameBaseFormat, sameFormat } from '../../lib/describe.js';
 import { defaultFormatForm, formatFormOf, formatSettings } from '../../lib/formatForm.js';
 import { errorText } from '../../lib/messages.js';
+import { loadRemembered, readSnapshot } from '../../lib/snapshot.js';
 import { useSessionStore } from '../../stores/session.js';
 
 const { t, te } = useI18n();
@@ -33,15 +34,34 @@ const state = ref<CompetitionStateInfo | null>(null);
 const persons = ref<PersonInfo[]>([]);
 const error = ref('');
 
+/** Shown from the copy on this device because the server cannot be reached */
+const stale = ref(false);
+
 async function load() {
+  const id = competitionId.value;
+  // Another competition: its last known state right away, so switching does not wait for a hanging connection
+  if (state.value?.competition.id !== id) state.value = readSnapshot<CompetitionStateInfo>('staff', `state:${id}`);
   const [s, p] = await Promise.all([
-    api<CompetitionStateInfo>('GET', `/api/competitions/${competitionId.value}/state`),
-    api<{ persons: PersonInfo[] }>('GET', `/api/events/${eventId.value}/persons`),
+    loadRemembered<CompetitionStateInfo>('staff', `state:${id}`, `/api/competitions/${id}/state`),
+    loadRemembered<{ persons: PersonInfo[] }>('staff', `persons:${eventId.value}`, `/api/events/${eventId.value}/persons`),
   ]);
-  state.value = s;
-  persons.value = p.persons;
+  if (id !== competitionId.value) return;
+  state.value = s.value;
+  persons.value = p.value.persons;
+  stale.value = s.stale;
 }
-watch(competitionId, () => void load().catch((e) => (error.value = errorText(t, te, e))), { immediate: true });
+watch(
+  competitionId,
+  () => {
+    error.value = '';
+    load().catch((e) => {
+      error.value = errorText(t, te, e);
+      // Unreachable and never seen on this device: say so instead of loading forever
+      if (state.value?.competition.id !== competitionId.value) state.value = null;
+    });
+  },
+  { immediate: true },
+);
 live.onChange(() => void load());
 
 async function run(action: () => Promise<unknown>) {
@@ -228,6 +248,7 @@ const removeCompetition = async () => {
       <button v-if="!competition.drawn && session.isAdmin" type="button" class="button secondary small" @click="removeCompetition">{{ t('common.delete') }}</button>
     </header>
     <p v-if="error" class="warning-text" role="alert">{{ error }}</p>
+    <p v-else-if="stale" class="muted" role="status">{{ t('common.lastKnownState') }}</p>
 
     <template v-if="!competition.drawn">
       <section class="card" aria-labelledby="entries-title">
@@ -445,5 +466,6 @@ const removeCompetition = async () => {
       </section>
     </template>
   </div>
+  <p v-else-if="error" class="warning-text" role="alert">{{ error }}</p>
   <p v-else class="muted">{{ t('common.loading') }}</p>
 </template>

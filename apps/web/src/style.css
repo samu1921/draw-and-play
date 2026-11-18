@@ -1231,6 +1231,13 @@ textarea {
   fill: currentColor;
 }
 
+/* A result entered at the desk that still waits for the connection */
+.badge.pending {
+  justify-self: start;
+  align-self: center;
+  margin-left: 0;
+}
+
 .queue-actions {
   display: flex;
   align-items: center;

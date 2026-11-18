@@ -79,6 +79,7 @@ const de: typeof en = {
     close: 'Schließen',
     loading: 'Lädt …',
     optional: 'optional',
+    lastKnownState: 'Keine Verbindung zum Server: Angezeigt wird der letzte bekannte Stand.',
     stream: { live: 'Live', connecting: 'Verbinde …', offline: 'Offline – verbinde neu' },
   },
   sports: { 'table-tennis': 'Tischtennis' },
@@ -802,6 +803,7 @@ const de: typeof en = {
     waiting: 'Ein Ergebnis ist noch nicht gesendet. Es geht von selbst raus, sobald wieder Verbindung besteht. | {n} Ergebnisse sind noch nicht gesendet. Sie gehen von selbst raus, sobald wieder Verbindung besteht.',
     refused: 'Nicht übernommen:',
     changed: 'Das Spiel wurde inzwischen an der Turnierleitung geändert, zum Beispiel wurde ein anderes Ergebnis eingetragen. Bitte dort klären.',
+    pending: 'Ergebnis {result} wartet auf Verbindung',
     dismiss: 'Verwerfen',
   },
   table: {
