@@ -258,9 +258,28 @@ await visitor.getByRole('button', { name: 'Open', exact: true }).click();
 await visitor.locator('.table-card').first().waitFor();
 locked.delete('public');
 await shot(visitor, '12-public-overview');
-await visitor.getByRole('link', { name: 'Einzel' }).click();
+// Up next: the waiting matches in the expected order, without having to know the projector
+if ((await visitor.locator('.pm-list.next .pm-item').count()) === 0) errors.push('public: no upcoming matches listed');
+// Searching for a player keeps only their matches
+const searched = (await visitor.locator('.pm-list.recent .pm-players span').first().innerText()).trim();
+await visitor.getByLabel('Find a player or club').fill(searched.split(' ')[1] ?? searched);
+await visitor.waitForURL(/[?&]q=/);
+for (const item of await visitor.locator('.pm-item').all()) {
+  if (!(await item.innerText()).includes(searched)) errors.push(`public search: "${searched}" shows a match without them`);
+}
+await visitor.getByRole('button', { name: 'Clear search' }).click();
+await visitor.getByRole('navigation', { name: 'Competitions' }).getByRole('link', { name: 'Einzel' }).click();
 await visitor.locator('.standings').first().waitFor();
+await visitor.getByRole('heading', { name: 'Up next' }).waitFor();
 await shot(visitor, '13-public-competition');
+// Most visitors come with their phone through the QR code
+const pocket = await (await browser.newContext({ locale: 'de-DE', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })).newPage();
+watch(pocket, 'public phone');
+locked.add('public phone');
+await pocket.goto(`${BASE}/e/${slug}?code=${viewerCode}`);
+await pocket.getByRole('heading', { name: 'Als Nächstes' }).waitFor();
+locked.delete('public phone');
+await shot(pocket, '12b-public-phone');
 const imprint = visitor.locator('.legal-footer a', { hasText: 'Legal notice' });
 if ((await imprint.getAttribute('href')) !== 'https://ttc.example/impressum') errors.push('public footer: legal notice link missing');
 if (!(await visitor.locator('.legal-footer').innerText()).includes('Namen, Vereine und Ergebnisse')) errors.push('public footer: privacy note missing');
