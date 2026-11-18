@@ -2,6 +2,20 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.7.0] – 2026-11-18
+
+### Features
+
+- **web:** Show up next, latest results and placings clearly in public
+
+### Documentation
+
+- Describe the public overview and player search
+
+### Tests
+
+- **e2e:** Cover up next and the player search in public
+
 ## [0.6.1] – 2026-11-18
 
 ### Bug fixes
