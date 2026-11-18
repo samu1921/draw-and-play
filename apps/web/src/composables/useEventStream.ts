@@ -60,7 +60,21 @@ export function useEventStream(eventRef: Ref<string | undefined>, onChange: (mes
   };
 
   watch(eventRef, (value) => (value ? open(value) : close()), { immediate: true });
-  onBeforeUnmount(close);
+  // A stream over a dropped Wi-Fi can look open for minutes; the browser knows sooner when the network is gone.
+  const onOffline = () => (status.value = 'offline');
+  const onOnline = () => {
+    if (status.value === 'live' || !eventRef.value) return;
+    open(eventRef.value);
+    // A reconnect: once ready, everything is loaded again
+    connectedBefore = true;
+  };
+  window.addEventListener('offline', onOffline);
+  window.addEventListener('online', onOnline);
+  onBeforeUnmount(() => {
+    close();
+    window.removeEventListener('offline', onOffline);
+    window.removeEventListener('online', onOnline);
+  });
   /** Opens the stream again, e.g. once the browser may read the event (a refused stream is not retried by the browser) */
   const restart = () => {
     if (eventRef.value) open(eventRef.value);
