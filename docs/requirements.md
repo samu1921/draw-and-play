@@ -138,7 +138,7 @@ Principle: **what has not started yet can be changed, what has been played is ke
 | N2 | **Access**: public pages read only; result entry with a rotating PIN per event; admins with username and password (Argon2 hashes, secure session cookies, rate limits). | ✅ | [Architecture](architecture.md#6-security-and-privacy) |
 | N3 | **Privacy**: public views show name and club only, ratings only if enabled, short names ("Max M.") per event on request; public pages are excluded from search engines and can be put behind an access code; legal notice and privacy links on every public page. | ✅ | [Architecture](architecture.md#6-security-and-privacy) |
 | N4 | **Traceability**: every change is logged with who (user or device), when and what. | ✅ | [Audit log](features.md#12-audit-log) |
-| N5 | **Unreliable networks**: results entered without a connection are kept on the phone and sent later; the app shell loads offline. Full offline operation of the desk is not a goal. | ✅ | [Result entry](features.md#7-result-entry-at-the-table) |
+| N5 | **Unreliable networks**: results entered without a connection are kept on the device (phone or desk) and sent later; the app loads offline and shows the last known state. Full offline operation of the desk is not a goal. | ✅ | [Match desk](features.md#6-match-desk), [Result entry](features.md#7-result-entry-at-the-table) |
 | N6 | **Backups**: periodic database dumps, plus a JSON export of an event at the push of a button. | ✅ | [Deployment](deploy.md#6-backups) |
 | N7 | **Bilingual**: user interface in English and German; the tournament logic returns language-neutral codes. | ✅ | [Architecture](architecture.md#2-repository-and-stack) |
 | N8 | **Tested logic**: the tournament logic is a pure library with unit tests, independent of UI and database. | ✅ | [Architecture](architecture.md#3-domain-library) |
@@ -146,6 +146,6 @@ Principle: **what has not started yet can be changed, what has been played is ke
 
 ## 7. Out of scope
 
-- Full offline operation of the tournament desk. Calling matches needs the current overall state, so the desk relies on the server (with a mobile hotspot as fallback).
+- Full offline operation of the tournament desk. Calling matches needs the current overall state, so it relies on the server (with a mobile hotspot as fallback); without a connection the desk only shows the last state and takes results.
 - League operation and team match days.
 - Payment processing and online registration.

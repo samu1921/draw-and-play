@@ -20,7 +20,7 @@ Bereit für eine erste Vereinsmeisterschaft. Alles, was das [Referenzszenario](r
 | Betrieb | Docker Compose, Backup-Dienst, Demo-Stack, JSON-Export/-Import einer Veranstaltung |
 | Sport-Profile | Sportart je Veranstaltung; der Rest der App liest das Profil statt fest verdrahtetem Tischtennis |
 | Spieler | Vorname allein reicht, CSV-Import mit Vorschau, Dublettenerkennung und Meldungen (F3, F4) |
-| Funklöcher | Postausgang für Ergebnisse am Handy, idempotente Ergebnis-Anfragen, App-Hülle offline (N5) |
+| Funklöcher | Postausgang für Ergebnisse am Handy und an der Turnierleitung, idempotente Ergebnis-Anfragen, ganze App offline mit letztem Stand (N5) |
 | Drucken und Export | Schiedsrichterzettel, Zeitplan, Gruppenblätter, KO-Bäume, Ergebnisse, Urkunden, CSV (F33, F34) |
 | Rückzug | Restspiele werden kampflos gewertet, Gruppenspiele gestrichen (WO D 7.9), rücknehmbar (F27) |
 | Zugang | Zugangscode für die öffentlichen Ansichten mit druckbarem QR-Aushang (N3) |
