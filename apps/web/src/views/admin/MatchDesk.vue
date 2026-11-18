@@ -24,6 +24,12 @@ const outbox = useResultOutbox(
   live.status,
 );
 const ops = computed(() => live.operations.value);
+/** Results entered here that still wait on this device for the connection, per match */
+const pending = computed(() => new Map(outbox.waiting.value.map((i) => [i.matchId, i])));
+const pendingText = (m: OperationsMatch) => {
+  const body = pending.value.get(m.id)?.body;
+  return body ? t('outbox.pending', { result: 'notation' in body ? body.notation : t('public.walkover') }) : '';
+};
 const competitions = computed(() => new Map((ops.value?.competitions ?? []).map((c) => [c.id, c])));
 const rulesOf = (m: OperationsMatch | null) => live.overview.value?.competitions.find((c) => c.id === m?.competitionId)?.matchRules;
 
@@ -115,6 +121,7 @@ async function onSaved() {
       <div class="table-grid">
         <TableCard v-for="table in ops.tables" :key="table.id" :table="table" :competitions="competitions" :now="now">
           <template v-if="table.match">
+            <span v-if="pending.has(table.match.id)" class="badge warning pending">{{ pendingText(table.match) }}</span>
             <button type="button" class="button small" @click="editing = table.match">{{ t('admin.desk.result') }}</button>
             <button type="button" class="button secondary small" @click="uncall(table.match)">{{ t('admin.desk.uncall') }}</button>
           </template>
@@ -160,6 +167,7 @@ async function onSaved() {
             <span v-if="plannedOf(m)" class="muted small">
               {{ t('forecast.suggested', { time: formatClock(plannedOf(m)!.start), table: tableName(plannedOf(m)!.tableId) }) }}
             </span>
+            <span v-if="pending.has(m.id)" class="badge warning pending">{{ pendingText(m) }}</span>
             <span v-if="m.busy" class="busy-note">
               <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1" /><rect x="9.5" y="2" width="3.5" height="12" rx="1" /></svg>
               {{ t('admin.desk.busy') }}
@@ -199,6 +207,7 @@ async function onSaved() {
       :rules="rulesOf(editing)"
       :sport="live.sport.value"
       :outbox="outbox"
+      :pending="editing ? pending.get(editing.id)?.body : undefined"
       :competition-name="editing ? competitions.get(editing.competitionId)?.name : undefined"
       allow-walkover @close="editing = null" @saved="onSaved" />
   </div>

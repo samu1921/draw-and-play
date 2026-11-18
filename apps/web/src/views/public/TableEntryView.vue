@@ -19,7 +19,7 @@ const { t, te } = useI18n();
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const tableName = computed(() => route.params.table as string);
-const live = useLiveEvent(slug, { operations: true, remember: true });
+const live = useLiveEvent(slug, { operations: true, remember: 'public' });
 const outbox = useResultOutbox(
   computed(() => live.overview.value?.event.id),
   live.status,

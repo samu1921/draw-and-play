@@ -31,7 +31,7 @@ const { t } = useI18n();
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const profileId = computed(() => (route.params.profileId as string | undefined) || null);
-const live = useLiveEvent(slug, { operations: true, remember: true });
+const live = useLiveEvent(slug, { operations: true, remember: 'public' });
 useEventTitle(computed(() => live.overview.value?.event.name ?? live.locked.value?.name));
 useEventBranding(computed(() => live.overview.value?.event.settings.branding));
 const now = useNow();

@@ -78,6 +78,7 @@ export default {
     close: 'Close',
     loading: 'Loading …',
     optional: 'optional',
+    lastKnownState: 'No connection to the server: showing the last known state.',
     stream: { live: 'Live', connecting: 'Connecting …', offline: 'Offline – reconnecting' },
   },
   sports: { 'table-tennis': 'Table tennis' },
@@ -801,6 +802,7 @@ export default {
     waiting: 'One result has not been sent yet. It goes out by itself as soon as there is a connection again. | {n} results have not been sent yet. They go out by themselves as soon as there is a connection again.',
     refused: 'Not accepted:',
     changed: 'The match was changed at the tournament desk in the meantime, for example a different result was entered. Please sort it out there.',
+    pending: 'Result {result} waits for a connection',
     dismiss: 'Dismiss',
   },
   table: {

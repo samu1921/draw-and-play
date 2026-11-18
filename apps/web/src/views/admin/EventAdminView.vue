@@ -7,13 +7,15 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import StreamBadge from '../../components/live/StreamBadge.vue';
 import { useLiveEvent } from '../../composables/useLiveEvent.js';
+import { useOfflineCopies } from '../../composables/useOfflineCopies.js';
 import { errorText } from '../../lib/messages.js';
 import { useSessionStore } from '../../stores/session.js';
 
 const { t, te, d } = useI18n();
 const route = useRoute();
 const eventId = computed(() => route.params.eventId as string);
-const live = useLiveEvent(eventId, { operations: true });
+const live = useLiveEvent(eventId, { operations: true, remember: 'staff' });
+useOfflineCopies(live);
 useEventTitle(computed(() => live.overview.value?.event.name));
 useEventBranding(computed(() => live.overview.value?.event.settings.branding));
 const event = computed(() => live.overview.value?.event ?? null);

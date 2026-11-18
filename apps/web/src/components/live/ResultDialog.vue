@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { ResultOutbox } from '../../composables/useResultOutbox.js';
 import { api, type OperationsMatch } from '../../lib/api.js';
+import type { ResultBody } from '../../lib/outbox.js';
 import { matchLabel } from '../../lib/describe.js';
 import { errorText } from '../../lib/messages.js';
 import ResultKeypad from './ResultKeypad.vue';
@@ -14,6 +15,8 @@ const props = defineProps<{
   sport: SportProfile;
   /** Sends the result, or keeps it for later while the connection is down */
   outbox: ResultOutbox;
+  /** A result for this match that still waits on this device: shown instead of the saved one */
+  pending?: ResultBody | undefined;
   /** Competition name, shown with the result while it waits */
   competitionName?: string;
   /** The desk may also record walkovers */
@@ -36,7 +39,8 @@ const complete = computed(() => {
 watch(
   () => props.match,
   (match) => {
-    notation.value = match?.result && !match.result.walkover ? match.result.games.map(([a, b]) => (a > b ? `${b}` : `-${a}`)).join(' ') : '';
+    if (props.pending) notation.value = 'notation' in props.pending ? props.pending.notation : '';
+    else notation.value = match?.result && !match.result.walkover ? match.result.games.map(([a, b]) => (a > b ? `${b}` : `-${a}`)).join(' ') : '';
     error.value = '';
     if (!match) return dialog.value?.close();
     if (!dialog.value?.open) dialog.value?.showModal();
