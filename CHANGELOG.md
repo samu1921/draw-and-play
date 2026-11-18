@@ -2,6 +2,22 @@
 
 All notable changes, generated from the commit messages ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)).
 
+## [0.6.1] – 2026-11-18
+
+### Bug fixes
+
+- **web:** Open every page offline, not only those visited before
+- **web:** Show the live stream as offline as soon as the network drops
+- **web:** Keep the desk and competitions usable without a connection
+
+### Documentation
+
+- Describe the desk without a connection
+
+### Tests
+
+- **e2e:** Enter a result at the desk without a connection
+
 ## [0.6.0] – 2026-11-13
 
 ### Features
