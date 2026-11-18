@@ -138,7 +138,7 @@ Grundsatz: **Was noch nicht begonnen hat, ist änderbar. Was gespielt ist, bleib
 | N2 | **Zugriff**: öffentliche Seiten nur lesend; Ergebniseingabe mit rotierbarer PIN je Veranstaltung; Admins mit Benutzername und Passwort (Argon2-Hashes, sichere Session-Cookies, Rate-Limits). | ✅ | [Architektur](architecture.de.md#6-sicherheit-und-datenschutz) |
 | N3 | **Datenschutz**: Öffentliche Ansichten zeigen nur Name und Verein, Wertungszahlen nur wenn freigegeben, auf Wunsch Kurznamen („Max M.“) je Veranstaltung; öffentliche Seiten sind von Suchmaschinen ausgenommen und lassen sich hinter einen Zugangscode legen; Impressum und Datenschutz auf jeder öffentlichen Seite verlinkt. | ✅ | [Architektur](architecture.de.md#6-sicherheit-und-datenschutz) |
 | N4 | **Nachvollziehbarkeit**: Jede Änderung wird mit wer (Benutzer oder Gerät), wann und was protokolliert. | ✅ | [Protokoll](features.de.md#12-protokoll) |
-| N5 | **Unzuverlässiges Netz**: Ohne Verbindung eingegebene Ergebnisse bleiben auf dem Handy und werden nachgesendet; die App-Hülle lädt offline. Vollständiger Offline-Betrieb der Turnierleitung ist kein Ziel. | ✅ | [Ergebniseingabe](features.de.md#7-ergebniseingabe-am-tisch) |
+| N5 | **Unzuverlässiges Netz**: Ohne Verbindung eingegebene Ergebnisse bleiben auf dem Gerät (Handy oder Turnierleitung) und werden nachgesendet; die App lädt offline und zeigt den letzten bekannten Stand. Vollständiger Offline-Betrieb der Turnierleitung ist kein Ziel. | ✅ | [Spielbetrieb](features.de.md#6-spielbetrieb), [Ergebniseingabe](features.de.md#7-ergebniseingabe-am-tisch) |
 | N6 | **Backups**: regelmäßige Datenbank-Dumps und JSON-Export einer Veranstaltung auf Knopfdruck. | ✅ | [Deployment](deploy.de.md#6-backups) |
 | N7 | **Zweisprachig**: Oberfläche auf Englisch und Deutsch; die Turnierlogik liefert sprachneutrale Codes. | ✅ | [Architektur](architecture.de.md#2-repository-und-stack) |
 | N8 | **Getestete Logik**: Die Turnierlogik ist eine reine Bibliothek mit Unit-Tests, unabhängig von Oberfläche und Datenbank. | ✅ | [Architektur](architecture.de.md#3-domänenbibliothek) |
@@ -146,6 +146,6 @@ Grundsatz: **Was noch nicht begonnen hat, ist änderbar. Was gespielt ist, bleib
 
 ## 7. Nicht im Umfang
 
-- Vollständiger Offline-Betrieb der Turnierleitung. Der Aufruf braucht den aktuellen Gesamtstand, deshalb hängt die Turnierleitung am Server (mit mobilem Hotspot als Rückfall).
+- Vollständiger Offline-Betrieb der Turnierleitung. Der Aufruf braucht den aktuellen Gesamtstand, deshalb hängt er am Server (mit mobilem Hotspot als Rückfall); ohne Verbindung zeigt die Turnierleitung nur den letzten Stand und nimmt Ergebnisse an.
 - Ligabetrieb und Mannschaftsspieltage.
 - Zahlungsabwicklung und Online-Anmeldung.

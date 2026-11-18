@@ -20,7 +20,7 @@ Ready for a first club championship. Everything the [reference scenario](require
 | Operations | Docker Compose, backup service, demo stack, JSON export/import of an event |
 | Sport profiles | the sport is chosen per event; the rest of the app reads the profile instead of hard-wired table tennis |
 | Players | first name alone is enough, CSV import with preview, duplicate detection and entries (F3, F4) |
-| Dead spots | result outbox on phones, idempotent result requests, offline app shell (N5) |
+| Dead spots | result outbox on phones and at the desk, idempotent result requests, whole app offline with the last state (N5) |
 | Print and export | score sheets, schedule, group sheets, brackets, results, certificates, CSV (F33, F34) |
 | Withdrawals | remaining matches become walkovers, group matches annulled (DTTB WO D 7.9), can be taken back (F27) |
 | Access | viewer code for the public views with a printable QR notice (N3) |

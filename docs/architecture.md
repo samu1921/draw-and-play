@@ -112,7 +112,7 @@ What the numbers show:
 - **Per-event lock:** match commands run in a transaction holding a PostgreSQL advisory lock per event, so two devices can never call the same table or the same player twice. The database also enforces at most one called match per table with a partial unique index.
 - **Idempotent results:** repeating a result request is safe. If the match already holds exactly that result, the answer is `200`; this is what lets phones resend after a dead spot.
 - **Server-Sent Events:** `GET /api/events/:ref/stream` announces *what* changed (`match`, `competition`, `persons`, `draw` …) but carries no data. Public and admin clients share the stream and reload what their access allows. A heartbeat every 25 seconds keeps proxies from closing the connection; clients reconnect by themselves.
-- **Offline tolerance on phones:** a service worker caches the built app shell (never `/api`). Results that cannot be sent wait in a local outbox and are retried on reconnect, after every stream `ready` and every 15 seconds.
+- **Offline tolerance on phones and at the desk:** a service worker stores all files of the build when it installs (the build writes in the list), never `/api`, so every page opens offline, including one not visited before. Pages keep their last state in `localStorage`: public data (table phone, projector) apart from staff data (desk, competitions, signed-in user), which is removed on sign-out. Online, the desk keeps a copy of every competition, at most every 30 seconds. Results that cannot be sent wait in a local outbox and are retried on reconnect, after every stream `ready` and every 15 seconds.
 
 ## 6. Security and privacy
 
@@ -156,7 +156,7 @@ One database holds any number of events. Migrations live in `apps/server/drizzle
 | Cloud server first, laptop as fallback | Players reach result entry and public views from their own phones without the hall's network. The same image runs on a laptop; the event moves by export/import. |
 | Pure domain library, formats as data | Testable without a database, planner runs in the browser, format changes during the event are possible. |
 | Server-Sent Events instead of WebSockets | Updates only flow from server to client; commands are ordinary HTTP requests. SSE reconnects by itself and passes proxies easily. |
-| Outbox for results instead of full offline operation | A dead spot must not lose a result, but calling matches needs the overall state, so the desk stays online. |
+| Outbox and last known state instead of full offline operation | A dead spot must neither lose a result nor leave the desk blind, but calling matches needs the overall state, so calling stays online. |
 | Generic CSV import instead of a federation format | Player lists come from many sources (club software, Excel); a header-based import covers them all. Federation XML stays an idea for official tournaments. |
 | Withdrawal turns remaining matches into walkovers and annuls the group matches | Keeps standings and brackets valid without rebuilding groups; the group table follows DTTB WO D 7.9 (all matches of the withdrawn entry annulled, ranked last). |
 | Viewer code in plain text, display links carry the code | It only grants reading; the notice must be printable again at any time, and projector PCs need no input. |
