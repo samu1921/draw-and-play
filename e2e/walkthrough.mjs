@@ -201,6 +201,34 @@ offline.delete('phone');
 await admin.waitForTimeout(800);
 await shot(admin, '08-desk-after-phone');
 
+step('desk: result without a connection');
+// The desk keeps its last state and a copy of every competition, so a reload and the competition pages work offline,
+// also a competition not opened before (Hobby); a result waits on the device and is marked at its match.
+await admin.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+await admin.waitForFunction((id) => localStorage.getItem(`dap-staff:state:${id}`) !== null, hobby.competition.id, { timeout: 40_000 });
+await desk.setOffline(true);
+offline.add('admin');
+await admin.reload();
+await admin.locator('.queue-item').first().waitFor();
+await section(admin, 'Konkurrenzen');
+await admin.getByRole('link', { name: 'Hobby', exact: true }).click();
+await admin.getByText(/letzte bekannte Stand/).waitFor();
+await section(admin, 'Spielbetrieb');
+const offlineMatch = admin.locator('.queue-item:has-text("Einzel")').first();
+const offlinePlayers = await offlineMatch.locator('.queue-players').textContent();
+await offlineMatch.getByRole('button', { name: 'Ergebnis' }).click();
+await admin.locator('.result-input').fill('4 4 4');
+await admin.getByRole('button', { name: 'Ergebnis speichern' }).click();
+await admin.getByText('Ergebnis 4 4 4 wartet auf Verbindung').waitFor();
+await shot(admin, '08b-desk-offline');
+await desk.setOffline(false);
+await admin.locator('.badge.pending').waitFor({ state: 'detached', timeout: 30_000 });
+offline.delete('admin');
+// Sent: the match leaves the queue once the desk has loaded the new state
+await admin
+  .waitForFunction((players) => ![...document.querySelectorAll('.queue-players')].some((e) => e.textContent === players), offlinePlayers, { timeout: 10_000 })
+  .catch(() => errors.push('desk: offline result did not arrive'));
+
 // --- Projector ---
 step('projector');
 const beamer = await (await browser.newContext({ locale: 'de-DE', viewport: { width: 1920, height: 1080 } })).newPage();
