@@ -1,15 +1,25 @@
-// Service worker: keeps the app itself (HTML, scripts, styles) available without a connection, so a page such as
-// the table page still opens in a dead spot and shows the last known state. API requests are never cached here;
+// Service worker: keeps the app itself (HTML, scripts, styles) available without a connection, so the desk and the
+// table page still open in a dead spot and show the last known state. API requests are never cached here;
 // the pages keep their own snapshot of the data they need.
 //
+// - Installation: all files of the build are kept right away (the list is written in at build time, see
+//   vite.config.ts), so every page opens offline, also one that was never opened before.
 // - Page loads: network first, so a new deployment arrives with the next load; offline the last page is used.
 // - /assets/*: file names carry a content hash and never change, so cache first.
-// Bump CACHE when this file changes in a way that needs the old cache gone.
-const CACHE = 'dap-shell-v1';
+const BUILD = '__BUILD__';
+const PRECACHE = [/* __PRECACHE__ */];
+const CACHE = `dap-shell-${BUILD}`;
 const MAX_ASSETS = 200;
 
-self.addEventListener('install', () => {
-  self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE);
+      // One by one: a file that fails to load must not keep the rest out
+      await Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => {})));
+      await self.skipWaiting();
+    })(),
+  );
 });
 
 self.addEventListener('activate', (event) => {
